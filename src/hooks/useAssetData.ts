@@ -69,7 +69,7 @@ function percentileWindow(values: number[], window = 156): number[] {
   return out;
 }
 
-function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, lastNetSpec: number) {
+function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, lastNetSpec: number, lastNetSmall: number) {
   // 156 weeks ≈ 3 years
   const N = 156;
   const rand = mulberry32(hashStr(symbol));
@@ -78,12 +78,14 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
   const prices: number[] = [];
   const oi: number[] = [];
   const netLev: number[] = [];
-  const netSpec: number[] = [];
+  const netSpecLarge: number[] = [];
+  const netSpecSmall: number[] = [];
 
   let p = lastPrice * (0.7 + rand() * 0.4);
   let o = 800_000 + Math.floor(rand() * 400_000);
   let nl = lastNetLev * (0.5 + rand() * 0.6);
   let ns = lastNetSpec * (0.5 + rand() * 0.6);
+  let nsm = lastNetSmall * (0.5 + rand() * 0.6);
 
   for (let i = 0; i < N; i++) {
     const drift = (lastPrice - p) * 0.012;
@@ -91,19 +93,26 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
     o = Math.max(100_000, o + Math.floor((rand() - 0.5) * 30_000));
     nl = nl + (lastNetLev - nl) * 0.015 + (rand() - 0.5) * Math.abs(lastNetLev || 1000) * 0.08;
     ns = ns + (lastNetSpec - ns) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSpec || 1000) * 0.08;
+    nsm = nsm + (lastNetSmall - nsm) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSmall || 1000) * 0.10;
     prices.push(p);
     oi.push(o);
     netLev.push(nl);
-    netSpec.push(ns);
+    netSpecLarge.push(ns);
+    netSpecSmall.push(nsm);
   }
 
   // Snap last to actuals
   prices[N - 1] = lastPrice;
   netLev[N - 1] = lastNetLev;
-  netSpec[N - 1] = lastNetSpec;
+  netSpecLarge[N - 1] = lastNetSpec;
+  netSpecSmall[N - 1] = lastNetSmall;
 
-  const levPct = percentileWindow(netLev);
-  const specPct = percentileWindow(netSpec);
+  const netSpec = netSpecLarge.map((v, i) => v + netSpecSmall[i]);
+
+  const levPct = percentileWindow(netLev, 156);
+  const specPct = percentileWindow(netSpecLarge, 156);
+  const netSpec3y = percentileWindow(netSpec, 156);
+  const netSpec6m = percentileWindow(netSpec, 26);
 
   // Build weekly dates ending today (UTC, Tuesday cadence approx)
   const today = new Date();
@@ -115,9 +124,12 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
       date: d.toISOString().slice(0, 10),
       price: Number(prices[i].toFixed(4)),
       netLevFunds: Math.round(netLev[i]),
-      netLargeSpec: Math.round(netSpec[i]),
+      netLargeSpec: Math.round(netSpecLarge[i]),
+      netSpec: Math.round(netSpec[i]),
       levFundPct: levPct[i],
       largeSpecPct: specPct[i],
+      netSpecPct3y: netSpec3y[i],
+      netSpecPct6m: netSpec6m[i],
       openInterest: oi[i],
     });
   }
