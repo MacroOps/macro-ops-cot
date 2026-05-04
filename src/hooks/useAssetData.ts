@@ -222,16 +222,21 @@ export function useAssetData(symbol: string) {
 
 // Forward-performance backtest: for each historical point in the same percentile bucket
 // as the current reading, compute the realized N-week forward price return.
-export function computeForwardPerformance(series: AssetSeriesPoint[], horizonsWeeks = [1, 4, 12, 26]) {
+export function computeForwardPerformance(
+  series: AssetSeriesPoint[],
+  horizonsWeeks = [1, 4, 12, 26],
+  windowKey: "netSpecPct3y" | "netSpecPct6m" = "netSpecPct3y",
+) {
   if (series.length < 30) return [];
   const current = series[series.length - 1];
-  const bucketLo = Math.max(0, current.levFundPct - 10);
-  const bucketHi = Math.min(100, current.levFundPct + 10);
+  const cur = current[windowKey];
+  const bucketLo = Math.max(0, cur - 10);
+  const bucketHi = Math.min(100, cur + 10);
 
   return horizonsWeeks.map(h => {
     const samples: number[] = [];
     for (let i = 0; i < series.length - h - 1; i++) {
-      const p = series[i].levFundPct;
+      const p = series[i][windowKey];
       if (p >= bucketLo && p <= bucketHi) {
         const r = (series[i + h].price - series[i].price) / series[i].price;
         samples.push(r);
