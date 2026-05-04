@@ -60,9 +60,19 @@
     --sidebar-ring: 18 80% 44%;
 
     /* Semantic positioning colors */
-    --pos-long: 68 100% 30%;
-    --pos-short: 1 71% 52%;
-    --pos-neutral: 180 7% 60%;
+    --pos-long: 152 76% 28%;       /* sharper institutional green */
+    --pos-short: 354 78% 44%;      /* sharper institutional red */
+    --pos-neutral: 215 16% 47%;
+
+    /* Chart / data table surface — always white on solar */
+    --chart-surface: 0 0% 100%;
+    --chart-surface-foreground: 215 28% 17%;  /* near-black slate ink */
+    --chart-grid: 215 16% 88%;
+    --chart-axis: 215 16% 40%;
+    --chart-ink: 215 28% 17%;       /* primary line color */
+    --chart-ink-muted: 215 16% 55%;
+    --chart-accent: 214 84% 36%;    /* deep institutional blue */
+    --chart-accent-2: 28 90% 42%;   /* sharp amber */
   }
 
   .dark {
