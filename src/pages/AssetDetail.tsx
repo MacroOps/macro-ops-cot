@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Area,
@@ -24,6 +24,8 @@ import { computeForwardPerformance, useAssetData } from "@/hooks/useAssetData";
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat("en-US");
 
+type WindowKey = "netSpecPct3y" | "netSpecPct6m";
+
 function StatBlock({ label, value, sub, tone = "default" }: { label: string; value: string; sub?: string; tone?: "default" | "long" | "short" | "primary" }) {
   const toneCls =
     tone === "long" ? "text-pos-long"
@@ -39,14 +41,29 @@ function StatBlock({ label, value, sub, tone = "default" }: { label: string; val
   );
 }
 
-function ChartPanel({ title, sub, children, height = 200 }: { title: string; sub?: string; children: React.ReactNode; height?: number }) {
+function ChartPanel({
+  title,
+  sub,
+  right,
+  children,
+  height = 200,
+}: {
+  title: string;
+  sub?: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+  height?: number;
+}) {
   return (
-    <div className="hud-panel flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+    <div className="hud-chart flex flex-col">
+      <div className="hud-chart-header flex items-center justify-between px-3 py-2">
         <div className="flex flex-col">
-          <span className="hud-label">{title}</span>
-          {sub && <span className="text-[10px] text-muted-foreground font-mono">{sub}</span>}
+          <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+            {title}
+          </span>
+          {sub && <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
         </div>
+        {right}
       </div>
       <div className="p-1.5" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">{children as any}</ResponsiveContainer>
@@ -55,22 +72,55 @@ function ChartPanel({ title, sub, children, height = 200 }: { title: string; sub
   );
 }
 
+function WindowToggle({ value, onChange }: { value: WindowKey; onChange: (v: WindowKey) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[
+        { k: "netSpecPct6m" as const, l: "6M" },
+        { k: "netSpecPct3y" as const, l: "3Y" },
+      ].map(o => (
+        <button
+          key={o.k}
+          onClick={() => onChange(o.k)}
+          className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
+            value === o.k
+              ? "border-chart-ink bg-chart-ink text-chart-surface"
+              : "border-chart-grid text-chart-axis hover:text-chart-ink"
+          }`}
+        >
+          {o.l}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function AssetDetail() {
   const { symbol = "ES" } = useParams();
   const { data, isLoading, error } = useAssetData(symbol);
 
+  const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
+
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
   const wkChg = last && prev ? ((last.price - prev.price) / prev.price) * 100 : 0;
-  const netWoW = last && prev ? last.netLevFunds - prev.netLevFunds : 0;
+  const netWoW = last && prev ? last.netSpec - prev.netSpec : 0;
 
-  const forward = useMemo(() => (data ? computeForwardPerformance(data.series) : []), [data]);
+  const forward = useMemo(
+    () => (data ? computeForwardPerformance(data.series, [1, 4, 12, 26], pctWindow) : []),
+    [data, pctWindow]
+  );
 
   // Slice last 78 weeks (~18m) for charts
   const chartData = useMemo(() => (data ? data.series.slice(-78) : []), [data]);
 
-  const tickColor = "hsl(var(--muted-foreground))";
-  const gridColor = "hsl(var(--border))";
+  const tickColor = "hsl(var(--chart-axis))";
+  const gridColor = "hsl(var(--chart-grid))";
+  const inkColor = "hsl(var(--chart-ink))";
+  const accentColor = "hsl(var(--chart-accent))";
+
+  const currentPct = last ? (pctWindow === "netSpecPct3y" ? last.netSpecPct3y : last.netSpecPct6m) : 0;
+  const windowLabel = pctWindow === "netSpecPct3y" ? "3Y" : "6M";
 
   return (
     <AppShell title={`Asset · ${symbol}`}>
@@ -88,65 +138,77 @@ export default function AssetDetail() {
               <span className="hud-label border border-border px-1.5 py-0.5 rounded-sm">{data.exchange}</span>
             )}
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-            CFTC report · {data?.lastReportDate ?? "—"}
+          <div className="flex items-center gap-3">
+            <WindowToggle value={pctWindow} onChange={setPctWindow} />
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+              CFTC report · {data?.lastReportDate ?? "—"}
+            </div>
           </div>
         </div>
 
         {/* Stats strip */}
         <div className="hud-panel flex flex-wrap">
           <StatBlock label="Last Price" value={last ? fmt.format(last.price) : "—"} sub={wkChg >= 0 ? `+${wkChg.toFixed(2)}% w/w` : `${wkChg.toFixed(2)}% w/w`} tone={wkChg >= 0 ? "long" : "short"} />
-          <StatBlock label="Lev Fund Net" value={last ? fmtInt.format(last.netLevFunds) : "—"} sub={`Δ ${netWoW >= 0 ? "+" : ""}${fmtInt.format(netWoW)}`} tone={last && last.netLevFunds >= 0 ? "long" : "short"} />
-          <StatBlock label="Large Spec Net" value={last ? fmtInt.format(last.netLargeSpec) : "—"} tone={last && last.netLargeSpec >= 0 ? "long" : "short"} />
-          <StatBlock label="Lev Fund %ile" value={last ? `${last.levFundPct}` : "—"} sub="3y rolling" tone={last && (last.levFundPct >= 85 || last.levFundPct <= 15) ? "primary" : "default"} />
+          <StatBlock label="Net Specs" value={last ? fmtInt.format(last.netSpec) : "—"} sub={`Δ ${netWoW >= 0 ? "+" : ""}${fmtInt.format(netWoW)}`} tone={last && last.netSpec >= 0 ? "long" : "short"} />
+          <StatBlock label={`Net Spec %ile ${windowLabel}`} value={last ? `${currentPct}` : "—"} sub="primary signal" tone={currentPct >= 85 || currentPct <= 15 ? "primary" : "default"} />
+          <StatBlock label="Lev Fund Net" value={last ? fmtInt.format(last.netLevFunds) : "—"} tone={last && last.netLevFunds >= 0 ? "long" : "short"} />
           <StatBlock label="Open Interest" value={last ? fmtInt.format(last.openInterest) : "—"} />
         </div>
 
         {/* Main grid: charts (2/3) + news (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-3">
-            {/* Price + Net positioning composite */}
-            <ChartPanel title="Price · Lev Fund Net (78w)" sub="Net contracts overlay reveals positioning vs price divergence" height={260}>
+            {/* Price + Net Spec composite */}
+            <ChartPanel
+              title="Price · Net Speculators (78w)"
+              sub="Large + small non-commercial net contracts overlaid on price"
+              height={260}
+            >
               <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
                 <YAxis yAxisId="net" orientation="left" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip
-                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 2, fontSize: 11 }}
-                  labelStyle={{ color: "hsl(var(--surface-foreground))", fontFamily: "monospace" }}
+                  contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11, color: "hsl(var(--chart-surface-foreground))" }}
+                  labelStyle={{ color: "hsl(var(--chart-surface-foreground))", fontFamily: "monospace" }}
                 />
                 <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                <Bar yAxisId="net" dataKey="netLevFunds" name="Lev Fund Net" barSize={3}>
+                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={3}>
                   {chartData.map((d, i) => (
-                    <Cell key={i} fill={d.netLevFunds >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.55} />
+                    <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
                   ))}
                 </Bar>
-                <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke="hsl(var(--surface-foreground))" strokeWidth={1.5} dot={false} />
+                <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.5} dot={false} />
               </ComposedChart>
             </ChartPanel>
 
             {/* Percentile chart */}
-            <ChartPanel title="Positioning Percentile (3y rolling)" sub="Extremes ≥85 long-crowded · ≤15 short-crowded" height={180}>
+            <ChartPanel
+              title={`Net Spec Positioning Percentile · ${windowLabel} rolling`}
+              sub="Extremes ≥85 long-crowded · ≤15 short-crowded"
+              right={<WindowToggle value={pctWindow} onChange={setPctWindow} />}
+              height={200}
+            >
               <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="pctFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={accentColor} stopOpacity={0.30} />
+                    <stop offset="100%" stopColor={accentColor} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
                 <Tooltip
-                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 2, fontSize: 11 }}
+                  contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }}
                 />
-                <ReferenceArea y1={85} y2={100} fill="hsl(var(--pos-long))" fillOpacity={0.08} />
-                <ReferenceArea y1={0} y2={15} fill="hsl(var(--pos-short))" fillOpacity={0.08} />
+                <ReferenceArea y1={85} y2={100} fill="hsl(var(--pos-long))" fillOpacity={0.10} />
+                <ReferenceArea y1={0} y2={15} fill="hsl(var(--pos-short))" fillOpacity={0.10} />
                 <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" />
                 <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" />
-                <Area type="monotone" dataKey="levFundPct" name="Lev Fund %" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#pctFill)" />
-                <Line type="monotone" dataKey="largeSpecPct" name="Large Spec %" stroke="hsl(var(--accent))" strokeWidth={1} dot={false} />
+                <Area type="monotone" dataKey={pctWindow} name={`Net Spec ${windowLabel}`} stroke={accentColor} strokeWidth={1.75} fill="url(#pctFill)" />
+                <Line type="monotone" dataKey="levFundPct" name="Lev Fund 3Y (ref)" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1} strokeDasharray="3 3" dot={false} />
               </AreaChart>
             </ChartPanel>
 
@@ -156,32 +218,39 @@ export default function AssetDetail() {
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={48} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 2, fontSize: 11 }} />
-                <Bar dataKey="openInterest" fill="hsl(var(--muted-foreground))" fillOpacity={0.55} />
+                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+                <Bar dataKey="openInterest" fill="hsl(var(--chart-ink))" fillOpacity={0.5} />
               </BarChart>
             </ChartPanel>
 
             {/* Forward performance backtest */}
-            <div className="hud-panel">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <div className="hud-chart">
+              <div className="hud-chart-header flex items-center justify-between px-3 py-2">
                 <div className="flex flex-col">
-                  <span className="hud-label">Forward Performance · Conditional on current %ile bucket</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    Bucket: {Math.max(0, (last?.levFundPct ?? 0) - 10)}–{Math.min(100, (last?.levFundPct ?? 0) + 10)} · 3y window
+                  <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                    Forward Performance · Conditional on current Net Spec %ile bucket ({windowLabel})
+                  </span>
+                  <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+                    Bucket: {Math.max(0, currentPct - 10)}–{Math.min(100, currentPct + 10)} · 3y window
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-chart-grid">
                 {forward.map(f => {
                   const pos = f.mean >= 0;
                   return (
                     <div key={f.horizon} className="p-3 flex flex-col gap-1">
-                      <span className="hud-label">{f.horizon}w forward</span>
-                      <div className={`flex items-center gap-1 font-mono text-base font-semibold tabular-nums ${pos ? "text-pos-long" : "text-pos-short"}`}>
+                      <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                        {f.horizon}w forward
+                      </span>
+                      <div
+                        className="flex items-center gap-1 font-mono text-base font-semibold tabular-nums"
+                        style={{ color: pos ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
+                      >
                         {pos ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
                         {pos ? "+" : ""}{f.mean.toFixed(2)}%
                       </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
+                      <div className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
                         Hit {f.hitRate.toFixed(0)}% · n={f.count}
                       </div>
                     </div>
@@ -233,10 +302,16 @@ export default function AssetDetail() {
                       </div>
                       <div className="flex items-center gap-3 text-[10px] font-mono">
                         <span className="text-muted-foreground">
-                          Expected: <span className={dir > 0 ? "text-pos-long" : dir < 0 ? "text-pos-short" : ""}>{dir > 0 ? "▲" : dir < 0 ? "▼" : "·"}</span>
+                          Expected:{" "}
+                          <span style={{ color: dir > 0 ? "hsl(var(--pos-long))" : dir < 0 ? "hsl(var(--pos-short))" : undefined }}>
+                            {dir > 0 ? "▲" : dir < 0 ? "▼" : "·"}
+                          </span>
                         </span>
                         <span className="text-muted-foreground">
-                          1D: <span className={obs >= 0 ? "text-pos-long" : "text-pos-short"}>{obs >= 0 ? "+" : ""}{obs.toFixed(2)}%</span>
+                          1D:{" "}
+                          <span style={{ color: obs >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}>
+                            {obs >= 0 ? "+" : ""}{obs.toFixed(2)}%
+                          </span>
                         </span>
                       </div>
                       {n.divergence_note && (
@@ -248,13 +323,17 @@ export default function AssetDetail() {
               </div>
             </div>
 
-            {/* Current percentile gauges */}
-            <div className="hud-panel p-3 space-y-2.5">
-              <span className="hud-label">Current Positioning</span>
+            {/* Current percentile gauges — on white surface */}
+            <div className="hud-chart p-3 space-y-2.5">
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                Current Positioning
+              </span>
               {last && (
                 <>
-                  <PercentileGauge value={last.levFundPct} label="Lev Funds (Disagg)" />
-                  <PercentileGauge value={last.largeSpecPct} label="Large Specs (Legacy)" />
+                  <PercentileGauge value={last.netSpecPct3y} label="Net Specs · 3Y" emphasize />
+                  <PercentileGauge value={last.netSpecPct6m} label="Net Specs · 6M" />
+                  <PercentileGauge value={last.levFundPct} label="Lev Funds · 3Y (ref)" />
+                  <PercentileGauge value={last.largeSpecPct} label="Large Specs · 3Y (ref)" />
                 </>
               )}
             </div>
