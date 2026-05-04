@@ -16,10 +16,15 @@ export interface MarketSnapshot {
   sector: Sector;
   price: number;
   weekChangePct: number;
-  // 0-100 percentile of net positioning vs trailing 3y
-  largeSpecPercentile: number;     // Legacy (Non-Commercial)
-  leveragedFundPercentile: number; // Disaggregated
-  netContracts: number;
+  // Legacy non-commercial percentiles (large specs)
+  largeSpecPercentile: number;     // 3y
+  // Disaggregated leveraged-fund percentiles (kept for reference)
+  leveragedFundPercentile: number; // 3y
+  // PRIMARY metric: Net Speculators (large + small non-commercial)
+  netSpecContracts: number;        // current net contracts
+  netSpecPct3y: number;            // 0-100 vs 156w window
+  netSpecPct6m: number;            // 0-100 vs 26w window
+  netContracts: number;            // legacy alias = netSpecContracts
   wowChange: number;
 }
 
