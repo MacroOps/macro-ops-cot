@@ -60,9 +60,19 @@
     --sidebar-ring: 18 80% 44%;
 
     /* Semantic positioning colors */
-    --pos-long: 68 100% 30%;
-    --pos-short: 1 71% 52%;
-    --pos-neutral: 180 7% 60%;
+    --pos-long: 152 76% 28%;       /* sharper institutional green */
+    --pos-short: 354 78% 44%;      /* sharper institutional red */
+    --pos-neutral: 215 16% 47%;
+
+    /* Chart / data table surface — always white on solar */
+    --chart-surface: 0 0% 100%;
+    --chart-surface-foreground: 215 28% 17%;  /* near-black slate ink */
+    --chart-grid: 215 16% 88%;
+    --chart-axis: 215 16% 40%;
+    --chart-ink: 215 28% 17%;       /* primary line color */
+    --chart-ink-muted: 215 16% 55%;
+    --chart-accent: 214 84% 36%;    /* deep institutional blue */
+    --chart-accent-2: 28 90% 42%;   /* sharp amber */
   }
 
   .dark {
@@ -112,9 +122,20 @@
     --sidebar-border: 220 18% 18%;
     --sidebar-ring: 18 90% 55%;
 
-    --pos-long: 142 65% 45%;
-    --pos-short: 1 75% 58%;
+    --pos-long: 152 70% 48%;
+    --pos-short: 354 82% 60%;
     --pos-neutral: 215 12% 55%;
+
+    /* Chart surface stays bright in dark for terminal contrast,
+       but slightly off-white to ease eye strain. */
+    --chart-surface: 210 20% 98%;
+    --chart-surface-foreground: 215 28% 17%;
+    --chart-grid: 215 16% 88%;
+    --chart-axis: 215 16% 40%;
+    --chart-ink: 215 28% 17%;
+    --chart-ink-muted: 215 16% 55%;
+    --chart-accent: 214 84% 36%;
+    --chart-accent-2: 28 90% 42%;
   }
 }
 
@@ -156,5 +177,28 @@
 
   .hud-divider {
     @apply border-t border-border;
+  }
+
+  /* White (or near-white) surface for charts and data tables.
+     Used to keep an institutional, terminal-like data canvas
+     regardless of the surrounding solar template. */
+  .hud-chart {
+    background: hsl(var(--chart-surface));
+    color: hsl(var(--chart-surface-foreground));
+    border: 1px solid hsl(var(--chart-grid));
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  .hud-chart-header {
+    border-bottom: 1px solid hsl(var(--chart-grid));
+    color: hsl(var(--chart-axis));
+  }
+
+  .hud-table {
+    background: hsl(var(--chart-surface));
+    color: hsl(var(--chart-surface-foreground));
+  }
+  .hud-table th, .hud-table td {
+    border-color: hsl(var(--chart-grid));
   }
 }

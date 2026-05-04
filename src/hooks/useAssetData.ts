@@ -6,8 +6,11 @@ export interface AssetSeriesPoint {
   price: number;
   netLargeSpec: number;
   netLevFunds: number;
-  largeSpecPct: number;   // 0-100 percentile vs window
-  levFundPct: number;
+  netSpec: number;          // large (non-commercial) + small (non-reportable)
+  largeSpecPct: number;     // legacy 3y percentile
+  levFundPct: number;       // disagg 3y percentile
+  netSpecPct3y: number;     // PRIMARY default
+  netSpecPct6m: number;
   openInterest: number;
 }
 
@@ -66,7 +69,7 @@ function percentileWindow(values: number[], window = 156): number[] {
   return out;
 }
 
-function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, lastNetSpec: number) {
+function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, lastNetSpec: number, lastNetSmall: number) {
   // 156 weeks ≈ 3 years
   const N = 156;
   const rand = mulberry32(hashStr(symbol));
@@ -75,12 +78,14 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
   const prices: number[] = [];
   const oi: number[] = [];
   const netLev: number[] = [];
-  const netSpec: number[] = [];
+  const netSpecLarge: number[] = [];
+  const netSpecSmall: number[] = [];
 
   let p = lastPrice * (0.7 + rand() * 0.4);
   let o = 800_000 + Math.floor(rand() * 400_000);
   let nl = lastNetLev * (0.5 + rand() * 0.6);
   let ns = lastNetSpec * (0.5 + rand() * 0.6);
+  let nsm = lastNetSmall * (0.5 + rand() * 0.6);
 
   for (let i = 0; i < N; i++) {
     const drift = (lastPrice - p) * 0.012;
@@ -88,19 +93,26 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
     o = Math.max(100_000, o + Math.floor((rand() - 0.5) * 30_000));
     nl = nl + (lastNetLev - nl) * 0.015 + (rand() - 0.5) * Math.abs(lastNetLev || 1000) * 0.08;
     ns = ns + (lastNetSpec - ns) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSpec || 1000) * 0.08;
+    nsm = nsm + (lastNetSmall - nsm) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSmall || 1000) * 0.10;
     prices.push(p);
     oi.push(o);
     netLev.push(nl);
-    netSpec.push(ns);
+    netSpecLarge.push(ns);
+    netSpecSmall.push(nsm);
   }
 
   // Snap last to actuals
   prices[N - 1] = lastPrice;
   netLev[N - 1] = lastNetLev;
-  netSpec[N - 1] = lastNetSpec;
+  netSpecLarge[N - 1] = lastNetSpec;
+  netSpecSmall[N - 1] = lastNetSmall;
 
-  const levPct = percentileWindow(netLev);
-  const specPct = percentileWindow(netSpec);
+  const netSpec = netSpecLarge.map((v, i) => v + netSpecSmall[i]);
+
+  const levPct = percentileWindow(netLev, 156);
+  const specPct = percentileWindow(netSpecLarge, 156);
+  const netSpec3y = percentileWindow(netSpec, 156);
+  const netSpec6m = percentileWindow(netSpec, 26);
 
   // Build weekly dates ending today (UTC, Tuesday cadence approx)
   const today = new Date();
@@ -112,9 +124,12 @@ function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, 
       date: d.toISOString().slice(0, 10),
       price: Number(prices[i].toFixed(4)),
       netLevFunds: Math.round(netLev[i]),
-      netLargeSpec: Math.round(netSpec[i]),
+      netLargeSpec: Math.round(netSpecLarge[i]),
+      netSpec: Math.round(netSpec[i]),
       levFundPct: levPct[i],
       largeSpecPct: specPct[i],
+      netSpecPct3y: netSpec3y[i],
+      netSpecPct6m: netSpec6m[i],
       openInterest: oi[i],
     });
   }
@@ -159,6 +174,7 @@ export function useAssetData(symbol: string) {
 
       let lastNetLev = 0;
       let lastNetSpec = 0;
+      let lastNetSmall = 0;
       const idsToFetch = [latestDisagg?.id, latestLegacy?.id].filter(Boolean) as string[];
       if (idsToFetch.length) {
         const { data: snaps } = await supabase
@@ -172,6 +188,9 @@ export function useAssetData(symbol: string) {
           if (s.report_id === latestLegacy?.id && s.category === "non_commercial") {
             lastNetSpec = s.net_contracts ?? 0;
           }
+          if (s.report_id === latestLegacy?.id && s.category === "non_reportable") {
+            lastNetSmall = s.net_contracts ?? 0;
+          }
         }
       }
 
@@ -182,9 +201,10 @@ export function useAssetData(symbol: string) {
         lastNetLev = 10_000;
         lastNetSpec = 14_000;
       }
+      if (!lastNetSmall) lastNetSmall = Math.round(lastNetSpec * 0.18);
 
       const lastPrice = Number(prices?.[0]?.close ?? 100);
-      const series = generateHistory(symbol, lastPrice, lastNetLev, lastNetSpec);
+      const series = generateHistory(symbol, lastPrice, lastNetLev, lastNetSpec, lastNetSmall);
 
       return {
         symbol: market.symbol,
@@ -202,16 +222,21 @@ export function useAssetData(symbol: string) {
 
 // Forward-performance backtest: for each historical point in the same percentile bucket
 // as the current reading, compute the realized N-week forward price return.
-export function computeForwardPerformance(series: AssetSeriesPoint[], horizonsWeeks = [1, 4, 12, 26]) {
+export function computeForwardPerformance(
+  series: AssetSeriesPoint[],
+  horizonsWeeks = [1, 4, 12, 26],
+  windowKey: "netSpecPct3y" | "netSpecPct6m" = "netSpecPct3y",
+) {
   if (series.length < 30) return [];
   const current = series[series.length - 1];
-  const bucketLo = Math.max(0, current.levFundPct - 10);
-  const bucketHi = Math.min(100, current.levFundPct + 10);
+  const cur = current[windowKey];
+  const bucketLo = Math.max(0, cur - 10);
+  const bucketHi = Math.min(100, cur + 10);
 
   return horizonsWeeks.map(h => {
     const samples: number[] = [];
     for (let i = 0; i < series.length - h - 1; i++) {
-      const p = series[i].levFundPct;
+      const p = series[i][windowKey];
       if (p >= bucketLo && p <= bucketHi) {
         const r = (series[i + h].price - series[i].price) / series[i].price;
         samples.push(r);

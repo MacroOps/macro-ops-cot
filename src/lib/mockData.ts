@@ -16,14 +16,19 @@ export interface MarketSnapshot {
   sector: Sector;
   price: number;
   weekChangePct: number;
-  // 0-100 percentile of net positioning vs trailing 3y
-  largeSpecPercentile: number;     // Legacy (Non-Commercial)
-  leveragedFundPercentile: number; // Disaggregated
-  netContracts: number;
+  // Legacy non-commercial percentiles (large specs)
+  largeSpecPercentile: number;     // 3y
+  // Disaggregated leveraged-fund percentiles (kept for reference)
+  leveragedFundPercentile: number; // 3y
+  // PRIMARY metric: Net Speculators (large + small non-commercial)
+  netSpecContracts: number;        // current net contracts
+  netSpecPct3y: number;            // 0-100 vs 156w window
+  netSpecPct6m: number;            // 0-100 vs 26w window
+  netContracts: number;            // legacy alias = netSpecContracts
   wowChange: number;
 }
 
-const MARKETS: MarketSnapshot[] = [
+const MARKETS: any[] = [
   { symbol: "ES",  name: "S&P 500 E-mini",        sector: "Equities",    price: 5832.5,   weekChangePct: 1.2,  largeSpecPercentile: 78, leveragedFundPercentile: 84, netContracts: 142_300, wowChange: 8_420 },
   { symbol: "NQ",  name: "Nasdaq 100 E-mini",     sector: "Equities",    price: 20418.0,  weekChangePct: 2.1,  largeSpecPercentile: 91, leveragedFundPercentile: 95, netContracts: 38_220,  wowChange: 4_110 },
   { symbol: "YM",  name: "Dow E-mini",            sector: "Equities",    price: 43210.0,  weekChangePct: 0.4,  largeSpecPercentile: 64, leveragedFundPercentile: 70, netContracts: 18_910,  wowChange: 1_220 },
