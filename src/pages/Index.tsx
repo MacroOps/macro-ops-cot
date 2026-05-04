@@ -67,7 +67,7 @@ const Index = () => {
       )}
 
       <div className="px-3 py-4 text-[10px] text-muted-foreground tracking-wider">
-        Live from backend · Percentiles are placeholder pending 3y rolling history.
+        Live from backend · Default metric: Net Speculators (large + small) on 3Y rolling percentile.
       </div>
     </AppShell>
   );
