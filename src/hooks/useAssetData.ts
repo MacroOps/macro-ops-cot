@@ -6,8 +6,11 @@ export interface AssetSeriesPoint {
   price: number;
   netLargeSpec: number;
   netLevFunds: number;
-  largeSpecPct: number;   // 0-100 percentile vs window
-  levFundPct: number;
+  netSpec: number;          // large (non-commercial) + small (non-reportable)
+  largeSpecPct: number;     // legacy 3y percentile
+  levFundPct: number;       // disagg 3y percentile
+  netSpecPct3y: number;     // PRIMARY default
+  netSpecPct6m: number;
   openInterest: number;
 }
 
