@@ -52,6 +52,36 @@ export type Database = {
           },
         ]
       }
+      ingestion_log: {
+        Row: {
+          finished_at: string | null
+          id: string
+          message: string | null
+          rows_written: number
+          source: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          rows_written?: number
+          source: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          rows_written?: number
+          source?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       markets: {
         Row: {
           cftc_code: string | null
@@ -61,10 +91,12 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          news_keywords: string | null
           price_unit: string | null
           sector: Database["public"]["Enums"]["market_sector"]
           symbol: string
           updated_at: string
+          yahoo_symbol: string | null
         }
         Insert: {
           cftc_code?: string | null
@@ -74,10 +106,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          news_keywords?: string | null
           price_unit?: string | null
           sector: Database["public"]["Enums"]["market_sector"]
           symbol: string
           updated_at?: string
+          yahoo_symbol?: string | null
         }
         Update: {
           cftc_code?: string | null
@@ -87,10 +121,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          news_keywords?: string | null
           price_unit?: string | null
           sector?: Database["public"]["Enums"]["market_sector"]
           symbol?: string
           updated_at?: string
+          yahoo_symbol?: string | null
         }
         Relationships: []
       }
