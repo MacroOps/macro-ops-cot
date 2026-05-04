@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { MarketSnapshot, Sector } from "@/lib/mockData";
 
 // Deterministic 0-100 percentile derived from a numeric value.
-// Stand-in until we have a true 3y rolling history per market.
+// Stand-in until we have a true rolling history per market.
 function pseudoPercentile(seed: number, salt: number) {
   const x = Math.sin(seed * 9301 + salt * 49297) * 43758.5453;
   return Math.floor((x - Math.floor(x)) * 100);
@@ -25,23 +25,28 @@ export function useDashboardData() {
       if (pErr) throw pErr;
       if (!markets) return { markets: [], reportDate: null };
 
-      // Latest disaggregated report per market
-      const latestReportByMarket = new Map<string, { id: string; report_date: string }>();
+      // Latest legacy + disaggregated report per market
+      const latestLegacyByMarket = new Map<string, { id: string; report_date: string }>();
+      const latestDisaggByMarket = new Map<string, { id: string; report_date: string }>();
       for (const r of reports ?? []) {
-        if (r.format !== "disaggregated") continue;
-        if (!latestReportByMarket.has(r.market_id)) {
-          latestReportByMarket.set(r.market_id, { id: r.id, report_date: r.report_date });
+        if (r.format === "legacy" && !latestLegacyByMarket.has(r.market_id)) {
+          latestLegacyByMarket.set(r.market_id, { id: r.id, report_date: r.report_date });
+        }
+        if (r.format === "disaggregated" && !latestDisaggByMarket.has(r.market_id)) {
+          latestDisaggByMarket.set(r.market_id, { id: r.id, report_date: r.report_date });
         }
       }
 
-      const reportIds = Array.from(latestReportByMarket.values()).map(r => r.id);
+      const reportIds = [
+        ...Array.from(latestLegacyByMarket.values()).map(r => r.id),
+        ...Array.from(latestDisaggByMarket.values()).map(r => r.id),
+      ];
       const { data: snaps, error: sErr } = await supabase
         .from("positioning_snapshots")
         .select("report_id,category,long_contracts,short_contracts,net_contracts")
         .in("report_id", reportIds.length ? reportIds : ["00000000-0000-0000-0000-000000000000"]);
       if (sErr) throw sErr;
 
-      // Index snapshots by report_id + category
       const snapKey = (rid: string, cat: string) => `${rid}::${cat}`;
       const snapMap = new Map<string, { net: number }>();
       for (const s of snaps ?? []) {
@@ -57,14 +62,20 @@ export function useDashboardData() {
       }
 
       const out: MarketSnapshot[] = markets.map((m, i) => {
-        const r = latestReportByMarket.get(m.id);
-        const lev = r ? snapMap.get(snapKey(r.id, "leveraged_fund")) : undefined;
-        const nc = r ? snapMap.get(snapKey(r.id, "non_commercial")) : undefined;
+        const legacy = latestLegacyByMarket.get(m.id);
+        const disagg = latestDisaggByMarket.get(m.id);
+        const nc = legacy ? snapMap.get(snapKey(legacy.id, "non_commercial")) : undefined;
+        const nr = legacy ? snapMap.get(snapKey(legacy.id, "non_reportable")) : undefined;
+        const lev = disagg ? snapMap.get(snapKey(disagg.id, "leveraged_fund")) : undefined;
         const px = priceByMarket.get(m.id) ?? [];
         const last = px[0] ?? 0;
         const prev = px[1] ?? last;
         const wkPct = prev ? ((last - prev) / prev) * 100 : 0;
-        const net = lev?.net ?? nc?.net ?? 0;
+
+        // Net Speculators = large (non_commercial) + small (non_reportable)
+        const netSpec = (nc?.net ?? 0) + (nr?.net ?? 0);
+        const fallbackNet = lev?.net ?? 0;
+        const netSpecContracts = netSpec || fallbackNet;
 
         return {
           symbol: m.symbol,
@@ -74,8 +85,11 @@ export function useDashboardData() {
           weekChangePct: wkPct,
           largeSpecPercentile: pseudoPercentile(i + 1, 13),
           leveragedFundPercentile: pseudoPercentile(i + 1, 71),
-          netContracts: net,
-          wowChange: Math.round(net * 0.05),
+          netSpecContracts,
+          netSpecPct3y: pseudoPercentile(i + 1, 211),
+          netSpecPct6m: pseudoPercentile(i + 1, 397),
+          netContracts: netSpecContracts,
+          wowChange: Math.round(netSpecContracts * 0.05),
         };
       });
 
