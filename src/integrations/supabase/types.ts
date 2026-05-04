@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cot_reports: {
+        Row: {
+          created_at: string
+          format: Database["public"]["Enums"]["report_format"]
+          id: string
+          market_id: string
+          open_interest: number | null
+          release_date: string | null
+          report_date: string
+        }
+        Insert: {
+          created_at?: string
+          format: Database["public"]["Enums"]["report_format"]
+          id?: string
+          market_id: string
+          open_interest?: number | null
+          release_date?: string | null
+          report_date: string
+        }
+        Update: {
+          created_at?: string
+          format?: Database["public"]["Enums"]["report_format"]
+          id?: string
+          market_id?: string
+          open_interest?: number | null
+          release_date?: string | null
+          report_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cot_reports_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      markets: {
+        Row: {
+          cftc_code: string | null
+          contract_size: number | null
+          created_at: string
+          exchange: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_unit: string | null
+          sector: Database["public"]["Enums"]["market_sector"]
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          cftc_code?: string | null
+          contract_size?: number | null
+          created_at?: string
+          exchange?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_unit?: string | null
+          sector: Database["public"]["Enums"]["market_sector"]
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          cftc_code?: string | null
+          contract_size?: number | null
+          created_at?: string
+          exchange?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_unit?: string | null
+          sector?: Database["public"]["Enums"]["market_sector"]
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_events: {
+        Row: {
+          created_at: string
+          divergence_note: string | null
+          expected_direction: number | null
+          headline: string
+          id: string
+          is_divergence: boolean
+          market_id: string | null
+          observed_return_1d: number | null
+          published_at: string
+          source: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          divergence_note?: string | null
+          expected_direction?: number | null
+          headline: string
+          id?: string
+          is_divergence?: boolean
+          market_id?: string | null
+          observed_return_1d?: number | null
+          published_at: string
+          source?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          divergence_note?: string | null
+          expected_direction?: number | null
+          headline?: string
+          id?: string
+          is_divergence?: boolean
+          market_id?: string | null
+          observed_return_1d?: number | null
+          published_at?: string
+          source?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_events_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      positioning_snapshots: {
+        Row: {
+          category: Database["public"]["Enums"]["trader_category"]
+          id: string
+          long_contracts: number
+          net_contracts: number | null
+          pct_of_oi: number | null
+          report_id: string
+          short_contracts: number
+          spread_contracts: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["trader_category"]
+          id?: string
+          long_contracts?: number
+          net_contracts?: number | null
+          pct_of_oi?: number | null
+          report_id: string
+          short_contracts?: number
+          spread_contracts?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["trader_category"]
+          id?: string
+          long_contracts?: number
+          net_contracts?: number | null
+          pct_of_oi?: number | null
+          report_id?: string
+          short_contracts?: number
+          spread_contracts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positioning_snapshots_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "cot_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_history: {
+        Row: {
+          close: number
+          id: string
+          market_id: string
+          observed_on: string
+        }
+        Insert: {
+          close: number
+          id?: string
+          market_id: string
+          observed_on: string
+        }
+        Update: {
+          close?: number
+          id?: string
+          market_id?: string
+          observed_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +222,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      market_sector:
+        | "Equities"
+        | "Rates"
+        | "FX"
+        | "Energy"
+        | "Metals"
+        | "Agriculture"
+        | "Crypto"
+      report_format: "legacy" | "disaggregated" | "tff"
+      trader_category:
+        | "commercial"
+        | "non_commercial"
+        | "non_reportable"
+        | "producer_merchant"
+        | "swap_dealer"
+        | "managed_money"
+        | "other_reportable"
+        | "dealer_intermediary"
+        | "asset_manager"
+        | "leveraged_fund"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +368,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      market_sector: [
+        "Equities",
+        "Rates",
+        "FX",
+        "Energy",
+        "Metals",
+        "Agriculture",
+        "Crypto",
+      ],
+      report_format: ["legacy", "disaggregated", "tff"],
+      trader_category: [
+        "commercial",
+        "non_commercial",
+        "non_reportable",
+        "producer_merchant",
+        "swap_dealer",
+        "managed_money",
+        "other_reportable",
+        "dealer_intermediary",
+        "asset_manager",
+        "leveraged_fund",
+      ],
+    },
   },
 } as const
