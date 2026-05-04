@@ -15,8 +15,8 @@ const Index = () => {
   );
 
   const stats = useMemo(() => {
-    const long = markets.filter(m => m.leveragedFundPercentile >= 85).length;
-    const short = markets.filter(m => m.leveragedFundPercentile <= 15).length;
+    const long = markets.filter(m => m.netSpecPct3y >= 85).length;
+    const short = markets.filter(m => m.netSpecPct3y <= 15).length;
     return { tracked: markets.length, long, short };
   }, [markets]);
 
