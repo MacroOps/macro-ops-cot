@@ -178,4 +178,27 @@
   .hud-divider {
     @apply border-t border-border;
   }
+
+  /* White (or near-white) surface for charts and data tables.
+     Used to keep an institutional, terminal-like data canvas
+     regardless of the surrounding solar template. */
+  .hud-chart {
+    background: hsl(var(--chart-surface));
+    color: hsl(var(--chart-surface-foreground));
+    border: 1px solid hsl(var(--chart-grid));
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  .hud-chart-header {
+    border-bottom: 1px solid hsl(var(--chart-grid));
+    color: hsl(var(--chart-axis));
+  }
+
+  .hud-table {
+    background: hsl(var(--chart-surface));
+    color: hsl(var(--chart-surface-foreground));
+  }
+  .hud-table th, .hud-table td {
+    border-color: hsl(var(--chart-grid));
+  }
 }
