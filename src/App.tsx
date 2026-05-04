@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/hud/ThemeProvider";
 import Index from "./pages/Index.tsx";
 import AssetDetail from "./pages/AssetDetail.tsx";
 import SectorAggregates from "./pages/SectorAggregates.tsx";
+import Backtests from "./pages/Backtests.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/asset/:symbol" element={<AssetDetail />} />
             <Route path="/sectors" element={<SectorAggregates />} />
+            <Route path="/backtests" element={<Backtests />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

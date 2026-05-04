@@ -18,7 +18,7 @@ const nav = [
   { title: "Asset Detail", url: "/asset/ES", icon: BarChart3 },
   { title: "Sector Aggregates", url: "/sectors", icon: Layers },
   { title: "News & Divergence", url: "/news", icon: Newspaper },
-  { title: "Backtests", url: "/backtests", icon: FlaskConical },
+  { title: "Backtests Lab", url: "/backtests", icon: FlaskConical },
 ];
 
 export function AppSidebar() {
