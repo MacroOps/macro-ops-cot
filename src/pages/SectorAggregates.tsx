@@ -10,17 +10,28 @@ import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 const fmtInt = new Intl.NumberFormat("en-US");
 
 function pctColor(p: number): string {
-  // 0 → short (red), 50 → neutral, 100 → long (green)
   if (p >= 85) return "hsl(var(--pos-long))";
-  if (p >= 65) return "hsl(var(--success) / 0.6)";
-  if (p >= 35) return "hsl(var(--muted-foreground) / 0.5)";
-  if (p >= 15) return "hsl(var(--destructive) / 0.6)";
+  if (p >= 65) return "hsl(var(--pos-long) / 0.65)";
+  if (p >= 35) return "hsl(var(--chart-ink-muted))";
+  if (p >= 15) return "hsl(var(--pos-short) / 0.65)";
   return "hsl(var(--pos-short))";
 }
 
+type MetricKey = "avgNetSpecPct3y" | "avgNetSpecPct6m" | "netContracts" | "wowChange";
+
+const METRIC_OPTIONS: { key: MetricKey; label: string }[] = [
+  { key: "avgNetSpecPct3y", label: "Net Spec %ile 3Y" },
+  { key: "avgNetSpecPct6m", label: "Net Spec %ile 6M" },
+  { key: "netContracts", label: "Net" },
+  { key: "wowChange", label: "Δ WoW" },
+];
+
 const SectorAggregates = () => {
   const { rollups, isLoading, error, reportDate } = useSectorData();
-  const [metric, setMetric] = useState<"avgLevPct" | "avgSpecPct" | "netContracts" | "wowChange">("avgLevPct");
+  const [metric, setMetric] = useState<MetricKey>("avgNetSpecPct3y");
+  const [heatWindow, setHeatWindow] = useState<"netSpecPct3y" | "netSpecPct6m">("netSpecPct3y");
+
+  const isPctMetric = metric === "avgNetSpecPct3y" || metric === "avgNetSpecPct6m";
 
   const chartData = useMemo(
     () => rollups.map(r => ({ sector: r.sector, value: r[metric] as number })),
@@ -28,7 +39,7 @@ const SectorAggregates = () => {
   );
 
   const totals = useMemo(() => {
-    const t = rollups.reduce(
+    return rollups.reduce(
       (a, r) => ({
         markets: a.markets + r.count,
         long: a.long + r.crowdedLong,
@@ -37,7 +48,6 @@ const SectorAggregates = () => {
       }),
       { markets: 0, long: 0, short: 0, net: 0 }
     );
-    return t;
   }, [rollups]);
 
   return (
@@ -56,27 +66,24 @@ const SectorAggregates = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-border p-px">
-        {/* Comparison bar chart */}
-        <div className="hud-panel p-3 lg:col-span-2">
+        {/* Comparison bar chart — white surface */}
+        <div className="hud-chart lg:col-span-2 p-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="hud-label">Sector Comparison</div>
-            <div className="flex items-center gap-1">
-              {([
-                ["avgLevPct", "Lev Pct"],
-                ["avgSpecPct", "Spec Pct"],
-                ["netContracts", "Net"],
-                ["wowChange", "Δ WoW"],
-              ] as const).map(([k, label]) => (
+            <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+              Sector Comparison · Net Speculators (Large + Small)
+            </div>
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {METRIC_OPTIONS.map(o => (
                 <button
-                  key={k}
-                  onClick={() => setMetric(k)}
+                  key={o.key}
+                  onClick={() => setMetric(o.key)}
                   className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
-                    metric === k
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:text-surface-foreground"
+                    metric === o.key
+                      ? "border-chart-ink bg-chart-ink text-chart-surface"
+                      : "border-chart-grid text-chart-axis hover:text-chart-ink"
                   }`}
                 >
-                  {label}
+                  {o.label}
                 </button>
               ))}
             </div>
@@ -84,26 +91,43 @@ const SectorAggregates = () => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="sector" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={{ stroke: "hsl(var(--border))" }} width={60} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 11, borderRadius: 2 }}
-                  labelStyle={{ color: "hsl(var(--surface-foreground))" }}
-                  formatter={(v: number) =>
-                    metric.includes("Pct") || metric === "avgLevPct" || metric === "avgSpecPct"
-                      ? `${v}`
-                      : fmtInt.format(v)
-                  }
+                <CartesianGrid stroke="hsl(var(--chart-grid))" strokeDasharray="2 4" vertical={false} />
+                <XAxis
+                  dataKey="sector"
+                  tick={{ fontSize: 10, fill: "hsl(var(--chart-axis))" }}
+                  axisLine={{ stroke: "hsl(var(--chart-grid))" }}
+                  tickLine={false}
                 />
-                {(metric === "netContracts" || metric === "wowChange") && (
-                  <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "hsl(var(--chart-axis))" }}
+                  axisLine={{ stroke: "hsl(var(--chart-grid))" }}
+                  tickLine={false}
+                  width={60}
+                  domain={isPctMetric ? [0, 100] : ["auto", "auto"]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--chart-surface))",
+                    border: "1px solid hsl(var(--chart-grid))",
+                    fontSize: 11,
+                    borderRadius: 2,
+                    color: "hsl(var(--chart-surface-foreground))",
+                  }}
+                  labelStyle={{ color: "hsl(var(--chart-surface-foreground))" }}
+                  formatter={(v: number) => (isPctMetric ? `${v}` : fmtInt.format(v))}
+                />
+                {!isPctMetric && <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />}
+                {isPctMetric && (
+                  <>
+                    <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" />
+                    <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" />
+                  </>
                 )}
                 <Bar dataKey="value">
                   {chartData.map((d, i) => {
-                    let fill = "hsl(var(--primary))";
-                    if (metric === "avgLevPct" || metric === "avgSpecPct") fill = pctColor(d.value);
-                    else fill = d.value >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
+                    const fill = isPctMetric
+                      ? pctColor(d.value)
+                      : d.value >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
                     return <Cell key={i} fill={fill} />;
                   })}
                 </Bar>
@@ -112,44 +136,64 @@ const SectorAggregates = () => {
           </div>
         </div>
 
-        {/* Sector summary list */}
-        <div className="hud-panel p-3">
-          <div className="hud-label mb-2">Sector Summary</div>
-          <div className="flex flex-col divide-y divide-border">
+        {/* Sector summary list — white surface table */}
+        <div className="hud-chart p-3">
+          <div className="text-[10px] uppercase tracking-[0.12em] font-medium mb-2" style={{ color: "hsl(var(--chart-axis))" }}>
+            Sector Summary
+          </div>
+          <div className="flex flex-col divide-y divide-chart-grid">
             {isLoading
               ? Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="h-12 animate-pulse bg-muted/40" />
+                  <div key={i} className="h-12 animate-pulse bg-chart-grid/40" />
                 ))
-              : rollups.map(r => (
-                  <SectorSummaryRow key={r.sector} r={r} />
-                ))}
+              : rollups.map(r => <SectorSummaryRow key={r.sector} r={r} />)}
           </div>
         </div>
       </div>
 
-      {/* Heatmap */}
-      <div className="hud-panel m-px p-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="hud-label">Positioning Heatmap · Leveraged Funds Percentile</div>
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-            <Legend swatch="hsl(var(--pos-short))" label="≤15 Short" />
-            <Legend swatch="hsl(var(--muted-foreground) / 0.5)" label="Neutral" />
-            <Legend swatch="hsl(var(--pos-long))" label="≥85 Long" />
+      {/* Heatmap on white surface */}
+      <div className="hud-chart m-px p-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+            Positioning Heatmap · Net Speculators
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1">
+              {[
+                { k: "netSpecPct3y", l: "3Y" },
+                { k: "netSpecPct6m", l: "6M" },
+              ].map(o => (
+                <button
+                  key={o.k}
+                  onClick={() => setHeatWindow(o.k as any)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
+                    heatWindow === o.k
+                      ? "border-chart-ink bg-chart-ink text-chart-surface"
+                      : "border-chart-grid text-chart-axis hover:text-chart-ink"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 text-[10px]" style={{ color: "hsl(var(--chart-axis))" }}>
+              <Legend swatch="hsl(var(--pos-short))" label="≤15 Short" />
+              <Legend swatch="hsl(var(--chart-ink-muted))" label="Neutral" />
+              <Legend swatch="hsl(var(--pos-long))" label="≥85 Long" />
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-3">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-10 animate-pulse bg-muted/40 rounded-sm" />
+                <div key={i} className="h-10 animate-pulse bg-chart-grid/40 rounded-sm" />
               ))
-            : rollups.map(r => (
-                <SectorHeatmapRow key={r.sector} r={r} />
-              ))}
+            : rollups.map(r => <SectorHeatmapRow key={r.sector} r={r} windowKey={heatWindow} />)}
         </div>
       </div>
 
       <div className="px-3 py-4 text-[10px] text-muted-foreground tracking-wider">
-        Report {reportDate ?? "—"} · Sector aggregates derived from latest disaggregated COT.
+        Report {reportDate ?? "—"} · Default metric: Net Speculators (Large + Small) percentile.
       </div>
     </AppShell>
   );
@@ -158,21 +202,27 @@ const SectorAggregates = () => {
 function SectorSummaryRow({ r }: { r: SectorRollup }) {
   const up = r.avgWeekChangePct >= 0;
   return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 py-2">
+    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 py-2">
       <div className="min-w-0">
-        <div className="text-xs font-semibold text-surface-foreground">{r.sector}</div>
-        <div className="text-[10px] text-muted-foreground">{r.count} markets</div>
+        <div className="text-xs font-semibold" style={{ color: "hsl(var(--chart-surface-foreground))" }}>{r.sector}</div>
+        <div className="text-[10px]" style={{ color: "hsl(var(--chart-axis))" }}>{r.count} markets</div>
       </div>
       <div className="text-right">
-        <div className="hud-label">Avg Lev</div>
-        <div
-          className="font-mono text-xs tabular-nums"
-          style={{ color: pctColor(r.avgLevPct) }}
-        >
-          {r.avgLevPct}
+        <div className="text-[9px] uppercase tracking-wider" style={{ color: "hsl(var(--chart-axis))" }}>3Y</div>
+        <div className="font-mono text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct3y) }}>
+          {r.avgNetSpecPct3y}
         </div>
       </div>
-      <div className={`flex items-center gap-0.5 text-[10px] font-mono tabular-nums ${up ? "text-success" : "text-destructive"}`}>
+      <div className="text-right">
+        <div className="text-[9px] uppercase tracking-wider" style={{ color: "hsl(var(--chart-axis))" }}>6M</div>
+        <div className="font-mono text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct6m) }}>
+          {r.avgNetSpecPct6m}
+        </div>
+      </div>
+      <div
+        className="flex items-center gap-0.5 text-[10px] font-mono tabular-nums"
+        style={{ color: up ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
+      >
         {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
         {up ? "+" : ""}{r.avgWeekChangePct.toFixed(2)}%
       </div>
@@ -180,33 +230,44 @@ function SectorSummaryRow({ r }: { r: SectorRollup }) {
   );
 }
 
-function SectorHeatmapRow({ r }: { r: SectorRollup }) {
+function SectorHeatmapRow({ r, windowKey }: { r: SectorRollup; windowKey: "netSpecPct3y" | "netSpecPct6m" }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-3 items-center">
       <div>
-        <div className="text-xs font-semibold text-surface-foreground">{r.sector}</div>
-        <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
+        <div className="text-xs font-semibold" style={{ color: "hsl(var(--chart-surface-foreground))" }}>{r.sector}</div>
+        <div className="text-[10px] font-mono tabular-nums" style={{ color: "hsl(var(--chart-axis))" }}>
           Net {r.netContracts >= 0 ? "+" : ""}{fmtInt.format(r.netContracts)}
         </div>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-1">
-        {r.markets.map(m => (
-          <Link
-            key={m.symbol}
-            to={`/asset/${m.symbol}`}
-            className="group relative border border-border rounded-sm px-1.5 py-1 text-center hover:border-primary transition-colors"
-            style={{ background: pctColor(m.leveragedFundPercentile) + "33" }}
-            title={`${m.name} · Lev Pct ${m.leveragedFundPercentile}`}
-          >
-            <div className="font-mono text-[10px] font-semibold text-surface-foreground">{m.symbol}</div>
-            <div
-              className="font-mono text-[10px] tabular-nums"
-              style={{ color: pctColor(m.leveragedFundPercentile) }}
+        {r.markets.map(m => {
+          const v = m[windowKey];
+          return (
+            <Link
+              key={m.symbol}
+              to={`/asset/${m.symbol}`}
+              className="group relative rounded-sm px-1.5 py-1 text-center transition-colors"
+              style={{
+                background: pctColor(v) + "26",
+                border: "1px solid hsl(var(--chart-grid))",
+              }}
+              title={`${m.name} · Net Spec ${windowKey === "netSpecPct3y" ? "3Y" : "6M"} ${v}`}
             >
-              {m.leveragedFundPercentile}
-            </div>
-          </Link>
-        ))}
+              <div
+                className="font-mono text-[10px] font-semibold"
+                style={{ color: "hsl(var(--chart-surface-foreground))" }}
+              >
+                {m.symbol}
+              </div>
+              <div
+                className="font-mono text-[10px] tabular-nums"
+                style={{ color: pctColor(v) }}
+              >
+                {v}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -226,7 +287,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 function Legend({ swatch, label }: { swatch: string; label: string }) {
   return (
     <div className="flex items-center gap-1">
-      <div className="h-2.5 w-2.5 rounded-sm border border-border" style={{ background: swatch }} />
+      <div className="h-2.5 w-2.5 rounded-sm" style={{ background: swatch, border: "1px solid hsl(var(--chart-grid))" }} />
       <span>{label}</span>
     </div>
   );
