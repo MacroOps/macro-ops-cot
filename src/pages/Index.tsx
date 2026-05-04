@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { MarketCard } from "@/components/hud/MarketCard";
-import { getMarkets, SECTORS, type Sector } from "@/lib/mockData";
+import { SECTORS, type Sector } from "@/lib/mockData";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Index = () => {
-  const markets = getMarkets();
+  const { data, isLoading, error } = useDashboardData();
+  const markets = data?.markets ?? [];
   const [sector, setSector] = useState<Sector | "All">("All");
 
   const filtered = useMemo(
@@ -20,15 +22,13 @@ const Index = () => {
 
   return (
     <AppShell title="Global Positioning Dashboard">
-      {/* Stats strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border bg-surface/30">
         <Stat label="Markets Tracked" value={stats.tracked.toString()} />
         <Stat label="Crowded Long ≥85" value={stats.long.toString()} accent="long" />
         <Stat label="Crowded Short ≤15" value={stats.short.toString()} accent="short" />
-        <Stat label="Report" value="2026-W18" mono />
+        <Stat label="Report" value={data?.reportDate ?? "—"} mono />
       </div>
 
-      {/* Sector filter */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto">
         <span className="hud-label mr-2 shrink-0">Sector</span>
         {(["All", ...SECTORS] as const).map(s => (
@@ -46,15 +46,28 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Market grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-border p-px">
-        {filtered.map(m => (
-          <MarketCard key={m.symbol} m={m} />
-        ))}
-      </div>
+      {error && (
+        <div className="px-3 py-3 text-xs text-destructive border-b border-border">
+          Failed to load market data: {(error as Error).message}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-border p-px">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="hud-panel p-3 h-40 animate-pulse bg-surface/40" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-border p-px">
+          {filtered.map(m => (
+            <MarketCard key={m.symbol} m={m} />
+          ))}
+        </div>
+      )}
 
       <div className="px-3 py-4 text-[10px] text-muted-foreground tracking-wider">
-        Placeholder data · Live CFTC ingestion pending schema setup.
+        Live from backend · Percentiles are placeholder pending 3y rolling history.
       </div>
     </AppShell>
   );
