@@ -174,6 +174,7 @@ export function useAssetData(symbol: string) {
 
       let lastNetLev = 0;
       let lastNetSpec = 0;
+      let lastNetSmall = 0;
       const idsToFetch = [latestDisagg?.id, latestLegacy?.id].filter(Boolean) as string[];
       if (idsToFetch.length) {
         const { data: snaps } = await supabase
@@ -187,6 +188,9 @@ export function useAssetData(symbol: string) {
           if (s.report_id === latestLegacy?.id && s.category === "non_commercial") {
             lastNetSpec = s.net_contracts ?? 0;
           }
+          if (s.report_id === latestLegacy?.id && s.category === "non_reportable") {
+            lastNetSmall = s.net_contracts ?? 0;
+          }
         }
       }
 
@@ -197,9 +201,10 @@ export function useAssetData(symbol: string) {
         lastNetLev = 10_000;
         lastNetSpec = 14_000;
       }
+      if (!lastNetSmall) lastNetSmall = Math.round(lastNetSpec * 0.18);
 
       const lastPrice = Number(prices?.[0]?.close ?? 100);
-      const series = generateHistory(symbol, lastPrice, lastNetLev, lastNetSpec);
+      const series = generateHistory(symbol, lastPrice, lastNetLev, lastNetSpec, lastNetSmall);
 
       return {
         symbol: market.symbol,
