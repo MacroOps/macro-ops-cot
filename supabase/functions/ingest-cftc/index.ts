@@ -16,10 +16,13 @@ const num = (v: unknown) => {
   return Number.isFinite(n) ? Math.round(n) : 0;
 };
 
-async function fetchSocrata(base: string, code: string, sinceISO: string) {
+async function fetchSocrata(base: string, code: string, sinceISO: string, untilISO?: string) {
   const url = new URL(base);
   url.searchParams.set("cftc_contract_market_code", code);
-  url.searchParams.set("$where", `report_date_as_yyyy_mm_dd >= '${sinceISO}'`);
+  const where = untilISO
+    ? `report_date_as_yyyy_mm_dd >= '${sinceISO}' AND report_date_as_yyyy_mm_dd < '${untilISO}'`
+    : `report_date_as_yyyy_mm_dd >= '${sinceISO}'`;
+  url.searchParams.set("$where", where);
   url.searchParams.set("$order", "report_date_as_yyyy_mm_dd DESC");
   url.searchParams.set("$limit", "600");
   const r = await fetch(url.toString());
