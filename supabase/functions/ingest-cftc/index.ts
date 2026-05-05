@@ -74,9 +74,9 @@ Deno.serve(async (req) => {
           const nrS = num(row.nonrept_positions_short_all);
 
           const snapshots = [
-            { category: "non_commercial", long_contracts: ncL, short_contracts: ncS, spread_contracts: ncSp, net_contracts: ncL - ncS, pct_of_oi: oi ? (ncL - ncS) / oi * 100 : null },
-            { category: "commercial",     long_contracts: cL,  short_contracts: cS,  spread_contracts: 0,    net_contracts: cL - cS,   pct_of_oi: oi ? (cL - cS) / oi * 100 : null },
-            { category: "non_reportable", long_contracts: nrL, short_contracts: nrS, spread_contracts: 0,    net_contracts: nrL - nrS, pct_of_oi: oi ? (nrL - nrS) / oi * 100 : null },
+            { category: "non_commercial", long_contracts: ncL, short_contracts: ncS, spread_contracts: ncSp, pct_of_oi: oi ? (ncL - ncS) / oi * 100 : null },
+            { category: "commercial",     long_contracts: cL,  short_contracts: cS,  spread_contracts: 0,    pct_of_oi: oi ? (cL - cS) / oi * 100 : null },
+            { category: "non_reportable", long_contracts: nrL, short_contracts: nrS, spread_contracts: 0,    pct_of_oi: oi ? (nrL - nrS) / oi * 100 : null },
           ].map(s => ({ ...s, report_id: rep.id }));
           const { error: sErr } = await sb.from("positioning_snapshots")
             .upsert(snapshots, { onConflict: "report_id,category" });
