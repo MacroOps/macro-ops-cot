@@ -1,19 +1,43 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Star } from "lucide-react";
 import { PercentileGauge } from "./PercentileGauge";
 import type { MarketSnapshot } from "@/lib/mockData";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat("en-US");
 
 export function MarketCard({ m }: { m: MarketSnapshot }) {
   const up = m.weekChangePct >= 0;
+  const { user } = useAuth();
+  const { ids, add, remove } = useWatchlist();
+  const starred = m.id ? ids.has(m.id) : false;
+
+  function toggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { toast.error("Sign in to save markets"); return; }
+    if (!m.id) return;
+    if (starred) remove.mutate(m.id);
+    else add.mutate(m.id);
+  }
+
   return (
     <Link
       to={`/asset/${m.symbol}`}
-      className="hud-panel p-3 flex flex-col gap-2.5 hover:border-primary/60 transition-colors group"
+      className="hud-panel p-3 flex flex-col gap-2.5 hover:border-primary/60 transition-colors group relative"
     >
-      <div className="flex items-start justify-between gap-2">
+      <button
+        onClick={toggle}
+        className="absolute top-2 right-2 p-1 rounded-sm hover:bg-muted/40 transition-colors"
+        aria-label={starred ? "Remove from watchlist" : "Add to watchlist"}
+      >
+        <Star className={`h-3.5 w-3.5 ${starred ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+      </button>
+
+      <div className="flex items-start justify-between gap-2 pr-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-mono text-sm font-semibold text-surface-foreground">{m.symbol}</span>
@@ -35,7 +59,6 @@ export function MarketCard({ m }: { m: MarketSnapshot }) {
         </div>
       </div>
 
-      {/* White data surface for the gauges and stats */}
       <div className="hud-chart p-2.5 flex flex-col gap-2">
         <PercentileGauge value={m.netSpecPct3y} label="Net Specs · 3Y" emphasize />
         <PercentileGauge value={m.netSpecPct6m} label="Net Specs · 6M" />
@@ -64,3 +87,4 @@ export function MarketCard({ m }: { m: MarketSnapshot }) {
     </Link>
   );
 }
+

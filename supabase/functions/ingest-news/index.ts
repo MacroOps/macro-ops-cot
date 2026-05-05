@@ -56,8 +56,9 @@ Deno.serve(async (req) => {
     for (const m of (markets ?? []) as Market[]) {
       if (!m.news_keywords) continue;
       try {
-        // Marketaux free tier: take the first keyword to keep request count low
-        const kw = m.news_keywords.split(",")[0].trim();
+        // Use all keywords joined with OR for broader recall
+        const kws = m.news_keywords.split(",").map(s => s.trim()).filter(Boolean);
+        const kw = kws.map(k => `"${k}"`).join(" | ");
         const articles = await fetchMarketaux(kw);
         await sleep(1100); // free tier ~ 1 req/sec
 

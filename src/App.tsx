@@ -9,6 +9,7 @@ import AssetDetail from "./pages/AssetDetail.tsx";
 import SectorAggregates from "./pages/SectorAggregates.tsx";
 import Backtests from "./pages/Backtests.tsx";
 import News from "./pages/News.tsx";
+import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/sectors" element={<SectorAggregates />} />
             <Route path="/backtests" element={<Backtests />} />
             <Route path="/news" element={<News />} />
+            <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

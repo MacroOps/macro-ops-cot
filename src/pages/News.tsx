@@ -197,9 +197,11 @@ function FeedRow({ item }: { item: NewsItem }) {
           <div className="text-[9px] uppercase tracking-wider text-chart-ink-muted mt-0.5">1d return</div>
         </div>
 
-        <button className="text-chart-ink-muted hover:text-chart-ink shrink-0 mt-1" aria-label="Open source">
-          <ExternalLink className="h-3.5 w-3.5" />
-        </button>
+        {item.url ? (
+          <a href={item.url} target="_blank" rel="noreferrer" className="text-chart-ink-muted hover:text-chart-ink shrink-0 mt-1" aria-label="Open source">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        ) : null}
       </div>
     </li>
   );
