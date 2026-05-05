@@ -40,9 +40,12 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const yearsBack = Number(body.years ?? 10);
     const symbolFilter: string | undefined = body.symbol;
+    const formatFilter: "legacy" | "disaggregated" | undefined = body.format;
+    const sinceOverride: string | undefined = body.since;
+    const untilOverride: string | undefined = body.until;
     const since = new Date();
     since.setFullYear(since.getFullYear() - yearsBack);
-    const sinceISO = since.toISOString().slice(0, 10);
+    const sinceISO = sinceOverride ?? since.toISOString().slice(0, 10);
 
     let q = sb.from("markets").select("id,symbol,cftc_code")
       .eq("is_active", true).not("cftc_code", "is", null);
@@ -53,10 +56,8 @@ Deno.serve(async (req) => {
     for (const m of (markets ?? []) as Market[]) {
       if (!m.cftc_code) continue;
       try {
-        const [legacy, disagg] = await Promise.all([
-          fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO),
-          fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO),
-        ]);
+        const legacy = formatFilter === "disaggregated" ? [] : await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride);
+        const disagg = formatFilter === "legacy" ? [] : await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride);
 
         // ---- Legacy ----
         for (const row of legacy) {
