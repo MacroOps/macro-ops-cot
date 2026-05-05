@@ -109,11 +109,11 @@ Deno.serve(async (req) => {
           const orSp = num(row.other_rept_positions_spread);
 
           const snapshots = [
-            { category: "producer_merchant", long_contracts: pmL, short_contracts: pmS, spread_contracts: 0,   net_contracts: pmL - pmS, pct_of_oi: oi ? (pmL - pmS) / oi * 100 : null },
-            { category: "swap_dealer",       long_contracts: swL, short_contracts: swS, spread_contracts: swSp, net_contracts: swL - swS, pct_of_oi: oi ? (swL - swS) / oi * 100 : null },
-            { category: "managed_money",     long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, net_contracts: mmL - mmS, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
-            { category: "other_reportable",  long_contracts: orL, short_contracts: orS, spread_contracts: orSp, net_contracts: orL - orS, pct_of_oi: oi ? (orL - orS) / oi * 100 : null },
-            { category: "leveraged_fund",    long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, net_contracts: mmL - mmS, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
+            { category: "producer_merchant", long_contracts: pmL, short_contracts: pmS, spread_contracts: 0,   pct_of_oi: oi ? (pmL - pmS) / oi * 100 : null },
+            { category: "swap_dealer",       long_contracts: swL, short_contracts: swS, spread_contracts: swSp, pct_of_oi: oi ? (swL - swS) / oi * 100 : null },
+            { category: "managed_money",     long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
+            { category: "other_reportable",  long_contracts: orL, short_contracts: orS, spread_contracts: orSp, pct_of_oi: oi ? (orL - orS) / oi * 100 : null },
+            { category: "leveraged_fund",    long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
           ].map(s => ({ ...s, report_id: rep.id }));
           const { error: sErr } = await sb.from("positioning_snapshots")
             .upsert(snapshots, { onConflict: "report_id,category" });
