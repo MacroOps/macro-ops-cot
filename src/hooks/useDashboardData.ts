@@ -2,22 +2,32 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { MarketSnapshot, Sector } from "@/lib/mockData";
 
-// Deterministic 0-100 percentile derived from a numeric value.
-// Stand-in until we have a true rolling history per market.
-function pseudoPercentile(seed: number, salt: number) {
-  const x = Math.sin(seed * 9301 + salt * 49297) * 43758.5453;
-  return Math.floor((x - Math.floor(x)) * 100);
+function percentileOf(values: number[], target: number) {
+  if (!values.length) return 50;
+  let below = 0;
+  for (const v of values) if (v <= target) below++;
+  return Math.round((below / values.length) * 100);
 }
 
 export function useDashboardData() {
   return useQuery({
     queryKey: ["dashboard-data"],
     queryFn: async (): Promise<{ markets: MarketSnapshot[]; reportDate: string | null }> => {
+      const threeYearsAgo = new Date();
+      threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+      const cutoff = threeYearsAgo.toISOString().slice(0, 10);
+
       const [{ data: markets, error: mErr }, { data: reports, error: rErr }, { data: prices, error: pErr }] =
         await Promise.all([
           supabase.from("markets").select("id,symbol,name,sector").eq("is_active", true),
-          supabase.from("cot_reports").select("id,market_id,report_date,format").order("report_date", { ascending: false }),
-          supabase.from("price_history").select("market_id,observed_on,close").order("observed_on", { ascending: false }),
+          supabase.from("cot_reports")
+            .select("id,market_id,report_date,format")
+            .gte("report_date", cutoff)
+            .order("report_date", { ascending: false })
+            .limit(10000),
+          supabase.from("price_history").select("market_id,observed_on,close")
+            .order("observed_on", { ascending: false })
+            .limit(10000),
         ]);
 
       if (mErr) throw mErr;
@@ -25,35 +35,45 @@ export function useDashboardData() {
       if (pErr) throw pErr;
       if (!markets) return { markets: [], reportDate: null };
 
-      // Latest legacy + disaggregated report per market
-      const latestLegacyByMarket = new Map<string, { id: string; report_date: string }>();
-      const latestDisaggByMarket = new Map<string, { id: string; report_date: string }>();
-      for (const r of reports ?? []) {
-        if (r.format === "legacy" && !latestLegacyByMarket.has(r.market_id)) {
-          latestLegacyByMarket.set(r.market_id, { id: r.id, report_date: r.report_date });
-        }
-        if (r.format === "disaggregated" && !latestDisaggByMarket.has(r.market_id)) {
-          latestDisaggByMarket.set(r.market_id, { id: r.id, report_date: r.report_date });
+      const reportIds = (reports ?? []).map(r => r.id);
+      const snapsRes = reportIds.length
+        ? await supabase.from("positioning_snapshots")
+            .select("report_id,category,net_contracts")
+            .in("report_id", reportIds)
+        : { data: [], error: null };
+      if (snapsRes.error) throw snapsRes.error;
+
+      // report_id -> category -> net
+      const snapMap = new Map<string, Map<string, number>>();
+      for (const s of snapsRes.data ?? []) {
+        let m = snapMap.get(s.report_id);
+        if (!m) { m = new Map(); snapMap.set(s.report_id, m); }
+        m.set(s.category, s.net_contracts ?? 0);
+      }
+
+      // Per market: ordered (oldest→newest) net-spec history from legacy reports,
+      // and lev-fund history from disagg.
+      const histByMarket = new Map<string, { date: string; netSpec: number; netLev: number | null }[]>();
+      const reportsAsc = [...(reports ?? [])].sort((a, b) => a.report_date.localeCompare(b.report_date));
+      for (const r of reportsAsc) {
+        const cats = snapMap.get(r.id);
+        if (!cats) continue;
+        let arr = histByMarket.get(r.market_id);
+        if (!arr) { arr = []; histByMarket.set(r.market_id, arr); }
+        if (r.format === "legacy") {
+          const nc = cats.get("non_commercial") ?? 0;
+          const nr = cats.get("non_reportable") ?? 0;
+          arr.push({ date: r.report_date, netSpec: nc + nr, netLev: null });
+        } else if (r.format === "disaggregated") {
+          const lev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
+          // attach to nearest legacy entry on same date if present
+          const same = arr.find(x => x.date === r.report_date);
+          if (same) same.netLev = lev;
+          else arr.push({ date: r.report_date, netSpec: 0, netLev: lev });
         }
       }
 
-      const reportIds = [
-        ...Array.from(latestLegacyByMarket.values()).map(r => r.id),
-        ...Array.from(latestDisaggByMarket.values()).map(r => r.id),
-      ];
-      const { data: snaps, error: sErr } = await supabase
-        .from("positioning_snapshots")
-        .select("report_id,category,long_contracts,short_contracts,net_contracts")
-        .in("report_id", reportIds.length ? reportIds : ["00000000-0000-0000-0000-000000000000"]);
-      if (sErr) throw sErr;
-
-      const snapKey = (rid: string, cat: string) => `${rid}::${cat}`;
-      const snapMap = new Map<string, { net: number }>();
-      for (const s of snaps ?? []) {
-        snapMap.set(snapKey(s.report_id, s.category), { net: s.net_contracts ?? 0 });
-      }
-
-      // Two latest prices per market for WoW change
+      // Two latest prices per market
       const priceByMarket = new Map<string, number[]>();
       for (const p of prices ?? []) {
         const arr = priceByMarket.get(p.market_id) ?? [];
@@ -61,35 +81,36 @@ export function useDashboardData() {
         priceByMarket.set(p.market_id, arr);
       }
 
-      const out: MarketSnapshot[] = markets.map((m, i) => {
-        const legacy = latestLegacyByMarket.get(m.id);
-        const disagg = latestDisaggByMarket.get(m.id);
-        const nc = legacy ? snapMap.get(snapKey(legacy.id, "non_commercial")) : undefined;
-        const nr = legacy ? snapMap.get(snapKey(legacy.id, "non_reportable")) : undefined;
-        const lev = disagg ? snapMap.get(snapKey(disagg.id, "leveraged_fund")) : undefined;
-        const px = priceByMarket.get(m.id) ?? [];
-        const last = px[0] ?? 0;
-        const prev = px[1] ?? last;
-        const wkPct = prev ? ((last - prev) / prev) * 100 : 0;
+      const out: MarketSnapshot[] = markets.map(m => {
+        const hist = histByMarket.get(m.id) ?? [];
+        const specSeries = hist.map(h => h.netSpec).filter(v => v !== 0 || hist.length < 3);
+        const levSeries = hist.map(h => h.netLev).filter((v): v is number => v != null);
+        const last = hist[hist.length - 1];
+        const netSpecContracts = last?.netSpec ?? 0;
+        const netLevContracts = last?.netLev ?? 0;
 
-        // Net Speculators = large (non_commercial) + small (non_reportable)
-        const netSpec = (nc?.net ?? 0) + (nr?.net ?? 0);
-        const fallbackNet = lev?.net ?? 0;
-        const netSpecContracts = netSpec || fallbackNet;
+        const px = priceByMarket.get(m.id) ?? [];
+        const lastPx = px[0] ?? 0;
+        const prevPx = px[1] ?? lastPx;
+        const wkPct = prevPx ? ((lastPx - prevPx) / prevPx) * 100 : 0;
+
+        const last26Spec = specSeries.slice(-26);
+        const prevSpec = specSeries.length > 1 ? specSeries[specSeries.length - 2] : netSpecContracts;
+        const wow = netSpecContracts - prevSpec;
 
         return {
           symbol: m.symbol,
           name: m.name,
           sector: m.sector as Sector,
-          price: last,
+          price: lastPx,
           weekChangePct: wkPct,
-          largeSpecPercentile: pseudoPercentile(i + 1, 13),
-          leveragedFundPercentile: pseudoPercentile(i + 1, 71),
+          largeSpecPercentile: percentileOf(specSeries, netSpecContracts),
+          leveragedFundPercentile: percentileOf(levSeries, netLevContracts),
           netSpecContracts,
-          netSpecPct3y: pseudoPercentile(i + 1, 211),
-          netSpecPct6m: pseudoPercentile(i + 1, 397),
+          netSpecPct3y: percentileOf(specSeries, netSpecContracts),
+          netSpecPct6m: percentileOf(last26Spec, netSpecContracts),
           netContracts: netSpecContracts,
-          wowChange: Math.round(netSpecContracts * 0.05),
+          wowChange: wow,
         };
       });
 
