@@ -11,6 +11,7 @@ export type Sector =
   | "Crypto";
 
 export interface MarketSnapshot {
+  id?: string;
   symbol: string;
   name: string;
   sector: Sector;

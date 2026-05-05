@@ -99,6 +99,7 @@ export function useDashboardData() {
         const wow = netSpecContracts - prevSpec;
 
         return {
+          id: m.id,
           symbol: m.symbol,
           name: m.name,
           sector: m.sector as Sector,
