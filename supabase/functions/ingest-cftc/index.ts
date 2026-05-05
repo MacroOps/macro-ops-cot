@@ -36,13 +36,15 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const yearsBack = Number(body.years ?? 10);
+    const symbolFilter: string | undefined = body.symbol;
     const since = new Date();
     since.setFullYear(since.getFullYear() - yearsBack);
     const sinceISO = since.toISOString().slice(0, 10);
 
-    const { data: markets, error: mErr } = await sb
-      .from("markets").select("id,symbol,cftc_code")
+    let q = sb.from("markets").select("id,symbol,cftc_code")
       .eq("is_active", true).not("cftc_code", "is", null);
+    if (symbolFilter) q = q.eq("symbol", symbolFilter);
+    const { data: markets, error: mErr } = await q;
     if (mErr) throw mErr;
 
     for (const m of (markets ?? []) as Market[]) {
