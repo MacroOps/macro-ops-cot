@@ -2,14 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AssetSeriesPoint {
-  date: string;       // YYYY-MM-DD
+  date: string;
   price: number;
   netLargeSpec: number;
   netLevFunds: number;
-  netSpec: number;          // large (non-commercial) + small (non-reportable)
-  largeSpecPct: number;     // legacy 3y percentile
-  levFundPct: number;       // disagg 3y percentile
-  netSpecPct3y: number;     // PRIMARY default
+  netSpec: number;
+  largeSpecPct: number;
+  levFundPct: number;
+  netSpecPct3y: number;
   netSpecPct6m: number;
   openInterest: number;
 }
@@ -36,27 +36,7 @@ export interface AssetData {
   lastReportDate: string | null;
 }
 
-// Deterministic PRNG for synthetic history (so same symbol → same chart)
-function mulberry32(a: number) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashStr(s: string) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function percentileWindow(values: number[], window = 156): number[] {
+function percentileWindow(values: number[], window: number): number[] {
   const out: number[] = new Array(values.length).fill(50);
   for (let i = 0; i < values.length; i++) {
     const start = Math.max(0, i - window + 1);
@@ -67,73 +47,6 @@ function percentileWindow(values: number[], window = 156): number[] {
     out[i] = Math.round((below / slice.length) * 100);
   }
   return out;
-}
-
-function generateHistory(symbol: string, lastPrice: number, lastNetLev: number, lastNetSpec: number, lastNetSmall: number) {
-  // 156 weeks ≈ 3 years
-  const N = 156;
-  const rand = mulberry32(hashStr(symbol));
-  const vol = lastPrice * 0.02;
-
-  const prices: number[] = [];
-  const oi: number[] = [];
-  const netLev: number[] = [];
-  const netSpecLarge: number[] = [];
-  const netSpecSmall: number[] = [];
-
-  let p = lastPrice * (0.7 + rand() * 0.4);
-  let o = 800_000 + Math.floor(rand() * 400_000);
-  let nl = lastNetLev * (0.5 + rand() * 0.6);
-  let ns = lastNetSpec * (0.5 + rand() * 0.6);
-  let nsm = lastNetSmall * (0.5 + rand() * 0.6);
-
-  for (let i = 0; i < N; i++) {
-    const drift = (lastPrice - p) * 0.012;
-    p = Math.max(p * 0.5, p + drift + (rand() - 0.5) * vol * 2);
-    o = Math.max(100_000, o + Math.floor((rand() - 0.5) * 30_000));
-    nl = nl + (lastNetLev - nl) * 0.015 + (rand() - 0.5) * Math.abs(lastNetLev || 1000) * 0.08;
-    ns = ns + (lastNetSpec - ns) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSpec || 1000) * 0.08;
-    nsm = nsm + (lastNetSmall - nsm) * 0.015 + (rand() - 0.5) * Math.abs(lastNetSmall || 1000) * 0.10;
-    prices.push(p);
-    oi.push(o);
-    netLev.push(nl);
-    netSpecLarge.push(ns);
-    netSpecSmall.push(nsm);
-  }
-
-  // Snap last to actuals
-  prices[N - 1] = lastPrice;
-  netLev[N - 1] = lastNetLev;
-  netSpecLarge[N - 1] = lastNetSpec;
-  netSpecSmall[N - 1] = lastNetSmall;
-
-  const netSpec = netSpecLarge.map((v, i) => v + netSpecSmall[i]);
-
-  const levPct = percentileWindow(netLev, 156);
-  const specPct = percentileWindow(netSpecLarge, 156);
-  const netSpec3y = percentileWindow(netSpec, 156);
-  const netSpec6m = percentileWindow(netSpec, 26);
-
-  // Build weekly dates ending today (UTC, Tuesday cadence approx)
-  const today = new Date();
-  const series: AssetSeriesPoint[] = [];
-  for (let i = 0; i < N; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (N - 1 - i) * 7);
-    series.push({
-      date: d.toISOString().slice(0, 10),
-      price: Number(prices[i].toFixed(4)),
-      netLevFunds: Math.round(netLev[i]),
-      netLargeSpec: Math.round(netSpecLarge[i]),
-      netSpec: Math.round(netSpec[i]),
-      levFundPct: levPct[i],
-      largeSpecPct: specPct[i],
-      netSpecPct3y: netSpec3y[i],
-      netSpecPct6m: netSpec6m[i],
-      openInterest: oi[i],
-    });
-  }
-  return series;
 }
 
 export function useAssetData(symbol: string) {
@@ -153,14 +66,14 @@ export function useAssetData(symbol: string) {
           .from("cot_reports")
           .select("id,report_date,format,open_interest")
           .eq("market_id", market.id)
-          .order("report_date", { ascending: false })
-          .limit(8),
+          .order("report_date", { ascending: true })
+          .limit(2000),
         supabase
           .from("price_history")
           .select("close,observed_on")
           .eq("market_id", market.id)
-          .order("observed_on", { ascending: false })
-          .limit(2),
+          .order("observed_on", { ascending: true })
+          .limit(5000),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
@@ -169,42 +82,85 @@ export function useAssetData(symbol: string) {
           .limit(20),
       ]);
 
-      const latestDisagg = (reports ?? []).find(r => r.format === "disaggregated");
-      const latestLegacy = (reports ?? []).find(r => r.format === "legacy");
+      const reportIds = (reports ?? []).map(r => r.id);
+      const snapsRes = reportIds.length
+        ? await supabase
+            .from("positioning_snapshots")
+            .select("report_id,category,net_contracts")
+            .in("report_id", reportIds)
+        : { data: [] as { report_id: string; category: string; net_contracts: number | null }[] };
+      const snapMap = new Map<string, Map<string, number>>();
+      for (const s of (snapsRes.data ?? [])) {
+        let m = snapMap.get(s.report_id);
+        if (!m) { m = new Map(); snapMap.set(s.report_id, m); }
+        m.set(s.category, s.net_contracts ?? 0);
+      }
 
-      let lastNetLev = 0;
-      let lastNetSpec = 0;
-      let lastNetSmall = 0;
-      const idsToFetch = [latestDisagg?.id, latestLegacy?.id].filter(Boolean) as string[];
-      if (idsToFetch.length) {
-        const { data: snaps } = await supabase
-          .from("positioning_snapshots")
-          .select("report_id,category,net_contracts")
-          .in("report_id", idsToFetch);
-        for (const s of snaps ?? []) {
-          if (s.report_id === latestDisagg?.id && s.category === "leveraged_fund") {
-            lastNetLev = s.net_contracts ?? 0;
-          }
-          if (s.report_id === latestLegacy?.id && s.category === "non_commercial") {
-            lastNetSpec = s.net_contracts ?? 0;
-          }
-          if (s.report_id === latestLegacy?.id && s.category === "non_reportable") {
-            lastNetSmall = s.net_contracts ?? 0;
-          }
+      // Build per-date map: legacy + disagg merged
+      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; oi: number }>();
+      for (const r of reports ?? []) {
+        const cats = snapMap.get(r.id);
+        if (!cats) continue;
+        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, oi: 0 };
+        if (r.format === "legacy") {
+          e.netLarge = cats.get("non_commercial") ?? 0;
+          e.netSmall = cats.get("non_reportable") ?? 0;
+        } else if (r.format === "disaggregated") {
+          e.netLev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
         }
+        e.oi = Math.max(e.oi, r.open_interest ?? 0);
+        byDate.set(r.report_date, e);
       }
 
-      // Fallback: derive from disaggregated if no legacy
-      if (!lastNetSpec && lastNetLev) lastNetSpec = Math.round(lastNetLev * 1.4);
-      if (!lastNetLev && lastNetSpec) lastNetLev = Math.round(lastNetSpec * 0.7);
-      if (!lastNetLev && !lastNetSpec) {
-        lastNetLev = 10_000;
-        lastNetSpec = 14_000;
-      }
-      if (!lastNetSmall) lastNetSmall = Math.round(lastNetSpec * 0.18);
+      const cotDates = Array.from(byDate.keys()).sort();
+      const priceByDate = new Map<string, number>();
+      for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
 
-      const lastPrice = Number(prices?.[0]?.close ?? 100);
-      const series = generateHistory(symbol, lastPrice, lastNetLev, lastNetSpec, lastNetSmall);
+      // For each COT date, find the closest available price on or before that date.
+      const priceDatesSorted = (prices ?? []).map(p => p.observed_on);
+      function priceOn(date: string): number {
+        if (priceByDate.has(date)) return priceByDate.get(date)!;
+        // binary-ish search backward
+        let lo = 0, hi = priceDatesSorted.length - 1, best = 0;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (priceDatesSorted[mid] <= date) { best = mid; lo = mid + 1; } else hi = mid - 1;
+        }
+        return priceDatesSorted.length ? Number((prices ?? [])[best].close) : 0;
+      }
+
+      const netLargeArr: number[] = [];
+      const netSpecArr: number[] = [];
+      const netLevArr: number[] = [];
+      for (const d of cotDates) {
+        const e = byDate.get(d)!;
+        netLargeArr.push(e.netLarge);
+        netSpecArr.push(e.netLarge + e.netSmall);
+        netLevArr.push(e.netLev);
+      }
+
+      const largePct = percentileWindow(netLargeArr, 156);
+      const levPct = percentileWindow(netLevArr, 156);
+      const spec3y = percentileWindow(netSpecArr, 156);
+      const spec6m = percentileWindow(netSpecArr, 26);
+
+      const series: AssetSeriesPoint[] = cotDates.map((d, i) => {
+        const e = byDate.get(d)!;
+        return {
+          date: d,
+          price: priceOn(d),
+          netLargeSpec: e.netLarge,
+          netLevFunds: e.netLev,
+          netSpec: e.netLarge + e.netSmall,
+          largeSpecPct: largePct[i],
+          levFundPct: levPct[i],
+          netSpecPct3y: spec3y[i],
+          netSpecPct6m: spec6m[i],
+          openInterest: e.oi,
+        };
+      });
+
+      const lastReportDate = cotDates.length ? cotDates[cotDates.length - 1] : null;
 
       return {
         symbol: market.symbol,
@@ -213,15 +169,13 @@ export function useAssetData(symbol: string) {
         exchange: market.exchange,
         series,
         news: (news ?? []) as AssetNewsItem[],
-        lastReportDate: latestDisagg?.report_date ?? latestLegacy?.report_date ?? null,
+        lastReportDate,
       };
     },
     enabled: !!symbol,
   });
 }
 
-// Forward-performance backtest: for each historical point in the same percentile bucket
-// as the current reading, compute the realized N-week forward price return.
 export function computeForwardPerformance(
   series: AssetSeriesPoint[],
   horizonsWeeks = [1, 4, 12, 26],
@@ -239,7 +193,7 @@ export function computeForwardPerformance(
       const p = series[i][windowKey];
       if (p >= bucketLo && p <= bucketHi) {
         const r = (series[i + h].price - series[i].price) / series[i].price;
-        samples.push(r);
+        if (Number.isFinite(r)) samples.push(r);
       }
     }
     if (!samples.length) return { horizon: h, mean: 0, hitRate: 0, count: 0 };
