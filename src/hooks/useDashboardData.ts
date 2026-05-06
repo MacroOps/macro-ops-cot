@@ -36,16 +36,21 @@ export function useDashboardData() {
       if (!markets) return { markets: [], reportDate: null };
 
       const reportIds = (reports ?? []).map(r => r.id);
-      const snapsRes = reportIds.length
-        ? await supabase.from("positioning_snapshots")
-            .select("report_id,category,net_contracts")
-            .in("report_id", reportIds)
-        : { data: [], error: null };
-      if (snapsRes.error) throw snapsRes.error;
+      const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
+      const CHUNK = 200;
+      for (let i = 0; i < reportIds.length; i += CHUNK) {
+        const chunk = reportIds.slice(i, i + CHUNK);
+        const { data, error } = await supabase
+          .from("positioning_snapshots")
+          .select("report_id,category,net_contracts")
+          .in("report_id", chunk);
+        if (error) throw error;
+        if (data) snapRows.push(...data);
+      }
 
       // report_id -> category -> net
       const snapMap = new Map<string, Map<string, number>>();
-      for (const s of snapsRes.data ?? []) {
+      for (const s of snapRows) {
         let m = snapMap.get(s.report_id);
         if (!m) { m = new Map(); snapMap.set(s.report_id, m); }
         m.set(s.category, s.net_contracts ?? 0);
