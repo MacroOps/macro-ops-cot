@@ -1,0 +1,21 @@
+INSERT INTO public.markets (symbol, name, sector, cftc_code, yahoo_symbol, exchange, is_active) VALUES
+  ('6A',  'Australian Dollar',          'FX',          '232741', '6A=F',  'CME',   true),
+  ('6C',  'Canadian Dollar',            'FX',          '090741', '6C=F',  'CME',   true),
+  ('6S',  'Swiss Franc',                'FX',          '092741', '6S=F',  'CME',   true),
+  ('6N',  'New Zealand Dollar',         'FX',          '112741', '6N=F',  'CME',   true),
+  ('6M',  'Mexican Peso',               'FX',          '095741', '6M=F',  'CME',   true),
+  ('NKD', 'Nikkei 225 (Yen)',           'Equities',    '240743', 'NKD=F', 'CME',   true),
+  ('MME', 'MSCI Emerging Mkts E-mini',  'Equities',    '244042', 'MME=F', 'ICE',   true),
+  ('VX',  'VIX Futures',                'Equities',    '1170E1', '^VIX',  'CFE',   true),
+  ('ZT',  '2Y T-Note',                  'Rates',       '042601', 'ZT=F',  'CBOT',  true),
+  ('UB',  'Ultra T-Bond',               'Rates',       '020604', 'UB=F',  'CBOT',  true),
+  ('PL',  'Platinum',                   'Metals',      '076651', 'PL=F',  'NYMEX', true),
+  ('PA',  'Palladium',                  'Metals',      '075651', 'PA=F',  'NYMEX', true),
+  ('HO',  'Heating Oil',                'Energy',      '022651', 'HO=F',  'NYMEX', true),
+  ('CC',  'Cocoa',                      'Agriculture', '073732', 'CC=F',  'ICE',   true),
+  ('KC',  'Coffee',                     'Agriculture', '083731', 'KC=F',  'ICE',   true),
+  ('SB',  'Sugar',                      'Agriculture', '080732', 'SB=F',  'ICE',   true),
+  ('CT',  'Cotton',                     'Agriculture', '033661', 'CT=F',  'ICE',   true),
+  ('LE',  'Live Cattle',                'Agriculture', '057642', 'LE=F',  'CME',   true),
+  ('HE',  'Lean Hogs',                  'Agriculture', '054642', 'HE=F',  'CME',   true)
+ON CONFLICT (symbol) DO NOTHING;
