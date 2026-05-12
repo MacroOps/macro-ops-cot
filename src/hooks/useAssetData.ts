@@ -102,14 +102,15 @@ export function useAssetData(symbol: string) {
       }
 
       // Build per-date map: legacy + disagg merged
-      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; oi: number }>();
+      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; oi: number; hasLegacy: boolean }>();
       for (const r of reports ?? []) {
         const cats = snapMap.get(r.id);
         if (!cats) continue;
-        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, oi: 0 };
+        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, oi: 0, hasLegacy: false };
         if (r.format === "legacy") {
           e.netLarge = cats.get("non_commercial") ?? 0;
           e.netSmall = cats.get("non_reportable") ?? 0;
+          e.hasLegacy = true;
         } else if (r.format === "disaggregated") {
           e.netLev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
         }
@@ -117,7 +118,10 @@ export function useAssetData(symbol: string) {
         byDate.set(r.report_date, e);
       }
 
-      const cotDates = Array.from(byDate.keys()).sort();
+      const cotDates = Array.from(byDate.entries())
+        .filter(([, e]) => e.hasLegacy)
+        .map(([date]) => date)
+        .sort();
       const priceByDate = new Map<string, number>();
       for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
 

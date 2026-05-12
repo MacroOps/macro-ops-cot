@@ -58,7 +58,7 @@ export function useDashboardData() {
 
       // Per market: ordered (oldest→newest) net-spec history from legacy reports,
       // and lev-fund history from disagg.
-      const histByMarket = new Map<string, { date: string; netSpec: number; netLev: number | null }[]>();
+      const histByMarket = new Map<string, { date: string; netSpec: number | null; netLev: number | null }[]>();
       const reportsAsc = [...(reports ?? [])].sort((a, b) => a.report_date.localeCompare(b.report_date));
       for (const r of reportsAsc) {
         const cats = snapMap.get(r.id);
@@ -68,13 +68,15 @@ export function useDashboardData() {
         if (r.format === "legacy") {
           const nc = cats.get("non_commercial") ?? 0;
           const nr = cats.get("non_reportable") ?? 0;
-          arr.push({ date: r.report_date, netSpec: nc + nr, netLev: null });
+          const same = arr.find(x => x.date === r.report_date);
+          if (same) same.netSpec = nc + nr;
+          else arr.push({ date: r.report_date, netSpec: nc + nr, netLev: null });
         } else if (r.format === "disaggregated") {
           const lev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
           // attach to nearest legacy entry on same date if present
           const same = arr.find(x => x.date === r.report_date);
           if (same) same.netLev = lev;
-          else arr.push({ date: r.report_date, netSpec: 0, netLev: lev });
+          else arr.push({ date: r.report_date, netSpec: null, netLev: lev });
         }
       }
 
@@ -87,8 +89,8 @@ export function useDashboardData() {
       }
 
       const out: MarketSnapshot[] = markets.map(m => {
-        const hist = histByMarket.get(m.id) ?? [];
-        const specSeries = hist.map(h => h.netSpec).filter(v => v !== 0 || hist.length < 3);
+        const hist = (histByMarket.get(m.id) ?? []).filter((h): h is { date: string; netSpec: number; netLev: number | null } => h.netSpec != null);
+        const specSeries = hist.map(h => h.netSpec);
         const levSeries = hist.map(h => h.netLev).filter((v): v is number => v != null);
         const last = hist[hist.length - 1];
         const netSpecContracts = last?.netSpec ?? 0;
