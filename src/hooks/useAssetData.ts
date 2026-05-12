@@ -117,7 +117,10 @@ export function useAssetData(symbol: string) {
         byDate.set(r.report_date, e);
       }
 
-      const cotDates = Array.from(byDate.keys()).sort();
+      const cotDates = Array.from(byDate.entries())
+        .filter(([, e]) => e.netLarge !== 0 || e.netSmall !== 0)
+        .map(([date]) => date)
+        .sort();
       const priceByDate = new Map<string, number>();
       for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
 
