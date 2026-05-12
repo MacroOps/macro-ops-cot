@@ -76,7 +76,7 @@ export function useDashboardData() {
           // attach to nearest legacy entry on same date if present
           const same = arr.find(x => x.date === r.report_date);
           if (same) same.netLev = lev;
-          else arr.push({ date: r.report_date, netSpec: Number.NaN, netLev: lev });
+          else arr.push({ date: r.report_date, netSpec: null, netLev: lev });
         }
       }
 
