@@ -21,7 +21,7 @@ async function fetchMarketaux(search: string): Promise<MxArticle[]> {
   url.searchParams.set("api_token", MARKETAUX_API_KEY!);
   url.searchParams.set("search", search);
   url.searchParams.set("language", "en");
-  url.searchParams.set("filter_entities", "true");
+  url.searchParams.set("filter_entities", "false");
   url.searchParams.set("limit", "3");
   const r = await fetch(url.toString());
   if (r.status === 429) { await sleep(1500); return fetchMarketaux(search); }
