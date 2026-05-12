@@ -58,7 +58,7 @@ export function useDashboardData() {
 
       // Per market: ordered (oldest→newest) net-spec history from legacy reports,
       // and lev-fund history from disagg.
-      const histByMarket = new Map<string, { date: string; netSpec: number; netLev: number | null }[]>();
+      const histByMarket = new Map<string, { date: string; netSpec: number | null; netLev: number | null }[]>();
       const reportsAsc = [...(reports ?? [])].sort((a, b) => a.report_date.localeCompare(b.report_date));
       for (const r of reportsAsc) {
         const cats = snapMap.get(r.id);
@@ -89,7 +89,7 @@ export function useDashboardData() {
       }
 
       const out: MarketSnapshot[] = markets.map(m => {
-        const hist = (histByMarket.get(m.id) ?? []).filter(h => Number.isFinite(h.netSpec));
+        const hist = (histByMarket.get(m.id) ?? []).filter((h): h is { date: string; netSpec: number; netLev: number | null } => h.netSpec != null);
         const specSeries = hist.map(h => h.netSpec);
         const levSeries = hist.map(h => h.netLev).filter((v): v is number => v != null);
         const last = hist[hist.length - 1];
