@@ -31,7 +31,7 @@ function timeAgo(iso: string) {
 const News = () => {
   const { data: items, isLoading } = useNewsFeed();
   const [sector, setSector] = useState<Sector | "All">("All");
-  const [onlyDivergence, setOnlyDivergence] = useState(true);
+  const [onlyDivergence, setOnlyDivergence] = useState(false);
   const [minSeverity, setMinSeverity] = useState<Severity | "any">("any");
 
   const filtered = useMemo(() => {

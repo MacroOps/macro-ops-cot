@@ -21,7 +21,7 @@ async function fetchMarketaux(search: string): Promise<MxArticle[]> {
   url.searchParams.set("api_token", MARKETAUX_API_KEY!);
   url.searchParams.set("search", search);
   url.searchParams.set("language", "en");
-  url.searchParams.set("filter_entities", "true");
+  url.searchParams.set("filter_entities", "false");
   url.searchParams.set("limit", "3");
   const r = await fetch(url.toString());
   if (r.status === 429) { await sleep(1500); return fetchMarketaux(search); }
@@ -74,12 +74,12 @@ Deno.serve(async (req) => {
           const sent = avgSentiment(a);
           const dir = sent > 0.05 ? 1 : sent < -0.05 ? -1 : 0;
           const day = a.published_at.slice(0, 10);
-          // Find next trading day's close vs that day's close
+          // Find the first trading day >= publish day, and the next one after it
           let ret1d: number | null = null;
-          const idx = sortedDates.indexOf(day);
-          if (idx >= 0 && idx + 1 < sortedDates.length) {
-            const c0 = priceByDate.get(sortedDates[idx]);
-            const c1 = priceByDate.get(sortedDates[idx + 1]);
+          const onOrAfterIdx = sortedDates.findIndex(d => d >= day);
+          if (onOrAfterIdx >= 0 && onOrAfterIdx + 1 < sortedDates.length) {
+            const c0 = priceByDate.get(sortedDates[onOrAfterIdx]);
+            const c1 = priceByDate.get(sortedDates[onOrAfterIdx + 1]);
             if (c0 && c1) ret1d = ((c1 - c0) / c0) * 100;
           }
           const isDiv = dir !== 0 && ret1d != null && Math.sign(ret1d) !== Math.sign(dir) && Math.abs(ret1d) > 0.5;
