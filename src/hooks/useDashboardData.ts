@@ -119,12 +119,17 @@ export function useDashboardData() {
         const tff = tffByMarket.get(m.id) ?? [];
         const tff26 = tff.slice(-26);
         const lastTff = tff[tff.length - 1];
-        const netLevPct6m = tff26.length && lastTff
+        let netLevPct6m: number | null = tff26.length && lastTff
           ? percentileOf(tff26.map(x => x.netLev), lastTff.netLev)
           : null;
         const netAssetMgrPct6m = tff26.length && lastTff
           ? percentileOf(tff26.map(x => x.netAM), lastTff.netAM)
           : null;
+        // Fallback for commodities (no TFF report): use managed_money from disaggregated.
+        if (netLevPct6m == null && levSeries.length) {
+          const lev26 = levSeries.slice(-26);
+          netLevPct6m = percentileOf(lev26, netLevContracts);
+        }
 
         return {
           id: m.id,
