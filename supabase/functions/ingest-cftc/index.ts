@@ -57,8 +57,12 @@ Deno.serve(async (req) => {
     for (const m of (markets ?? []) as Market[]) {
       if (!m.cftc_code) continue;
       try {
-        const legacy = formatFilter === "disaggregated" ? [] : await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride);
-        const disagg = formatFilter === "legacy" ? [] : await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride);
+        const wantLegacy = !formatFilter || formatFilter === "legacy";
+        const wantDisagg = !formatFilter || formatFilter === "disaggregated";
+        const wantTff    = !formatFilter || formatFilter === "tff";
+        const legacy = wantLegacy ? await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride) : [];
+        const disagg = wantDisagg ? await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride) : [];
+        const tff    = wantTff    ? await fetchSocrata(SOCRATA_TFF,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
 
         // ---- Legacy ----
         for (const row of legacy) {
