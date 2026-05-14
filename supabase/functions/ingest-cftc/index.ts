@@ -8,6 +8,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SOCRATA_LEGACY = "https://publicreporting.cftc.gov/resource/6dca-aqww.json";
 const SOCRATA_DISAGG = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json";
+const SOCRATA_TFF    = "https://publicreporting.cftc.gov/resource/gpe5-46if.json";
 
 interface Market { id: string; symbol: string; cftc_code: string | null }
 
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const yearsBack = Number(body.years ?? 10);
     const symbolFilter: string | undefined = body.symbol;
-    const formatFilter: "legacy" | "disaggregated" | undefined = body.format;
+    const formatFilter: "legacy" | "disaggregated" | "tff" | undefined = body.format;
     const sinceOverride: string | undefined = body.since;
     const untilOverride: string | undefined = body.until;
     const since = new Date();
@@ -56,8 +57,12 @@ Deno.serve(async (req) => {
     for (const m of (markets ?? []) as Market[]) {
       if (!m.cftc_code) continue;
       try {
-        const legacy = formatFilter === "disaggregated" ? [] : await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride);
-        const disagg = formatFilter === "legacy" ? [] : await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride);
+        const wantLegacy = !formatFilter || formatFilter === "legacy";
+        const wantDisagg = !formatFilter || formatFilter === "disaggregated";
+        const wantTff    = !formatFilter || formatFilter === "tff";
+        const legacy = wantLegacy ? await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride) : [];
+        const disagg = wantDisagg ? await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride) : [];
+        const tff    = wantTff    ? await fetchSocrata(SOCRATA_TFF,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
 
         // ---- Legacy ----
         for (const row of legacy) {
@@ -126,7 +131,40 @@ Deno.serve(async (req) => {
           if (sErr) throw sErr;
           written += snapshots.length;
         }
-        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length}`);
+
+        // ---- TFF (Traders in Financial Futures) ----
+        for (const row of tff) {
+          const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
+          if (!reportDate) continue;
+          const oi = num(row.open_interest_all);
+          const { data: rep, error: rErr } = await sb
+            .from("cot_reports")
+            .upsert({ market_id: m.id, report_date: reportDate, format: "tff", open_interest: oi },
+                    { onConflict: "market_id,report_date,format" })
+            .select("id").single();
+          if (rErr) throw rErr;
+
+          const dL = num(row.dealer_positions_long_all);
+          const dS = num(row.dealer_positions_short_all);
+          const dSp = num(row.dealer_positions_spread_all);
+          const amL = num(row.asset_mgr_positions_long);
+          const amS = num(row.asset_mgr_positions_short);
+          const amSp = num(row.asset_mgr_positions_spread);
+          const lmL = num(row.lev_money_positions_long);
+          const lmS = num(row.lev_money_positions_short);
+          const lmSp = num(row.lev_money_positions_spread);
+
+          const snapshots = [
+            { category: "dealer_intermediary", long_contracts: dL,  short_contracts: dS,  spread_contracts: dSp,  pct_of_oi: oi ? (dL - dS) / oi * 100 : null },
+            { category: "asset_manager",       long_contracts: amL, short_contracts: amS, spread_contracts: amSp, pct_of_oi: oi ? (amL - amS) / oi * 100 : null },
+            { category: "leveraged_fund",      long_contracts: lmL, short_contracts: lmS, spread_contracts: lmSp, pct_of_oi: oi ? (lmL - lmS) / oi * 100 : null },
+          ].map(s => ({ ...s, report_id: rep.id }));
+          const { error: sErr } = await sb.from("positioning_snapshots")
+            .upsert(snapshots, { onConflict: "report_id,category" });
+          if (sErr) throw sErr;
+          written += snapshots.length;
+        }
+        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length}`);
       } catch (e) {
         console.error(`cftc ${m.symbol} failed`, e);
       }
