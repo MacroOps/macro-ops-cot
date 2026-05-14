@@ -131,7 +131,40 @@ Deno.serve(async (req) => {
           if (sErr) throw sErr;
           written += snapshots.length;
         }
-        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length}`);
+
+        // ---- TFF (Traders in Financial Futures) ----
+        for (const row of tff) {
+          const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
+          if (!reportDate) continue;
+          const oi = num(row.open_interest_all);
+          const { data: rep, error: rErr } = await sb
+            .from("cot_reports")
+            .upsert({ market_id: m.id, report_date: reportDate, format: "tff", open_interest: oi },
+                    { onConflict: "market_id,report_date,format" })
+            .select("id").single();
+          if (rErr) throw rErr;
+
+          const dL = num(row.dealer_positions_long_all);
+          const dS = num(row.dealer_positions_short_all);
+          const dSp = num(row.dealer_positions_spread_all);
+          const amL = num(row.asset_mgr_positions_long);
+          const amS = num(row.asset_mgr_positions_short);
+          const amSp = num(row.asset_mgr_positions_spread);
+          const lmL = num(row.lev_money_positions_long);
+          const lmS = num(row.lev_money_positions_short);
+          const lmSp = num(row.lev_money_positions_spread);
+
+          const snapshots = [
+            { category: "dealer_intermediary", long_contracts: dL,  short_contracts: dS,  spread_contracts: dSp,  pct_of_oi: oi ? (dL - dS) / oi * 100 : null },
+            { category: "asset_manager",       long_contracts: amL, short_contracts: amS, spread_contracts: amSp, pct_of_oi: oi ? (amL - amS) / oi * 100 : null },
+            { category: "leveraged_fund",      long_contracts: lmL, short_contracts: lmS, spread_contracts: lmSp, pct_of_oi: oi ? (lmL - lmS) / oi * 100 : null },
+          ].map(s => ({ ...s, report_id: rep.id }));
+          const { error: sErr } = await sb.from("positioning_snapshots")
+            .upsert(snapshots, { onConflict: "report_id,category" });
+          if (sErr) throw sErr;
+          written += snapshots.length;
+        }
+        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length}`);
       } catch (e) {
         console.error(`cftc ${m.symbol} failed`, e);
       }
