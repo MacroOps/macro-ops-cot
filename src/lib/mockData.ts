@@ -25,6 +25,9 @@ export interface MarketSnapshot {
   netSpecContracts: number;        // current net contracts
   netSpecPct3y: number;            // 0-100 vs 156w window
   netSpecPct6m: number;            // 0-100 vs 26w window
+  // TFF percentiles (financial markets only — null elsewhere)
+  netLevPct6m?: number | null;
+  netAssetMgrPct6m?: number | null;
   netContracts: number;            // legacy alias = netSpecContracts
   wowChange: number;
 }
