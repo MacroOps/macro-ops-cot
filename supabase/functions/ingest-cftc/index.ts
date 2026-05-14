@@ -8,6 +8,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SOCRATA_LEGACY = "https://publicreporting.cftc.gov/resource/6dca-aqww.json";
 const SOCRATA_DISAGG = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json";
+const SOCRATA_TFF    = "https://publicreporting.cftc.gov/resource/gpe5-46if.json";
 
 interface Market { id: string; symbol: string; cftc_code: string | null }
 
