@@ -57,12 +57,24 @@ export function useDashboardData() {
       }
 
       // Per market: ordered (oldest→newest) net-spec history from legacy reports,
-      // and lev-fund history from disagg.
-      const histByMarket = new Map<string, { date: string; netSpec: number | null; netLev: number | null }[]>();
+      // lev-fund history from disagg, and TFF asset_manager / leveraged_fund history.
+      type Hist = { date: string; netSpec: number | null; netLev: number | null };
+      const histByMarket = new Map<string, Hist[]>();
+      const tffByMarket = new Map<string, { date: string; netLev: number; netAM: number }[]>();
       const reportsAsc = [...(reports ?? [])].sort((a, b) => a.report_date.localeCompare(b.report_date));
       for (const r of reportsAsc) {
         const cats = snapMap.get(r.id);
         if (!cats) continue;
+        if (r.format === "tff") {
+          let arr = tffByMarket.get(r.market_id);
+          if (!arr) { arr = []; tffByMarket.set(r.market_id, arr); }
+          arr.push({
+            date: r.report_date,
+            netLev: cats.get("leveraged_fund") ?? 0,
+            netAM: cats.get("asset_manager") ?? 0,
+          });
+          continue;
+        }
         let arr = histByMarket.get(r.market_id);
         if (!arr) { arr = []; histByMarket.set(r.market_id, arr); }
         if (r.format === "legacy") {
@@ -73,7 +85,6 @@ export function useDashboardData() {
           else arr.push({ date: r.report_date, netSpec: nc + nr, netLev: null });
         } else if (r.format === "disaggregated") {
           const lev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
-          // attach to nearest legacy entry on same date if present
           const same = arr.find(x => x.date === r.report_date);
           if (same) same.netLev = lev;
           else arr.push({ date: r.report_date, netSpec: null, netLev: lev });
@@ -105,6 +116,16 @@ export function useDashboardData() {
         const prevSpec = specSeries.length > 1 ? specSeries[specSeries.length - 2] : netSpecContracts;
         const wow = netSpecContracts - prevSpec;
 
+        const tff = tffByMarket.get(m.id) ?? [];
+        const tff26 = tff.slice(-26);
+        const lastTff = tff[tff.length - 1];
+        const netLevPct6m = tff26.length && lastTff
+          ? percentileOf(tff26.map(x => x.netLev), lastTff.netLev)
+          : null;
+        const netAssetMgrPct6m = tff26.length && lastTff
+          ? percentileOf(tff26.map(x => x.netAM), lastTff.netAM)
+          : null;
+
         return {
           id: m.id,
           symbol: m.symbol,
@@ -117,6 +138,8 @@ export function useDashboardData() {
           netSpecContracts,
           netSpecPct3y: percentileOf(specSeries, netSpecContracts),
           netSpecPct6m: percentileOf(last26Spec, netSpecContracts),
+          netLevPct6m,
+          netAssetMgrPct6m,
           netContracts: netSpecContracts,
           wowChange: wow,
         };
