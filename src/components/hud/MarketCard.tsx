@@ -62,6 +62,12 @@ export function MarketCard({ m }: { m: MarketSnapshot }) {
       <div className="hud-chart p-2.5 flex flex-col gap-2">
         <PercentileGauge value={m.netSpecPct3y} label="Net Specs · 3Y" emphasize />
         <PercentileGauge value={m.netSpecPct6m} label="Net Specs · 6M" />
+        {m.netLevPct6m != null && (
+          <PercentileGauge value={m.netLevPct6m} label="Net Lev Funds · 6M" />
+        )}
+        {m.netAssetMgrPct6m != null && (
+          <PercentileGauge value={m.netAssetMgrPct6m} label="Net Asset Mgrs · 6M" />
+        )}
 
         <div className="border-t border-chart-grid pt-2 flex items-center justify-between text-[10px]">
           <div className="flex flex-col">
