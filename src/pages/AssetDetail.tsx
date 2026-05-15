@@ -296,7 +296,7 @@ export default function AssetDetail() {
                     type="monotone"
                     dataKey={metric}
                     name={METRIC_LABEL[metric]}
-                    stroke={`url(#${PCT_GRADIENT_ID})`}
+                    stroke="#dc2626"
                     strokeWidth={2.5}
                     dot={false}
                     isAnimationActive={false}
