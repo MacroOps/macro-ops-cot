@@ -67,19 +67,31 @@ export function useAssetData(symbol: string) {
       if (mErr) throw mErr;
       if (!market) return null;
 
-      const [{ data: reports }, { data: prices }, { data: news }] = await Promise.all([
+      const [{ data: reports }, pricesAll, { data: news }] = await Promise.all([
         supabase
           .from("cot_reports")
           .select("id,report_date,format,open_interest")
           .eq("market_id", market.id)
           .order("report_date", { ascending: true })
           .limit(8000),
-        supabase
-          .from("price_history")
-          .select("close,observed_on")
-          .eq("market_id", market.id)
-          .order("observed_on", { ascending: true })
-          .limit(10000),
+        (async () => {
+          // Supabase caps responses at 1000 rows; paginate to get full price history.
+          const PAGE = 1000;
+          const out: { close: number; observed_on: string }[] = [];
+          for (let from = 0; from < 20000; from += PAGE) {
+            const { data, error } = await supabase
+              .from("price_history")
+              .select("close,observed_on")
+              .eq("market_id", market.id)
+              .order("observed_on", { ascending: true })
+              .range(from, from + PAGE - 1);
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            out.push(...data.map(p => ({ close: Number(p.close), observed_on: p.observed_on })));
+            if (data.length < PAGE) break;
+          }
+          return out;
+        })(),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
@@ -87,6 +99,7 @@ export function useAssetData(symbol: string) {
           .order("published_at", { ascending: false })
           .limit(20),
       ]);
+      const prices = pricesAll;
 
       const reportIds = (reports ?? []).map(r => r.id);
       const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
