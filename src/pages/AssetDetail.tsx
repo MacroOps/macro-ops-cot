@@ -242,31 +242,6 @@ export default function AssetDetail() {
         {/* Main grid: charts (2/3) + news (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-3">
-            {/* Price + Net Spec composite */}
-            <ChartPanel
-              title={`Price · Net Speculators (${timeframe.toUpperCase()})`}
-              sub="Bars: net non-commercial contracts (left) · Line: underlying price (right)"
-              height={300}
-            >
-              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis yAxisId="net" orientation="left" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11, color: "hsl(var(--chart-surface-foreground))" }}
-                  labelStyle={{ color: "hsl(var(--chart-surface-foreground))", fontFamily: "monospace" }}
-                />
-                <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
-                  {chartData.map((d, i) => (
-                    <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
-                  ))}
-                </Bar>
-                <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
-              </ComposedChart>
-            </ChartPanel>
-
             {/* Positioning chart with metric toggle */}
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
