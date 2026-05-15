@@ -112,13 +112,15 @@ function SegToggle({ value, onChange, options }: {
   );
 }
 
-// Vertical gradient: top (y=100, bullish-extreme) deep red → middle yellow → bottom (y=0, bearish-extreme) dark green.
+// Vertical gradient: top (bullish-extreme) deep red → middle yellow → bottom (bearish-extreme) dark green.
+// Uses userSpaceOnUse so colors map to actual chart Y-pixels rather than the path's own bounding box.
+// `plotTop`/`plotBottom` should match the chart's plot area in SVG coords (margin top + plot height).
 const PCT_GRADIENT_ID = "pctLineGradient";
 const PCT_FILL_GRADIENT_ID = "pctFillGradient";
-function PctGradients() {
+function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plotBottom?: number }) {
   return (
     <defs>
-      <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id={PCT_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
         <stop offset="0%" stopColor="#7f1d1d" />
         <stop offset="15%" stopColor="#dc2626" />
         <stop offset="30%" stopColor="#ea580c" />
@@ -128,10 +130,10 @@ function PctGradients() {
         <stop offset="85%" stopColor="#16a34a" />
         <stop offset="100%" stopColor="#14532d" />
       </linearGradient>
-      <linearGradient id={PCT_FILL_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.28} />
-        <stop offset="50%" stopColor="#eab308" stopOpacity={0.06} />
-        <stop offset="100%" stopColor="#16a34a" stopOpacity={0.28} />
+      <linearGradient id={PCT_FILL_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
+        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.22} />
+        <stop offset="50%" stopColor="#eab308" stopOpacity={0.04} />
+        <stop offset="100%" stopColor="#16a34a" stopOpacity={0.22} />
       </linearGradient>
     </defs>
   );
