@@ -278,7 +278,8 @@ export default function AssetDetail() {
             >
               {isPercentileMetric(metric) ? (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <PctGradients />
+                  {/* Plot height ≈ container(260) - margin top(8) - XAxis(~28) = ~224 */}
+                  <PctGradients plotTop={8} plotBottom={232} />
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis yAxisId="pct" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
@@ -290,16 +291,17 @@ export default function AssetDetail() {
                   <ReferenceArea yAxisId="pct" y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
                   <ReferenceLine yAxisId="pct" y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
                   <ReferenceLine yAxisId="pct" y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
-                  <Area
+                  <Line
                     yAxisId="pct"
                     type="monotone"
                     dataKey={metric}
                     name={METRIC_LABEL[metric]}
                     stroke={`url(#${PCT_GRADIENT_ID})`}
-                    strokeWidth={2}
-                    fill={`url(#${PCT_FILL_GRADIENT_ID})`}
+                    strokeWidth={2.25}
+                    dot={false}
+                    isAnimationActive={false}
                   />
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.7} dot={false} />
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.55} dot={false} isAnimationActive={false} />
                 </ComposedChart>
               ) : (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
