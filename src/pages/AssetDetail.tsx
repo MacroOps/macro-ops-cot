@@ -262,7 +262,7 @@ export default function AssetDetail() {
               height={240}
             >
               {isPercentileMetric(metric) ? (
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                   <defs>
                     <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#b91c1c" />
@@ -276,47 +276,34 @@ export default function AssetDetail() {
                   </defs>
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                  <YAxis yAxisId="pct" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
-                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
+                  <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
                   <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceArea yAxisId="pct" y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
-                  <ReferenceArea yAxisId="pct" y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
-                  <ReferenceLine yAxisId="pct" y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
-                  <ReferenceLine yAxisId="pct" y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.55} dot={false} isAnimationActive={false} connectNulls />
-                  <Line
-                    yAxisId="pct"
-                    type="monotone"
-                    dataKey={metric}
-                    name={METRIC_LABEL[metric]}
-                    stroke={`url(#${PCT_GRADIENT_ID})`}
-                    strokeWidth={2.5}
-                    dot={false}
-                    isAnimationActive={false}
-                    connectNulls
-                  />
+                  <ReferenceArea y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
+                  <ReferenceArea y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
+                  <ReferenceLine y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <ReferenceLine y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <Line type="monotone" dataKey={metric} name={METRIC_LABEL[metric]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
                 </ComposedChart>
               ) : (
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                  <YAxis yAxisId="net" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
+                  <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                   <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                  <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
+                  <ReferenceLine y={0} stroke={gridColor} />
+                  <Bar dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
                     {chartData.map((d, i) => (
                       <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
                     ))}
                   </Bar>
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
                 </ComposedChart>
               )}
             </ChartPanel>
 
             {/* Open Interest sparkline */}
+            <div className="mt-3" />
             <ChartPanel title="Open Interest" sub="Total contracts outstanding" height={120}>
-              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
