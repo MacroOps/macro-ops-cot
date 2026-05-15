@@ -121,14 +121,14 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
   return (
     <defs>
       <linearGradient id={PCT_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#7f1d1d" />
+        <stop offset="0%" stopColor="#b91c1c" />
         <stop offset="15%" stopColor="#dc2626" />
-        <stop offset="30%" stopColor="#ea580c" />
+        <stop offset="30%" stopColor="#f97316" />
         <stop offset="45%" stopColor="#eab308" />
         <stop offset="55%" stopColor="#eab308" />
-        <stop offset="70%" stopColor="#65a30d" />
+        <stop offset="70%" stopColor="#84cc16" />
         <stop offset="85%" stopColor="#16a34a" />
-        <stop offset="100%" stopColor="#14532d" />
+        <stop offset="100%" stopColor="#15803d" />
       </linearGradient>
       <linearGradient id={PCT_FILL_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
         <stop offset="0%" stopColor="#dc2626" stopOpacity={0.22} />
