@@ -89,6 +89,8 @@ function SegToggle<T extends string>({ value, onChange, options }: {
   onChange: (v: T) => void;
   options: { k: T; l: string; disabled?: boolean }[];
 }) {
+  const onChangeAny = onChange as (v: string) => void;
+  void onChangeAny;
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {options.map(o => (
