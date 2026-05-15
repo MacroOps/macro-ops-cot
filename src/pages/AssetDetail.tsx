@@ -330,7 +330,7 @@ export default function AssetDetail() {
                 </div>
                 <SegToggle
                   value={pctWindow}
-                  onChange={setPctWindow}
+                  onChange={(v) => setPctWindow(v as WindowKey)}
                   options={[
                     { k: "netSpecPct6m" as const, l: "6M" },
                     { k: "netSpecPct3y" as const, l: "3Y" },
