@@ -241,13 +241,25 @@ export default function AssetDetail() {
 
         {/* Main grid: charts (2/3) + news (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-0">
+            {/* Price chart (top) */}
+            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures" height={200}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
+                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+                <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
+              </ComposedChart>
+            </ChartPanel>
+
             {/* Positioning chart with metric toggle */}
+            <div className="mt-3" />
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
-              sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme · price overlaid" : "Bars: net contracts · Line: price"}
+              sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme" : "Bars: net contracts (weekly)"}
               right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
-              height={260}
+              height={240}
             >
               {isPercentileMetric(metric) ? (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
