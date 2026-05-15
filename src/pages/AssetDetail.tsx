@@ -297,11 +297,12 @@ export default function AssetDetail() {
                     dataKey={metric}
                     name={METRIC_LABEL[metric]}
                     stroke={`url(#${PCT_GRADIENT_ID})`}
-                    strokeWidth={2.25}
+                    strokeWidth={2.5}
                     dot={false}
                     isAnimationActive={false}
+                    connectNulls
                   />
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.55} dot={false} isAnimationActive={false} />
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1} strokeOpacity={0.35} strokeDasharray="2 3" dot={false} isAnimationActive={false} />
                 </ComposedChart>
               ) : (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
