@@ -4,7 +4,6 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   ComposedChart,
@@ -19,12 +18,25 @@ import {
 import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PercentileGauge } from "@/components/hud/PercentileGauge";
-import { computeForwardPerformance, useAssetData } from "@/hooks/useAssetData";
+import { computeForwardPerformance, useAssetData, type AssetSeriesPoint } from "@/hooks/useAssetData";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat("en-US");
 
 type WindowKey = "netSpecPct3y" | "netSpecPct6m";
+
+// Positioning chart metric options
+type MetricKey =
+  | "netSpec"
+  | "netSpecPct6m"
+  | "netSpecPct3y"
+  | "levFundPct6m"
+  | "levFundPct"
+  | "assetMgrPct6m"
+  | "assetMgrPct";
+
+type TimeframeKey = "2y" | "10y" | "all";
+const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "10y": 520, all: null };
 
 function StatBlock({ label, value, sub, tone = "default" }: { label: string; value: string; sub?: string; tone?: "default" | "long" | "short" | "primary" }) {
   const toneCls =
@@ -56,7 +68,7 @@ function ChartPanel({
 }) {
   return (
     <div className="hud-chart flex flex-col">
-      <div className="hud-chart-header flex items-center justify-between px-3 py-2">
+      <div className="hud-chart-header flex items-center justify-between gap-2 px-3 py-2 flex-wrap">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
             {title}
@@ -72,21 +84,26 @@ function ChartPanel({
   );
 }
 
-function WindowToggle({ value, onChange }: { value: WindowKey; onChange: (v: WindowKey) => void }) {
+function SegToggle<T extends string>({ value, onChange, options }: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { k: T; l: string; disabled?: boolean }[];
+}) {
   return (
-    <div className="flex items-center gap-1">
-      {[
-        { k: "netSpecPct6m" as const, l: "6M" },
-        { k: "netSpecPct3y" as const, l: "3Y" },
-      ].map(o => (
+    <div className="flex items-center gap-1 flex-wrap">
+      {options.map(o => (
         <button
           key={o.k}
-          onClick={() => onChange(o.k)}
+          onClick={() => !o.disabled && onChange(o.k)}
+          disabled={o.disabled}
           className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
             value === o.k
               ? "border-chart-ink bg-chart-ink text-chart-surface"
-              : "border-chart-grid text-chart-axis hover:text-chart-ink"
+              : o.disabled
+                ? "border-chart-grid text-chart-ink-muted opacity-40 cursor-not-allowed"
+                : "border-chart-grid text-chart-axis hover:text-chart-ink"
           }`}
+          title={o.disabled ? "Not available for this market" : undefined}
         >
           {o.l}
         </button>
@@ -95,32 +112,94 @@ function WindowToggle({ value, onChange }: { value: WindowKey; onChange: (v: Win
   );
 }
 
+// Vertical gradient: top (y=100, bullish-extreme) deep red → middle yellow → bottom (y=0, bearish-extreme) dark green.
+const PCT_GRADIENT_ID = "pctLineGradient";
+const PCT_FILL_GRADIENT_ID = "pctFillGradient";
+function PctGradients() {
+  return (
+    <defs>
+      <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#7f1d1d" />
+        <stop offset="15%" stopColor="#dc2626" />
+        <stop offset="30%" stopColor="#ea580c" />
+        <stop offset="45%" stopColor="#eab308" />
+        <stop offset="55%" stopColor="#eab308" />
+        <stop offset="70%" stopColor="#65a30d" />
+        <stop offset="85%" stopColor="#16a34a" />
+        <stop offset="100%" stopColor="#14532d" />
+      </linearGradient>
+      <linearGradient id={PCT_FILL_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.28} />
+        <stop offset="50%" stopColor="#eab308" stopOpacity={0.06} />
+        <stop offset="100%" stopColor="#16a34a" stopOpacity={0.28} />
+      </linearGradient>
+    </defs>
+  );
+}
+
+const METRIC_LABEL: Record<MetricKey, string> = {
+  netSpec: "Net Speculators (nominal)",
+  netSpecPct6m: "Net Spec %ile · 6M",
+  netSpecPct3y: "Net Spec %ile · 3Y",
+  levFundPct6m: "Lev Funds %ile · 6M",
+  levFundPct: "Lev Funds %ile · 3Y",
+  assetMgrPct6m: "Asset Mgrs %ile · 6M",
+  assetMgrPct: "Asset Mgrs %ile · 3Y",
+};
+
+function isPercentileMetric(m: MetricKey) {
+  return m !== "netSpec";
+}
+
 export default function AssetDetail() {
   const { symbol = "ES" } = useParams();
   const { data, isLoading, error } = useAssetData(symbol);
 
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
+  const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
+  const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
   const wkChg = last && prev ? ((last.price - prev.price) / prev.price) * 100 : 0;
   const netWoW = last && prev ? last.netSpec - prev.netSpec : 0;
 
+  const hasLev = !!last?.hasLev;
+  const hasAssetMgr = !!last?.hasAssetMgr;
+
   const forward = useMemo(
     () => (data ? computeForwardPerformance(data.series, [1, 4, 12, 26], pctWindow) : []),
     [data, pctWindow]
   );
 
-  // Slice last 78 weeks (~18m) for charts
-  const chartData = useMemo(() => (data ? data.series.slice(-78) : []), [data]);
+  const chartData: AssetSeriesPoint[] = useMemo(() => {
+    if (!data) return [];
+    const w = TF_WEEKS[timeframe];
+    return w == null ? data.series : data.series.slice(-w);
+  }, [data, timeframe]);
 
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
   const inkColor = "hsl(var(--chart-ink))";
-  const accentColor = "hsl(var(--chart-accent))";
 
   const currentPct = last ? (pctWindow === "netSpecPct3y" ? last.netSpecPct3y : last.netSpecPct6m) : 0;
   const windowLabel = pctWindow === "netSpecPct3y" ? "3Y" : "6M";
+
+  const tfOptions = [
+    { k: "2y" as const, l: "2Y" },
+    { k: "10y" as const, l: "10Y" },
+    { k: "all" as const, l: "All" },
+  ];
+
+  const metricOptions: { k: MetricKey; l: string; disabled?: boolean }[] = [
+    { k: "netSpec", l: "Net Spec" },
+    { k: "netSpecPct6m", l: "Spec 6M" },
+    { k: "netSpecPct3y", l: "Spec 3Y" },
+    { k: "levFundPct6m", l: "Lev 6M", disabled: !hasLev },
+    { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
+    { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
+    { k: "assetMgrPct", l: "AM 3Y", disabled: !hasAssetMgr },
+  ];
 
   return (
     <AppShell title={`Asset · ${symbol}`}>
@@ -138,8 +217,8 @@ export default function AssetDetail() {
               <span className="hud-label border border-border px-1.5 py-0.5 rounded-sm">{data.exchange}</span>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <WindowToggle value={pctWindow} onChange={setPctWindow} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <SegToggle value={timeframe} onChange={setTimeframe} options={tfOptions} />
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
               CFTC report · {data?.lastReportDate ?? "—"}
             </div>
@@ -151,76 +230,91 @@ export default function AssetDetail() {
           <StatBlock label="Last Price" value={last ? fmt.format(last.price) : "—"} sub={wkChg >= 0 ? `+${wkChg.toFixed(2)}% w/w` : `${wkChg.toFixed(2)}% w/w`} tone={wkChg >= 0 ? "long" : "short"} />
           <StatBlock label="Net Specs" value={last ? fmtInt.format(last.netSpec) : "—"} sub={`Δ ${netWoW >= 0 ? "+" : ""}${fmtInt.format(netWoW)}`} tone={last && last.netSpec >= 0 ? "long" : "short"} />
           <StatBlock label={`Net Spec %ile ${windowLabel}`} value={last ? `${currentPct}` : "—"} sub="primary signal" tone={currentPct >= 85 || currentPct <= 15 ? "primary" : "default"} />
-          <StatBlock label="Lev Fund Net" value={last ? fmtInt.format(last.netLevFunds) : "—"} tone={last && last.netLevFunds >= 0 ? "long" : "short"} />
+          <StatBlock label="Lev Fund Net" value={last && hasLev ? fmtInt.format(last.netLevFunds) : "—"} tone={last && last.netLevFunds >= 0 ? "long" : "short"} />
+          {hasAssetMgr && (
+            <StatBlock label="Asset Mgr Net" value={last ? fmtInt.format(last.netAssetMgr) : "—"} tone={last && last.netAssetMgr >= 0 ? "long" : "short"} />
+          )}
           <StatBlock label="Open Interest" value={last ? fmtInt.format(last.openInterest) : "—"} />
         </div>
 
         {/* Main grid: charts (2/3) + news (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-3">
-            {/* Price + Net Spec composite */}
+            {/* Price + Net Spec composite + OI line */}
             <ChartPanel
-              title="Price · Net Speculators (78w)"
-              sub="Large + small non-commercial net contracts overlaid on price"
-              height={260}
+              title={`Price · Net Speculators · Open Interest (${timeframe.toUpperCase()})`}
+              sub="Bars: net non-commercial contracts · Line: price · Dashed: open interest"
+              height={300}
             >
               <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
                 <YAxis yAxisId="net" orientation="left" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <YAxis yAxisId="oi" orientation="right" hide domain={["auto", "auto"]} />
                 <Tooltip
                   contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11, color: "hsl(var(--chart-surface-foreground))" }}
                   labelStyle={{ color: "hsl(var(--chart-surface-foreground))", fontFamily: "monospace" }}
                 />
                 <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={3}>
+                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3}>
                   {chartData.map((d, i) => (
                     <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
                   ))}
                 </Bar>
+                <Line yAxisId="oi" type="monotone" dataKey="openInterest" name="Open Interest" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1} strokeDasharray="3 3" dot={false} />
                 <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.5} dot={false} />
               </ComposedChart>
             </ChartPanel>
 
-            {/* Percentile chart */}
+            {/* Positioning chart with metric toggle */}
             <ChartPanel
-              title={`Net Spec Positioning Percentile · ${windowLabel} rolling`}
-              sub="Extremes ≥85 long-crowded · ≤15 short-crowded"
-              right={<WindowToggle value={pctWindow} onChange={setPctWindow} />}
-              height={200}
+              title={`Positioning · ${METRIC_LABEL[metric]}`}
+              sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme · price overlaid" : "Bars: net contracts · Line: price"}
+              right={<SegToggle value={metric} onChange={setMetric} options={metricOptions} />}
+              height={260}
             >
-              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="pctFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={accentColor} stopOpacity={0.30} />
-                    <stop offset="100%" stopColor={accentColor} stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }}
-                />
-                <ReferenceArea y1={85} y2={100} fill="hsl(var(--pos-long))" fillOpacity={0.10} />
-                <ReferenceArea y1={0} y2={15} fill="hsl(var(--pos-short))" fillOpacity={0.10} />
-                <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" />
-                <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" />
-                <Area type="monotone" dataKey={pctWindow} name={`Net Spec ${windowLabel}`} stroke={accentColor} strokeWidth={1.75} fill="url(#pctFill)" />
-                <Line type="monotone" dataKey="levFundPct" name="Lev Fund 3Y (ref)" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-              </AreaChart>
-            </ChartPanel>
-
-            {/* Open Interest */}
-            <ChartPanel title="Open Interest" height={140}>
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={48} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                <Bar dataKey="openInterest" fill="hsl(var(--chart-ink))" fillOpacity={0.5} />
-              </BarChart>
+              {isPercentileMetric(metric) ? (
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <PctGradients />
+                  <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+                  <YAxis yAxisId="pct" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
+                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }}
+                  />
+                  <ReferenceArea yAxisId="pct" y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
+                  <ReferenceArea yAxisId="pct" y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
+                  <ReferenceLine yAxisId="pct" y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <ReferenceLine yAxisId="pct" y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <Area
+                    yAxisId="pct"
+                    type="monotone"
+                    dataKey={metric}
+                    name={METRIC_LABEL[metric]}
+                    stroke={`url(#${PCT_GRADIENT_ID})`}
+                    strokeWidth={2}
+                    fill={`url(#${PCT_FILL_GRADIENT_ID})`}
+                  />
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.7} dot={false} />
+                </ComposedChart>
+              ) : (
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+                  <YAxis yAxisId="net" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+                  <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
+                  <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3}>
+                    {chartData.map((d, i) => (
+                      <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
+                    ))}
+                  </Bar>
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.5} dot={false} />
+                </ComposedChart>
+              )}
             </ChartPanel>
 
             {/* Forward performance backtest */}
@@ -234,6 +328,14 @@ export default function AssetDetail() {
                     Bucket: {Math.max(0, currentPct - 10)}–{Math.min(100, currentPct + 10)} · 3y window
                   </span>
                 </div>
+                <SegToggle
+                  value={pctWindow}
+                  onChange={setPctWindow}
+                  options={[
+                    { k: "netSpecPct6m" as const, l: "6M" },
+                    { k: "netSpecPct3y" as const, l: "3Y" },
+                  ]}
+                />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-chart-grid">
                 {forward.map(f => {
@@ -323,7 +425,7 @@ export default function AssetDetail() {
               </div>
             </div>
 
-            {/* Current percentile gauges — on white surface */}
+            {/* Current percentile gauges */}
             <div className="hud-chart p-3 space-y-2.5">
               <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
                 Current Positioning
@@ -332,7 +434,10 @@ export default function AssetDetail() {
                 <>
                   <PercentileGauge value={last.netSpecPct3y} label="Net Specs · 3Y" emphasize />
                   <PercentileGauge value={last.netSpecPct6m} label="Net Specs · 6M" />
-                  <PercentileGauge value={last.levFundPct} label="Lev Funds · 3Y (ref)" />
+                  {hasLev && <PercentileGauge value={last.levFundPct} label="Lev Funds · 3Y" />}
+                  {hasLev && <PercentileGauge value={last.levFundPct6m} label="Lev Funds · 6M" />}
+                  {hasAssetMgr && <PercentileGauge value={last.assetMgrPct} label="Asset Mgrs · 3Y" />}
+                  {hasAssetMgr && <PercentileGauge value={last.assetMgrPct6m} label="Asset Mgrs · 6M" />}
                   <PercentileGauge value={last.largeSpecPct} label="Large Specs · 3Y (ref)" />
                 </>
               )}
