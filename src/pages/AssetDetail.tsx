@@ -218,7 +218,7 @@ export default function AssetDetail() {
             )}
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <SegToggle value={timeframe} onChange={setTimeframe} options={tfOptions} />
+            <SegToggle value={timeframe} onChange={(v) => setTimeframe(v as TimeframeKey)} options={tfOptions} />
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
               CFTC report · {data?.lastReportDate ?? "—"}
             </div>
