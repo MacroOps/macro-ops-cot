@@ -73,13 +73,13 @@ export function useAssetData(symbol: string) {
           .select("id,report_date,format,open_interest")
           .eq("market_id", market.id)
           .order("report_date", { ascending: true })
-          .limit(2000),
+          .limit(8000),
         supabase
           .from("price_history")
           .select("close,observed_on")
           .eq("market_id", market.id)
           .order("observed_on", { ascending: true })
-          .limit(5000),
+          .limit(10000),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
