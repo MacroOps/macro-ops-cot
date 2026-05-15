@@ -6,12 +6,18 @@ export interface AssetSeriesPoint {
   price: number;
   netLargeSpec: number;
   netLevFunds: number;
+  netAssetMgr: number;
   netSpec: number;
   largeSpecPct: number;
   levFundPct: number;
+  levFundPct6m: number;
+  assetMgrPct: number;
+  assetMgrPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
   openInterest: number;
+  hasLev: boolean;
+  hasAssetMgr: boolean;
 }
 
 export interface AssetNewsItem {
@@ -67,13 +73,13 @@ export function useAssetData(symbol: string) {
           .select("id,report_date,format,open_interest")
           .eq("market_id", market.id)
           .order("report_date", { ascending: true })
-          .limit(2000),
+          .limit(8000),
         supabase
           .from("price_history")
           .select("close,observed_on")
           .eq("market_id", market.id)
           .order("observed_on", { ascending: true })
-          .limit(5000),
+          .limit(10000),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
@@ -101,18 +107,33 @@ export function useAssetData(symbol: string) {
         m.set(s.category, s.net_contracts ?? 0);
       }
 
-      // Build per-date map: legacy + disagg merged
-      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; oi: number; hasLegacy: boolean }>();
+      // Build per-date map: legacy + disagg + tff merged
+      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; netAssetMgr: number; oi: number; hasLegacy: boolean; hasLev: boolean; hasAssetMgr: boolean }>();
       for (const r of reports ?? []) {
         const cats = snapMap.get(r.id);
         if (!cats) continue;
-        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, oi: 0, hasLegacy: false };
+        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, netAssetMgr: 0, oi: 0, hasLegacy: false, hasLev: false, hasAssetMgr: false };
         if (r.format === "legacy") {
           e.netLarge = cats.get("non_commercial") ?? 0;
           e.netSmall = cats.get("non_reportable") ?? 0;
           e.hasLegacy = true;
         } else if (r.format === "disaggregated") {
-          e.netLev = cats.get("leveraged_fund") ?? cats.get("managed_money") ?? 0;
+          const mm = cats.get("managed_money");
+          if (mm != null && !e.hasLev) {
+            e.netLev = mm;
+            e.hasLev = true;
+          }
+        } else if (r.format === "tff") {
+          const lev = cats.get("leveraged_fund");
+          if (lev != null) {
+            e.netLev = lev;
+            e.hasLev = true;
+          }
+          const am = cats.get("asset_manager");
+          if (am != null) {
+            e.netAssetMgr = am;
+            e.hasAssetMgr = true;
+          }
         }
         e.oi = Math.max(e.oi, r.open_interest ?? 0);
         byDate.set(r.report_date, e);
@@ -125,11 +146,9 @@ export function useAssetData(symbol: string) {
       const priceByDate = new Map<string, number>();
       for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
 
-      // For each COT date, find the closest available price on or before that date.
       const priceDatesSorted = (prices ?? []).map(p => p.observed_on);
       function priceOn(date: string): number {
         if (priceByDate.has(date)) return priceByDate.get(date)!;
-        // binary-ish search backward
         let lo = 0, hi = priceDatesSorted.length - 1, best = 0;
         while (lo <= hi) {
           const mid = (lo + hi) >> 1;
@@ -141,15 +160,20 @@ export function useAssetData(symbol: string) {
       const netLargeArr: number[] = [];
       const netSpecArr: number[] = [];
       const netLevArr: number[] = [];
+      const netAssetMgrArr: number[] = [];
       for (const d of cotDates) {
         const e = byDate.get(d)!;
         netLargeArr.push(e.netLarge);
         netSpecArr.push(e.netLarge + e.netSmall);
         netLevArr.push(e.netLev);
+        netAssetMgrArr.push(e.netAssetMgr);
       }
 
       const largePct = percentileWindow(netLargeArr, 156);
       const levPct = percentileWindow(netLevArr, 156);
+      const levPct6m = percentileWindow(netLevArr, 26);
+      const assetMgrPct = percentileWindow(netAssetMgrArr, 156);
+      const assetMgrPct6m = percentileWindow(netAssetMgrArr, 26);
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
@@ -160,12 +184,18 @@ export function useAssetData(symbol: string) {
           price: priceOn(d),
           netLargeSpec: e.netLarge,
           netLevFunds: e.netLev,
+          netAssetMgr: e.netAssetMgr,
           netSpec: e.netLarge + e.netSmall,
           largeSpecPct: largePct[i],
           levFundPct: levPct[i],
+          levFundPct6m: levPct6m[i],
+          assetMgrPct: assetMgrPct[i],
+          assetMgrPct6m: assetMgrPct6m[i],
           netSpecPct3y: spec3y[i],
           netSpecPct6m: spec6m[i],
           openInterest: e.oi,
+          hasLev: e.hasLev,
+          hasAssetMgr: e.hasAssetMgr,
         };
       });
 
