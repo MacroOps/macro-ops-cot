@@ -84,13 +84,11 @@ function ChartPanel({
   );
 }
 
-function SegToggle<T extends string>({ value, onChange, options }: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { k: T; l: string; disabled?: boolean }[];
+function SegToggle({ value, onChange, options }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { k: string; l: string; disabled?: boolean }[];
 }) {
-  const onChangeAny = onChange as (v: string) => void;
-  void onChangeAny;
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {options.map(o => (
