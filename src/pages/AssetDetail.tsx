@@ -242,30 +242,28 @@ export default function AssetDetail() {
         {/* Main grid: charts (2/3) + news (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-3">
-            {/* Price + Net Spec composite + OI line */}
+            {/* Price + Net Spec composite */}
             <ChartPanel
-              title={`Price · Net Speculators · Open Interest (${timeframe.toUpperCase()})`}
-              sub="Bars: net non-commercial contracts · Line: price · Dashed: open interest"
+              title={`Price · Net Speculators (${timeframe.toUpperCase()})`}
+              sub="Bars: net non-commercial contracts (left) · Line: underlying price (right)"
               height={300}
             >
               <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
                 <YAxis yAxisId="net" orientation="left" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <YAxis yAxisId="oi" orientation="right" hide domain={["auto", "auto"]} />
+                <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
                 <Tooltip
                   contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11, color: "hsl(var(--chart-surface-foreground))" }}
                   labelStyle={{ color: "hsl(var(--chart-surface-foreground))", fontFamily: "monospace" }}
                 />
                 <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3}>
+                <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
                   {chartData.map((d, i) => (
                     <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
                   ))}
                 </Bar>
-                <Line yAxisId="oi" type="monotone" dataKey="openInterest" name="Open Interest" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1} strokeDasharray="3 3" dot={false} />
-                <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.5} dot={false} />
+                <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
               </ComposedChart>
             </ChartPanel>
 
@@ -292,14 +290,13 @@ export default function AssetDetail() {
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis yAxisId="pct" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
-                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }}
-                  />
+                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
                   <ReferenceArea yAxisId="pct" y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
                   <ReferenceArea yAxisId="pct" y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
                   <ReferenceLine yAxisId="pct" y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
                   <ReferenceLine yAxisId="pct" y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.25} strokeOpacity={0.55} dot={false} isAnimationActive={false} connectNulls />
                   <Line
                     yAxisId="pct"
                     type="monotone"
@@ -311,24 +308,34 @@ export default function AssetDetail() {
                     isAnimationActive={false}
                     connectNulls
                   />
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1} strokeOpacity={0.35} strokeDasharray="2 3" dot={false} isAnimationActive={false} />
                 </ComposedChart>
               ) : (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis yAxisId="net" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={50} domain={["auto", "auto"]} />
+                  <YAxis yAxisId="price" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
                   <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
                   <ReferenceLine yAxisId="net" y={0} stroke={gridColor} />
-                  <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3}>
+                  <Bar yAxisId="net" dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
                     {chartData.map((d, i) => (
                       <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
                     ))}
                   </Bar>
-                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.5} dot={false} />
+                  <Line yAxisId="price" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
                 </ComposedChart>
               )}
+            </ChartPanel>
+
+            {/* Open Interest sparkline */}
+            <ChartPanel title="Open Interest" sub="Total contracts outstanding" height={120}>
+              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+                <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+                <Line type="monotone" dataKey="openInterest" name="Open Interest" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls />
+              </ComposedChart>
             </ChartPanel>
 
             {/* Forward performance backtest */}
