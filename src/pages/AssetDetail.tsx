@@ -271,7 +271,7 @@ export default function AssetDetail() {
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
               sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme · price overlaid" : "Bars: net contracts · Line: price"}
-              right={<SegToggle value={metric} onChange={setMetric} options={metricOptions} />}
+              right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
               height={260}
             >
               {isPercentileMetric(metric) ? (
