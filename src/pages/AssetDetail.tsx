@@ -278,8 +278,17 @@ export default function AssetDetail() {
             >
               {isPercentileMetric(metric) ? (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  {/* Plot height ≈ container(260) - margin top(8) - XAxis(~28) = ~224 */}
-                  <PctGradients plotTop={8} plotBottom={232} />
+                  <defs>
+                    <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#b91c1c" />
+                      <stop offset="15%" stopColor="#dc2626" />
+                      <stop offset="35%" stopColor="#f97316" />
+                      <stop offset="50%" stopColor="#eab308" />
+                      <stop offset="65%" stopColor="#84cc16" />
+                      <stop offset="85%" stopColor="#16a34a" />
+                      <stop offset="100%" stopColor="#15803d" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis yAxisId="pct" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={28} ticks={[0, 15, 50, 85, 100]} />
