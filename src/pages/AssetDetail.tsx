@@ -180,6 +180,14 @@ export default function AssetDetail() {
     return w == null ? data.series : data.series.slice(-w);
   }, [data, timeframe]);
 
+  const priceChartData = useMemo(() => {
+    if (!data) return [];
+    const w = TF_WEEKS[timeframe];
+    // Daily data: ~5 trading days per COT week
+    const days = w == null ? null : w * 5;
+    return days == null ? data.priceSeries : data.priceSeries.slice(-days);
+  }, [data, timeframe]);
+
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
   const inkColor = "hsl(var(--chart-ink))";
