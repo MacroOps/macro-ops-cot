@@ -32,12 +32,18 @@ export interface AssetNewsItem {
   divergence_note: string | null;
 }
 
+export interface PricePoint {
+  date: string;
+  price: number;
+}
+
 export interface AssetData {
   symbol: string;
   name: string;
   sector: string;
   exchange: string | null;
   series: AssetSeriesPoint[];
+  priceSeries: PricePoint[];
   news: AssetNewsItem[];
   lastReportDate: string | null;
 }
