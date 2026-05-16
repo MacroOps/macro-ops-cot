@@ -31,10 +31,11 @@ Deno.serve(async (req) => {
       ? body.symbols.map((s: unknown) => String(s).toUpperCase())
       : null;
 
-    const { data: markets, error: mErr } = await sb
+    let marketQuery = sb
       .from("markets").select("id,symbol,yahoo_symbol")
-      .eq("is_active", true).not("yahoo_symbol", "is", null)
-      .or(symbols?.length ? `symbol.in.(${symbols.join(",")})` : "symbol.not.is.null");
+      .eq("is_active", true).not("yahoo_symbol", "is", null);
+    if (symbols?.length) marketQuery = marketQuery.in("symbol", symbols);
+    const { data: markets, error: mErr } = await marketQuery;
     if (mErr) throw mErr;
 
     for (const m of (markets ?? []) as Market[]) {
