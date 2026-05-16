@@ -7,7 +7,7 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface Market { id: string; symbol: string; yahoo_symbol: string | null }
 
-async function fetchYahoo(sym: string, range = "10y") {
+async function fetchYahoo(sym: string, range = "20y") {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=${range}`;
   const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 LovableBot" } });
   if (!r.ok) throw new Error(`Yahoo ${r.status} ${sym}`);
@@ -26,11 +26,16 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const range = (body.range as string) ?? "10y";
+    const range = (body.range as string) ?? "20y";
+    const symbols = Array.isArray(body.symbols)
+      ? body.symbols.map((s: unknown) => String(s).toUpperCase())
+      : null;
 
-    const { data: markets, error: mErr } = await sb
+    let marketQuery = sb
       .from("markets").select("id,symbol,yahoo_symbol")
       .eq("is_active", true).not("yahoo_symbol", "is", null);
+    if (symbols?.length) marketQuery = marketQuery.in("symbol", symbols);
+    const { data: markets, error: mErr } = await marketQuery;
     if (mErr) throw mErr;
 
     for (const m of (markets ?? []) as Market[]) {
