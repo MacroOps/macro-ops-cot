@@ -180,6 +180,14 @@ export default function AssetDetail() {
     return w == null ? data.series : data.series.slice(-w);
   }, [data, timeframe]);
 
+  const priceChartData = useMemo(() => {
+    if (!data) return [];
+    const w = TF_WEEKS[timeframe];
+    // Daily data: ~5 trading days per COT week
+    const days = w == null ? null : w * 5;
+    return days == null ? data.priceSeries : data.priceSeries.slice(-days);
+  }, [data, timeframe]);
+
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
   const inkColor = "hsl(var(--chart-ink))";
@@ -244,7 +252,7 @@ export default function AssetDetail() {
           <div className="lg:col-span-2 space-y-0">
             {/* Price chart (top) */}
             <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures" height={200}>
-              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+              <ComposedChart data={priceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />

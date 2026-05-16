@@ -32,12 +32,18 @@ export interface AssetNewsItem {
   divergence_note: string | null;
 }
 
+export interface PricePoint {
+  date: string;
+  price: number;
+}
+
 export interface AssetData {
   symbol: string;
   name: string;
   sector: string;
   exchange: string | null;
   series: AssetSeriesPoint[];
+  priceSeries: PricePoint[];
   news: AssetNewsItem[];
   lastReportDate: string | null;
 }
@@ -214,12 +220,15 @@ export function useAssetData(symbol: string) {
 
       const lastReportDate = cotDates.length ? cotDates[cotDates.length - 1] : null;
 
+      const priceSeries: PricePoint[] = (prices ?? []).map(p => ({ date: p.observed_on, price: Number(p.close) }));
+
       return {
         symbol: market.symbol,
         name: market.name,
         sector: market.sector,
         exchange: market.exchange,
         series,
+        priceSeries,
         news: (news ?? []) as AssetNewsItem[],
         lastReportDate,
       };
