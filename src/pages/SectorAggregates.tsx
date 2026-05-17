@@ -2,12 +2,28 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "@/components/hud/AppShell";
 import { useSectorData, type SectorRollup } from "@/hooks/useSectorData";
+import { useSectorHistory } from "@/hooks/useSectorHistory";
+import { SECTORS } from "@/lib/mockData";
+import type { Sector } from "@/lib/mockData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
+  LineChart, Line, ReferenceArea,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const fmtInt = new Intl.NumberFormat("en-US");
+
+type HistMetric = "avgNetSpecPct3y" | "avgNetSpecPct6m" | "netContracts" | "crowdedLong" | "crowdedShort";
+const HIST_METRICS: { k: HistMetric; l: string; pct: boolean }[] = [
+  { k: "avgNetSpecPct3y", l: "Avg Net Spec %ile 3Y", pct: true },
+  { k: "avgNetSpecPct6m", l: "Avg Net Spec %ile 6M", pct: true },
+  { k: "netContracts", l: "Sum Net Contracts", pct: false },
+  { k: "crowdedLong", l: "# Crowded Long (≥85)", pct: false },
+  { k: "crowdedShort", l: "# Crowded Short (≤15)", pct: false },
+];
+type HistTF = "2y" | "5y" | "10y" | "all";
+const HIST_WEEKS: Record<HistTF, number | null> = { "2y": 104, "5y": 260, "10y": 520, all: null };
+
 
 function pctColor(p: number): string {
   if (p >= 85) return "hsl(var(--pos-long))";
@@ -30,6 +46,16 @@ const SectorAggregates = () => {
   const { rollups, isLoading, error, reportDate } = useSectorData();
   const [metric, setMetric] = useState<MetricKey>("avgNetSpecPct3y");
   const [heatWindow, setHeatWindow] = useState<"netSpecPct3y" | "netSpecPct6m">("netSpecPct3y");
+  const [histSector, setHistSector] = useState<Sector>("Equities");
+  const [histMetric, setHistMetric] = useState<HistMetric>("avgNetSpecPct3y");
+  const [histTF, setHistTF] = useState<HistTF>("5y");
+  const { data: history, isLoading: histLoading } = useSectorHistory(histSector);
+  const histMeta = HIST_METRICS.find(m => m.k === histMetric)!;
+  const histData = useMemo(() => {
+    const h = history ?? [];
+    const w = HIST_WEEKS[histTF];
+    return w == null ? h : h.slice(-w);
+  }, [history, histTF]);
 
   const isPctMetric = metric === "avgNetSpecPct3y" || metric === "avgNetSpecPct6m";
 
@@ -148,6 +174,120 @@ const SectorAggregates = () => {
                 ))
               : rollups.map(r => <SectorSummaryRow key={r.sector} r={r} />)}
           </div>
+        </div>
+      </div>
+
+      {/* Historical sector positioning */}
+      <div className="hud-chart m-px p-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+            Historical Sector Positioning · {histSector} · {histMeta.l}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 flex-wrap">
+              {SECTORS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setHistSector(s)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
+                    histSector === s
+                      ? "border-chart-ink bg-chart-ink text-chart-surface"
+                      : "border-chart-grid text-chart-axis hover:text-chart-ink"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              {HIST_METRICS.map(o => (
+                <button
+                  key={o.k}
+                  onClick={() => setHistMetric(o.k)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
+                    histMetric === o.k
+                      ? "border-chart-ink bg-chart-ink text-chart-surface"
+                      : "border-chart-grid text-chart-axis hover:text-chart-ink"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              {(["2y", "5y", "10y", "all"] as HistTF[]).map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setHistTF(tf)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
+                    histTF === tf
+                      ? "border-chart-ink bg-chart-ink text-chart-surface"
+                      : "border-chart-grid text-chart-axis hover:text-chart-ink"
+                  }`}
+                >
+                  {tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="h-80">
+          {histLoading ? (
+            <div className="h-full animate-pulse bg-chart-grid/30 rounded-sm" />
+          ) : histData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+              No historical data for this sector.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={histData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke="hsl(var(--chart-grid))" strokeDasharray="2 4" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--chart-axis))" }} tickLine={false} axisLine={{ stroke: "hsl(var(--chart-grid))" }} minTickGap={40} />
+                <YAxis
+                  orientation="right"
+                  tick={{ fontSize: 9, fill: "hsl(var(--chart-axis))" }}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--chart-grid))" }}
+                  width={60}
+                  domain={histMeta.pct ? [0, 100] : ["auto", "auto"]}
+                  ticks={histMeta.pct ? [0, 15, 50, 85, 100] : undefined}
+                  tickFormatter={(v: number) => histMeta.pct ? `${v}` : Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--chart-surface))",
+                    border: "1px solid hsl(var(--chart-grid))",
+                    fontSize: 11,
+                    borderRadius: 2,
+                    color: "hsl(var(--chart-surface-foreground))",
+                  }}
+                  formatter={(v: number) => histMeta.pct ? `${v}` : fmtInt.format(v)}
+                />
+                {histMeta.pct ? (
+                  <>
+                    <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
+                    <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
+                    <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+                  </>
+                ) : (
+                  <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey={histMetric}
+                  stroke="hsl(var(--chart-ink))"
+                  strokeWidth={1.75}
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+        <div className="mt-2 text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+          {histData.length ? `${histData.length} weekly observations · ${histData[0].date} → ${histData[histData.length - 1].date}` : ""}
         </div>
       </div>
 
