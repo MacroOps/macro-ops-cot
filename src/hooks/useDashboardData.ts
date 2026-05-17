@@ -142,7 +142,7 @@ export function useDashboardData() {
           largeSpecPercentile: percentileOf(specSeries, netSpecContracts),
           leveragedFundPercentile: percentileOf(levSeries, netLevContracts),
           netSpecContracts,
-          netSpecPct3y: percentileOf(specSeries, netSpecContracts),
+          netSpecPct3y: percentileOf(last156Spec, netSpecContracts),
           netSpecPct6m: percentileOf(last26Spec, netSpecContracts),
           netLevPct6m,
           netAssetMgrPct6m,
