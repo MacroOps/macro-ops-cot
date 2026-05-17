@@ -121,19 +121,19 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
   return (
     <defs>
       <linearGradient id={PCT_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#b91c1c" />
-        <stop offset="15%" stopColor="#dc2626" />
-        <stop offset="30%" stopColor="#f97316" />
-        <stop offset="45%" stopColor="#eab308" />
-        <stop offset="55%" stopColor="#eab308" />
-        <stop offset="70%" stopColor="#84cc16" />
-        <stop offset="85%" stopColor="#16a34a" />
-        <stop offset="100%" stopColor="#15803d" />
+        <stop offset="0%" stopColor="#7a2818" />
+        <stop offset="15%" stopColor="#a8391f" />
+        <stop offset="30%" stopColor="#c0542e" />
+        <stop offset="45%" stopColor="#c98a3a" />
+        <stop offset="55%" stopColor="#b89048" />
+        <stop offset="70%" stopColor="#8a8a3e" />
+        <stop offset="85%" stopColor="#5e7536" />
+        <stop offset="100%" stopColor="#3f5a2a" />
       </linearGradient>
       <linearGradient id={PCT_FILL_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.22} />
-        <stop offset="50%" stopColor="#eab308" stopOpacity={0.04} />
-        <stop offset="100%" stopColor="#16a34a" stopOpacity={0.22} />
+        <stop offset="0%" stopColor="#a8391f" stopOpacity={0.22} />
+        <stop offset="50%" stopColor="#c98a3a" stopOpacity={0.05} />
+        <stop offset="100%" stopColor="#5e7536" stopOpacity={0.22} />
       </linearGradient>
     </defs>
   );
@@ -298,23 +298,23 @@ export default function AssetDetail() {
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                   <defs>
                     <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#b91c1c" />
-                      <stop offset="15%" stopColor="#dc2626" />
-                      <stop offset="35%" stopColor="#f97316" />
-                      <stop offset="50%" stopColor="#eab308" />
-                      <stop offset="65%" stopColor="#84cc16" />
-                      <stop offset="85%" stopColor="#16a34a" />
-                      <stop offset="100%" stopColor="#15803d" />
+                      <stop offset="0%" stopColor="#7a2818" />
+                      <stop offset="15%" stopColor="#a8391f" />
+                      <stop offset="35%" stopColor="#c0542e" />
+                      <stop offset="50%" stopColor="#c98a3a" />
+                      <stop offset="65%" stopColor="#8a8a3e" />
+                      <stop offset="85%" stopColor="#5e7536" />
+                      <stop offset="100%" stopColor="#3f5a2a" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
                   <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceArea y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
-                  <ReferenceArea y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
-                  <ReferenceLine y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
-                  <ReferenceLine y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
+                  <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
+                  <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+                  <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
                   <Line type="monotone" dataKey={metric} name={METRIC_LABEL[metric]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
                 </ComposedChart>
               ) : (
