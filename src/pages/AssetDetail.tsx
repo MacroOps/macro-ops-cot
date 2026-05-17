@@ -461,6 +461,7 @@ export default function AssetDetail() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {isLoading && <div className="text-xs text-muted-foreground">Loading…</div>}
