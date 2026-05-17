@@ -308,17 +308,6 @@ export default function AssetDetail() {
               )}
             </ChartPanel>
 
-            {/* Open Interest sparkline */}
-            <div className="mt-3" />
-            <ChartPanel title="Open Interest" sub="Total contracts outstanding" height={120}>
-              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                <Line type="monotone" dataKey="openInterest" name="Open Interest" stroke="hsl(var(--chart-ink-muted))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls />
-              </ComposedChart>
-            </ChartPanel>
 
             {/* Forward performance backtest */}
             <div className="hud-chart">
