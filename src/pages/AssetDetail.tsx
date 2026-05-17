@@ -160,6 +160,7 @@ export default function AssetDetail() {
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
+  const [showNews, setShowNews] = useState(true);
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
