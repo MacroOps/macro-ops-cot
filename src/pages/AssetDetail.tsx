@@ -267,7 +267,7 @@ export default function AssetDetail() {
               title={`Positioning · ${METRIC_LABEL[metric]}`}
               sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme" : "Bars: net contracts (weekly)"}
               right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
-              height={240}
+              height={360}
             >
               {isPercentileMetric(metric) ? (
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
