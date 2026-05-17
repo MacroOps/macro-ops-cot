@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PercentileGauge } from "@/components/hud/PercentileGauge";
 import { computeForwardPerformance, useAssetData, type AssetSeriesPoint } from "@/hooks/useAssetData";
@@ -160,6 +160,7 @@ export default function AssetDetail() {
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
+  const [showNews, setShowNews] = useState(true);
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
@@ -183,9 +184,23 @@ export default function AssetDetail() {
   const priceChartData = useMemo(() => {
     const ps = data?.priceSeries ?? [];
     if (!ps.length) return [];
+    // Compute SMAs over the full series, then slice to the visible window.
+    const sma = (period: number) => {
+      const out: (number | null)[] = new Array(ps.length).fill(null);
+      let sum = 0;
+      for (let i = 0; i < ps.length; i++) {
+        sum += ps[i].price;
+        if (i >= period) sum -= ps[i - period].price;
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    };
+    const s50 = sma(50);
+    const s200 = sma(200);
+    const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
     const w = TF_WEEKS[timeframe];
     const days = w == null ? null : w * 5;
-    return days == null ? ps : ps.slice(-days);
+    return days == null ? enriched : enriched.slice(-days);
   }, [data, timeframe]);
 
   const tickColor = "hsl(var(--chart-axis))";
@@ -229,6 +244,14 @@ export default function AssetDetail() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <SegToggle value={timeframe} onChange={(v) => setTimeframe(v as TimeframeKey)} options={tfOptions} />
+            <button
+              onClick={() => setShowNews(s => !s)}
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-surface-foreground"
+              title={showNews ? "Hide news panel" : "Show news panel"}
+            >
+              {showNews ? <PanelRightClose className="h-3 w-3" /> : <PanelRightOpen className="h-3 w-3" />}
+              <span className="hidden sm:inline">{showNews ? "Hide news" : "Show news"}</span>
+            </button>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
               CFTC report · {data?.lastReportDate ?? "—"}
             </div>
@@ -248,8 +271,8 @@ export default function AssetDetail() {
         </div>
 
         {/* Main grid: charts (2/3) + news (1/3) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="lg:col-span-2 space-y-0">
+        <div className={`grid grid-cols-1 gap-3 ${showNews ? "lg:grid-cols-3" : ""}`}>
+          <div className={showNews ? "lg:col-span-2 space-y-0" : "space-y-0"}>
             {/* Price chart (top) */}
             <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340}>
               <ComposedChart data={priceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
@@ -258,6 +281,8 @@ export default function AssetDetail() {
                 <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
                 <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
                 <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
+                <Line type="monotone" dataKey="sma50" name="SMA 50" stroke="hsl(var(--primary))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
+                <Line type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
               </ComposedChart>
             </ChartPanel>
 
@@ -358,6 +383,7 @@ export default function AssetDetail() {
           </div>
 
           {/* News & Divergence sidebar */}
+          {showNews && (
           <div className="lg:col-span-1 space-y-3">
             <div className="hud-panel">
               <div className="flex items-center justify-between px-3 py-2 border-b border-border">
@@ -435,6 +461,7 @@ export default function AssetDetail() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {isLoading && <div className="text-xs text-muted-foreground">Loading…</div>}
