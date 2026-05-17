@@ -17,25 +17,42 @@ export function useDashboardData() {
       threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
       const cutoff = threeYearsAgo.toISOString().slice(0, 10);
 
-      const [{ data: markets, error: mErr }, { data: reports, error: rErr }, { data: prices, error: pErr }] =
-        await Promise.all([
-          supabase.from("markets").select("id,symbol,name,sector").eq("is_active", true),
-          supabase.from("cot_reports")
-            .select("id,market_id,report_date,format")
-            .gte("report_date", cutoff)
-            .order("report_date", { ascending: false })
-            .limit(10000),
-          supabase.from("price_history").select("market_id,observed_on,close")
-            .order("observed_on", { ascending: false })
-            .limit(10000),
-        ]);
-
+      const { data: markets, error: mErr } = await supabase
+        .from("markets").select("id,symbol,name,sector").eq("is_active", true);
       if (mErr) throw mErr;
-      if (rErr) throw rErr;
-      if (pErr) throw pErr;
       if (!markets) return { markets: [], reportDate: null };
 
-      const reportIds = (reports ?? []).map(r => r.id);
+      // Paginated fetch of all COT reports in window (10k cap would truncate history per market).
+      const reports: { id: string; market_id: string; report_date: string; format: string }[] = [];
+      for (let from = 0; from < 200000; from += 1000) {
+        const { data, error } = await supabase
+          .from("cot_reports")
+          .select("id,market_id,report_date,format")
+          .gte("report_date", cutoff)
+          .order("report_date", { ascending: false })
+          .range(from, from + 999);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        reports.push(...data as any);
+        if (data.length < 1000) break;
+      }
+
+      // Paginated price history (most recent ~2 obs per market needed).
+      const prices: { market_id: string; observed_on: string; close: number }[] = [];
+      for (let from = 0; from < 50000; from += 1000) {
+        const { data, error } = await supabase
+          .from("price_history").select("market_id,observed_on,close")
+          .order("observed_on", { ascending: false })
+          .range(from, from + 999);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        prices.push(...data as any);
+        if (data.length < 1000) break;
+        // Stop once we have plenty per market
+        if (prices.length > 20000) break;
+      }
+
+      const reportIds = reports.map(r => r.id);
       const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
       const CHUNK = 200;
       for (let i = 0; i < reportIds.length; i += CHUNK) {
