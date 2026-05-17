@@ -271,8 +271,8 @@ export default function AssetDetail() {
         </div>
 
         {/* Main grid: charts (2/3) + news (1/3) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="lg:col-span-2 space-y-0">
+        <div className={`grid grid-cols-1 gap-3 ${showNews ? "lg:grid-cols-3" : ""}`}>
+          <div className={showNews ? "lg:col-span-2 space-y-0" : "space-y-0"}>
             {/* Price chart (top) */}
             <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340}>
               <ComposedChart data={priceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
