@@ -298,13 +298,13 @@ export default function AssetDetail() {
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                   <defs>
                     <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#b91c1c" />
-                      <stop offset="15%" stopColor="#dc2626" />
-                      <stop offset="35%" stopColor="#f97316" />
-                      <stop offset="50%" stopColor="#eab308" />
-                      <stop offset="65%" stopColor="#84cc16" />
-                      <stop offset="85%" stopColor="#16a34a" />
-                      <stop offset="100%" stopColor="#15803d" />
+                      <stop offset="0%" stopColor="#7a2818" />
+                      <stop offset="15%" stopColor="#a8391f" />
+                      <stop offset="35%" stopColor="#c0542e" />
+                      <stop offset="50%" stopColor="#c98a3a" />
+                      <stop offset="65%" stopColor="#8a8a3e" />
+                      <stop offset="85%" stopColor="#5e7536" />
+                      <stop offset="100%" stopColor="#3f5a2a" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
