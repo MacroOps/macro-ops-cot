@@ -311,10 +311,10 @@ export default function AssetDetail() {
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                   <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
                   <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceArea y1={85} y2={100} fill="#dc2626" fillOpacity={0.06} />
-                  <ReferenceArea y1={0} y2={15} fill="#16a34a" fillOpacity={0.06} />
-                  <ReferenceLine y={85} stroke="#dc2626" strokeDasharray="2 3" strokeOpacity={0.5} />
-                  <ReferenceLine y={15} stroke="#16a34a" strokeDasharray="2 3" strokeOpacity={0.5} />
+                  <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
+                  <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
+                  <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+                  <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
                   <Line type="monotone" dataKey={metric} name={METRIC_LABEL[metric]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
                 </ComposedChart>
               ) : (
