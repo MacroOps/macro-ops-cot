@@ -121,19 +121,19 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
   return (
     <defs>
       <linearGradient id={PCT_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#b91c1c" />
-        <stop offset="15%" stopColor="#dc2626" />
-        <stop offset="30%" stopColor="#f97316" />
-        <stop offset="45%" stopColor="#eab308" />
-        <stop offset="55%" stopColor="#eab308" />
-        <stop offset="70%" stopColor="#84cc16" />
-        <stop offset="85%" stopColor="#16a34a" />
-        <stop offset="100%" stopColor="#15803d" />
+        <stop offset="0%" stopColor="#7a2818" />
+        <stop offset="15%" stopColor="#a8391f" />
+        <stop offset="30%" stopColor="#c0542e" />
+        <stop offset="45%" stopColor="#c98a3a" />
+        <stop offset="55%" stopColor="#b89048" />
+        <stop offset="70%" stopColor="#8a8a3e" />
+        <stop offset="85%" stopColor="#5e7536" />
+        <stop offset="100%" stopColor="#3f5a2a" />
       </linearGradient>
       <linearGradient id={PCT_FILL_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#dc2626" stopOpacity={0.22} />
-        <stop offset="50%" stopColor="#eab308" stopOpacity={0.04} />
-        <stop offset="100%" stopColor="#16a34a" stopOpacity={0.22} />
+        <stop offset="0%" stopColor="#a8391f" stopOpacity={0.22} />
+        <stop offset="50%" stopColor="#c98a3a" stopOpacity={0.05} />
+        <stop offset="100%" stopColor="#5e7536" stopOpacity={0.22} />
       </linearGradient>
     </defs>
   );
