@@ -184,9 +184,23 @@ export default function AssetDetail() {
   const priceChartData = useMemo(() => {
     const ps = data?.priceSeries ?? [];
     if (!ps.length) return [];
+    // Compute SMAs over the full series, then slice to the visible window.
+    const sma = (period: number) => {
+      const out: (number | null)[] = new Array(ps.length).fill(null);
+      let sum = 0;
+      for (let i = 0; i < ps.length; i++) {
+        sum += ps[i].price;
+        if (i >= period) sum -= ps[i - period].price;
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    };
+    const s50 = sma(50);
+    const s200 = sma(200);
+    const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
     const w = TF_WEEKS[timeframe];
     const days = w == null ? null : w * 5;
-    return days == null ? ps : ps.slice(-days);
+    return days == null ? enriched : enriched.slice(-days);
   }, [data, timeframe]);
 
   const tickColor = "hsl(var(--chart-axis))";
