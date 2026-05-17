@@ -64,15 +64,15 @@
     --pos-short: 354 78% 44%;      /* sharper institutional red */
     --pos-neutral: 215 16% 47%;
 
-    /* Chart / data table surface — always white on solar */
-    --chart-surface: 0 0% 100%;
-    --chart-surface-foreground: 215 28% 17%;  /* near-black slate ink */
-    --chart-grid: 215 16% 88%;
-    --chart-axis: 215 16% 40%;
-    --chart-ink: 215 28% 17%;       /* primary line color */
-    --chart-ink-muted: 215 16% 55%;
-    --chart-accent: 214 84% 36%;    /* deep institutional blue */
-    --chart-accent-2: 28 90% 42%;   /* sharp amber */
+    /* Chart / data table surface — warm cream parchment (FT/editorial) */
+    --chart-surface: 40 45% 93%;             /* parchment cream */
+    --chart-surface-foreground: 25 15% 15%;  /* near-black warm ink */
+    --chart-grid: 38 22% 78%;
+    --chart-axis: 28 14% 35%;
+    --chart-ink: 25 15% 14%;                 /* primary line color */
+    --chart-ink-muted: 28 12% 45%;
+    --chart-accent: 12 60% 42%;              /* terracotta red */
+    --chart-accent-2: 40 55% 50%;            /* warm amber */
   }
 
   .dark {
