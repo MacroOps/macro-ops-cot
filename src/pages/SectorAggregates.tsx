@@ -33,6 +33,15 @@ function pctColor(p: number): string {
   return "hsl(var(--pos-short))";
 }
 
+// Continuous heatmap background: cream (neutral 50) → stronger red/green at extremes
+function heatBg(p: number): string {
+  const v = Math.max(0, Math.min(100, p));
+  const intensity = Math.min(1, Math.abs(v - 50) / 50);
+  const weight = 10 + intensity * 80; // 10%..90%
+  const target = v >= 50 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
+  return `color-mix(in oklab, hsl(var(--chart-surface)) ${(100 - weight).toFixed(1)}%, ${target} ${weight.toFixed(1)}%)`;
+}
+
 type MetricKey = "avgNetSpecPct3y" | "avgNetSpecPct6m" | "netContracts" | "wowChange";
 
 const METRIC_OPTIONS: { key: MetricKey; label: string }[] = [
