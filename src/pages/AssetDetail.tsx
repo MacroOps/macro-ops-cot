@@ -244,6 +244,14 @@ export default function AssetDetail() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <SegToggle value={timeframe} onChange={(v) => setTimeframe(v as TimeframeKey)} options={tfOptions} />
+            <button
+              onClick={() => setShowNews(s => !s)}
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors text-muted-foreground hover:text-surface-foreground"
+              title={showNews ? "Hide news panel" : "Show news panel"}
+            >
+              {showNews ? <PanelRightClose className="h-3 w-3" /> : <PanelRightOpen className="h-3 w-3" />}
+              <span className="hidden sm:inline">{showNews ? "Hide news" : "Show news"}</span>
+            </button>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
               CFTC report · {data?.lastReportDate ?? "—"}
             </div>
