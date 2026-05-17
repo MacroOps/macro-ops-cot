@@ -46,6 +46,16 @@ const SectorAggregates = () => {
   const { rollups, isLoading, error, reportDate } = useSectorData();
   const [metric, setMetric] = useState<MetricKey>("avgNetSpecPct3y");
   const [heatWindow, setHeatWindow] = useState<"netSpecPct3y" | "netSpecPct6m">("netSpecPct3y");
+  const [histSector, setHistSector] = useState<Sector>("Equities");
+  const [histMetric, setHistMetric] = useState<HistMetric>("avgNetSpecPct3y");
+  const [histTF, setHistTF] = useState<HistTF>("5y");
+  const { data: history, isLoading: histLoading } = useSectorHistory(histSector);
+  const histMeta = HIST_METRICS.find(m => m.k === histMetric)!;
+  const histData = useMemo(() => {
+    const h = history ?? [];
+    const w = HIST_WEEKS[histTF];
+    return w == null ? h : h.slice(-w);
+  }, [history, histTF]);
 
   const isPctMetric = metric === "avgNetSpecPct3y" || metric === "avgNetSpecPct6m";
 
