@@ -112,6 +112,7 @@ export function useDashboardData() {
         const prevPx = px[1] ?? lastPx;
         const wkPct = prevPx ? ((lastPx - prevPx) / prevPx) * 100 : 0;
 
+        const last156Spec = specSeries.slice(-156);
         const last26Spec = specSeries.slice(-26);
         const prevSpec = specSeries.length > 1 ? specSeries[specSeries.length - 2] : netSpecContracts;
         const wow = netSpecContracts - prevSpec;
