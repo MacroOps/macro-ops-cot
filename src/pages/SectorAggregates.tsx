@@ -33,6 +33,15 @@ function pctColor(p: number): string {
   return "hsl(var(--pos-short))";
 }
 
+// Continuous heatmap background: cream (neutral 50) → stronger red/green at extremes
+function heatBg(p: number): string {
+  const v = Math.max(0, Math.min(100, p));
+  const intensity = Math.min(1, Math.abs(v - 50) / 50);
+  const weight = 10 + intensity * 80; // 10%..90%
+  const target = v >= 50 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
+  return `color-mix(in oklab, hsl(var(--chart-surface)) ${(100 - weight).toFixed(1)}%, ${target} ${weight.toFixed(1)}%)`;
+}
+
 type MetricKey = "avgNetSpecPct3y" | "avgNetSpecPct6m" | "netContracts" | "wowChange";
 
 const METRIC_OPTIONS: { key: MetricKey; label: string }[] = [
@@ -380,34 +389,32 @@ function SectorHeatmapRow({ r, windowKey }: { r: SectorRollup; windowKey: "netSp
         </div>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-1">
-        {r.markets.map(m => {
-          const v = m[windowKey];
-          return (
-            <Link
-              key={m.symbol}
-              to={`/asset/${m.symbol}`}
-              className="group relative rounded-sm px-1.5 py-1 text-center transition-colors"
-              style={{
-                background: pctColor(v) + "26",
-                border: "1px solid hsl(var(--chart-grid))",
-              }}
-              title={`${m.name} · Net Spec ${windowKey === "netSpecPct3y" ? "3Y" : "6M"} ${v}`}
-            >
-              <div
-                className="font-mono text-[10px] font-semibold"
-                style={{ color: "hsl(var(--chart-surface-foreground))" }}
+        {[...r.markets]
+          .sort((a, b) => (b[windowKey] as number) - (a[windowKey] as number))
+          .map(m => {
+            const v = m[windowKey] as number;
+            const bg = heatBg(v);
+            const fg = v >= 70 || v <= 30 ? "#f5f0e6" : "hsl(var(--chart-surface-foreground))";
+            return (
+              <Link
+                key={m.symbol}
+                to={`/asset/${m.symbol}`}
+                className="group relative rounded-sm px-1.5 py-1 text-center transition-colors"
+                style={{
+                  background: bg,
+                  border: "1px solid hsl(var(--chart-grid))",
+                }}
+                title={`${m.name} · Net Spec ${windowKey === "netSpecPct3y" ? "3Y" : "6M"} ${v}`}
               >
-                {m.symbol}
-              </div>
-              <div
-                className="font-mono text-[10px] tabular-nums"
-                style={{ color: pctColor(v) }}
-              >
-                {v}
-              </div>
-            </Link>
-          );
-        })}
+                <div className="font-mono text-[10px] font-semibold" style={{ color: fg }}>
+                  {m.symbol}
+                </div>
+                <div className="font-mono text-[10px] tabular-nums" style={{ color: fg }}>
+                  {v}
+                </div>
+              </Link>
+            );
+          })}
       </div>
     </div>
   );
