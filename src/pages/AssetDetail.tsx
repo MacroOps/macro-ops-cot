@@ -251,11 +251,11 @@ export default function AssetDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-0">
             {/* Price chart (top) */}
-            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures" height={200}>
+            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340}>
               <ComposedChart data={priceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={["auto", "auto"]} tickFormatter={(v) => fmt.format(v)} />
+                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
                 <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
                 <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
               </ComposedChart>
