@@ -112,6 +112,7 @@ export function useDashboardData() {
         const prevPx = px[1] ?? lastPx;
         const wkPct = prevPx ? ((lastPx - prevPx) / prevPx) * 100 : 0;
 
+        const last156Spec = specSeries.slice(-156);
         const last26Spec = specSeries.slice(-26);
         const prevSpec = specSeries.length > 1 ? specSeries[specSeries.length - 2] : netSpecContracts;
         const wow = netSpecContracts - prevSpec;
@@ -141,7 +142,7 @@ export function useDashboardData() {
           largeSpecPercentile: percentileOf(specSeries, netSpecContracts),
           leveragedFundPercentile: percentileOf(levSeries, netLevContracts),
           netSpecContracts,
-          netSpecPct3y: percentileOf(specSeries, netSpecContracts),
+          netSpecPct3y: percentileOf(last156Spec, netSpecContracts),
           netSpecPct6m: percentileOf(last26Spec, netSpecContracts),
           netLevPct6m,
           netAssetMgrPct6m,
