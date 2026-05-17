@@ -2,12 +2,28 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "@/components/hud/AppShell";
 import { useSectorData, type SectorRollup } from "@/hooks/useSectorData";
+import { useSectorHistory } from "@/hooks/useSectorHistory";
+import { SECTORS } from "@/lib/mockData";
+import type { Sector } from "@/lib/mockData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
+  LineChart, Line, ReferenceArea,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const fmtInt = new Intl.NumberFormat("en-US");
+
+type HistMetric = "avgNetSpecPct3y" | "avgNetSpecPct6m" | "netContracts" | "crowdedLong" | "crowdedShort";
+const HIST_METRICS: { k: HistMetric; l: string; pct: boolean }[] = [
+  { k: "avgNetSpecPct3y", l: "Avg Net Spec %ile 3Y", pct: true },
+  { k: "avgNetSpecPct6m", l: "Avg Net Spec %ile 6M", pct: true },
+  { k: "netContracts", l: "Sum Net Contracts", pct: false },
+  { k: "crowdedLong", l: "# Crowded Long (≥85)", pct: false },
+  { k: "crowdedShort", l: "# Crowded Short (≤15)", pct: false },
+];
+type HistTF = "2y" | "5y" | "10y" | "all";
+const HIST_WEEKS: Record<HistTF, number | null> = { "2y": 104, "5y": 260, "10y": 520, all: null };
+
 
 function pctColor(p: number): string {
   if (p >= 85) return "hsl(var(--pos-long))";
