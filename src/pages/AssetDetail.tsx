@@ -161,6 +161,9 @@ export default function AssetDetail() {
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
   const [showNews, setShowNews] = useState(true);
+  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
+    large: true, small: true, commercial: true,
+  });
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
@@ -333,6 +336,46 @@ export default function AssetDetail() {
               )}
             </ChartPanel>
 
+
+
+            {/* Disaggregated trader categories */}
+            <div className="mt-3" />
+            <ChartPanel
+              title="Disaggregated Net Positioning"
+              sub="Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
+              right={
+                <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
+                  {([
+                    { k: "large" as const, l: "Large Specs", c: "hsl(var(--pos-long))" },
+                    { k: "small" as const, l: "Small Specs", c: "hsl(var(--primary))" },
+                    { k: "commercial" as const, l: "Commercials", c: "hsl(var(--pos-short))" },
+                  ]).map(o => (
+                    <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
+                      <input
+                        type="checkbox"
+                        checked={disagg[o.k]}
+                        onChange={(e) => setDisagg(s => ({ ...s, [o.k]: e.target.checked }))}
+                        className="accent-current h-3 w-3"
+                      />
+                      <span className="inline-block h-1.5 w-3" style={{ background: o.c }} />
+                      {o.l}
+                    </label>
+                  ))}
+                </div>
+              }
+              height={300}
+            >
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+                <ReferenceLine y={0} stroke={gridColor} />
+                {disagg.large && <Line type="monotone" dataKey="netLargeSpec" name="Large Specs" stroke="hsl(var(--pos-long))" strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />}
+                {disagg.small && <Line type="monotone" dataKey="netSmallSpec" name="Small Specs" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />}
+                {disagg.commercial && <Line type="monotone" dataKey="netCommercial" name="Commercials" stroke="hsl(var(--pos-short))" strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />}
+              </ComposedChart>
+            </ChartPanel>
 
             {/* Forward performance backtest */}
             <div className="hud-chart">
