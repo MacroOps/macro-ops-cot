@@ -371,9 +371,9 @@ export default function AssetDetail() {
                 <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
                 <ReferenceLine y={0} stroke={gridColor} />
-                {disagg.large && <Line type="monotone" dataKey="netLargeSpec" name="Large Specs" stroke="hsl(var(--pos-long))" strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />}
-                {disagg.small && <Line type="monotone" dataKey="netSmallSpec" name="Small Specs" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />}
-                {disagg.commercial && <Line type="monotone" dataKey="netCommercial" name="Commercials" stroke="hsl(var(--pos-short))" strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />}
+                {disagg.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(var(--pos-long))" isAnimationActive={false} />}
+                {disagg.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(var(--primary))" isAnimationActive={false} />}
+                {disagg.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(var(--pos-short))" isAnimationActive={false} />}
               </ComposedChart>
             </ChartPanel>
 
