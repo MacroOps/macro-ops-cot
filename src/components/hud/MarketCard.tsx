@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDownRight, Star } from "lucide-react";
 import { PercentileGauge } from "./PercentileGauge";
+import { ExtremityBadge } from "./ExtremityBadge";
 import type { MarketSnapshot } from "@/lib/mockData";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useAuth } from "@/hooks/useAuth";
