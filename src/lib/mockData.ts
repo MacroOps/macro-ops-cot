@@ -30,6 +30,26 @@ export interface MarketSnapshot {
   netAssetMgrPct6m?: number | null;
   netContracts: number;            // legacy alias = netSpecContracts
   wowChange: number;
+  // Composite extremity score in [-100, +100]. Positive = crowded long.
+  extremityScore: number;
+  extremityBand: ExtremityBand;
+}
+
+export type ExtremityBand =
+  | "euphoric"
+  | "capitulation"
+  | "crowded-long"
+  | "crowded-short"
+  | "leaning-long"
+  | "leaning-short"
+  | "neutral";
+
+export function bandOf(score: number): ExtremityBand {
+  const a = Math.abs(score);
+  if (a >= 75) return score >= 0 ? "euphoric" : "capitulation";
+  if (a >= 50) return score >= 0 ? "crowded-long" : "crowded-short";
+  if (a >= 25) return score >= 0 ? "leaning-long" : "leaning-short";
+  return "neutral";
 }
 
 const MARKETS: any[] = [
