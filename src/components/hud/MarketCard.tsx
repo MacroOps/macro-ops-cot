@@ -61,6 +61,7 @@ export function MarketCard({ m }: { m: MarketSnapshot }) {
       </div>
 
       <div className="hud-chart p-2.5 flex flex-col gap-2">
+        <ExtremityBadge score={m.extremityScore} band={m.extremityBand} />
         <PercentileGauge value={m.netSpecPct3y} label="Net Specs · 3Y" emphasize />
         <PercentileGauge value={m.netSpecPct6m} label="Net Specs · 6M" />
         {m.netLevPct6m != null && (
