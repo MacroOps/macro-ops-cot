@@ -1,6 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { MarketSnapshot, Sector } from "@/lib/mockData";
+import { bandOf, type MarketSnapshot, type Sector } from "@/lib/mockData";
+
+// Weights renormalized from 0.40 / 0.25 / 0.20 so score stays in [-100, +100].
+const W6M = 0.40 / 0.85;
+const W3Y = 0.25 / 0.85;
+const WWOW = 0.20 / 0.85;
+
+function stddev(arr: number[]): number {
+  if (arr.length < 2) return 0;
+  const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+  const v = arr.reduce((a, b) => a + (b - mean) ** 2, 0) / arr.length;
+  return Math.sqrt(v);
+}
 
 function percentileOf(values: number[], target: number) {
   if (!values.length) return 50;
