@@ -161,6 +161,9 @@ export default function AssetDetail() {
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
   const [showNews, setShowNews] = useState(true);
+  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
+    large: true, small: true, commercial: true,
+  });
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
