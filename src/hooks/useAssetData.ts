@@ -205,6 +205,8 @@ export function useAssetData(symbol: string) {
           date: d,
           price: priceOn(d),
           netLargeSpec: e.netLarge,
+          netSmallSpec: e.netSmall,
+          netCommercial: e.netCommercial,
           netLevFunds: e.netLev,
           netAssetMgr: e.netAssetMgr,
           netSpec: e.netLarge + e.netSmall,
