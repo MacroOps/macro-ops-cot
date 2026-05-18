@@ -129,14 +129,15 @@ export function useAssetData(symbol: string) {
       }
 
       // Build per-date map: legacy + disagg + tff merged
-      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; netAssetMgr: number; oi: number; hasLegacy: boolean; hasLev: boolean; hasAssetMgr: boolean }>();
+      const byDate = new Map<string, { netLarge: number; netSmall: number; netCommercial: number; netLev: number; netAssetMgr: number; oi: number; hasLegacy: boolean; hasLev: boolean; hasAssetMgr: boolean }>();
       for (const r of reports ?? []) {
         const cats = snapMap.get(r.id);
         if (!cats) continue;
-        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, netAssetMgr: 0, oi: 0, hasLegacy: false, hasLev: false, hasAssetMgr: false };
+        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netCommercial: 0, netLev: 0, netAssetMgr: 0, oi: 0, hasLegacy: false, hasLev: false, hasAssetMgr: false };
         if (r.format === "legacy") {
           e.netLarge = cats.get("non_commercial") ?? 0;
           e.netSmall = cats.get("non_reportable") ?? 0;
+          e.netCommercial = cats.get("commercial") ?? 0;
           e.hasLegacy = true;
         } else if (r.format === "disaggregated") {
           const mm = cats.get("managed_money");
