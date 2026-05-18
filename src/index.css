@@ -202,3 +202,13 @@
     border-color: hsl(var(--chart-grid));
   }
 }
+
+@layer utilities {
+  @keyframes extremity-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  .animate-extremity-pulse {
+    animation: extremity-pulse 1.8s ease-in-out infinite;
+  }
+}
