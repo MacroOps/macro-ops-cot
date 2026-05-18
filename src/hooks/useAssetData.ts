@@ -5,6 +5,8 @@ export interface AssetSeriesPoint {
   date: string;
   price: number;
   netLargeSpec: number;
+  netSmallSpec: number;
+  netCommercial: number;
   netLevFunds: number;
   netAssetMgr: number;
   netSpec: number;
