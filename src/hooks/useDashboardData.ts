@@ -146,6 +146,22 @@ export function useDashboardData() {
         const prevSpec = specSeries.length > 1 ? specSeries[specSeries.length - 2] : netSpecContracts;
         const wow = netSpecContracts - prevSpec;
 
+        // Weekly deltas for fever-pitch z-score
+        const deltas: number[] = [];
+        for (let i = 1; i < specSeries.length; i++) deltas.push(specSeries[i] - specSeries[i - 1]);
+        const recentDeltas = deltas.slice(-26);
+        const sd = stddev(recentDeltas);
+        let wowZ = 0;
+        if (sd > 0) wowZ = Math.max(-100, Math.min(100, (wow / sd) * 33.3));
+
+        const netSpecPct3y = percentileOf(last156Spec, netSpecContracts);
+        const netSpecPct6m = percentileOf(last26Spec, netSpecContracts);
+        const s3y = (netSpecPct3y - 50) * 2;
+        const s6m = (netSpecPct6m - 50) * 2;
+        const extremityScore = Math.round(W6M * s6m + W3Y * s3y + WWOW * wowZ);
+        const extremityBand = bandOf(extremityScore);
+
+
         const tff = tffByMarket.get(m.id) ?? [];
         const tff26 = tff.slice(-26);
         const lastTff = tff[tff.length - 1];
