@@ -187,12 +187,14 @@ export function useDashboardData() {
           largeSpecPercentile: percentileOf(specSeries, netSpecContracts),
           leveragedFundPercentile: percentileOf(levSeries, netLevContracts),
           netSpecContracts,
-          netSpecPct3y: percentileOf(last156Spec, netSpecContracts),
-          netSpecPct6m: percentileOf(last26Spec, netSpecContracts),
+          netSpecPct3y,
+          netSpecPct6m,
           netLevPct6m,
           netAssetMgrPct6m,
           netContracts: netSpecContracts,
           wowChange: wow,
+          extremityScore,
+          extremityBand,
         };
       });
 
