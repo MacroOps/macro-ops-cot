@@ -457,6 +457,53 @@ export default function AssetDetail() {
                 </>
               )}
             </div>
+
+            {/* Forward performance backtest */}
+            <div className="hud-chart">
+              <div className="hud-chart-header flex items-start justify-between gap-2 px-3 py-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                    Forward Performance
+                  </span>
+                  <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+                    Bucket {Math.max(0, currentPct - 10)}–{Math.min(100, currentPct + 10)} · {windowLabel}
+                  </span>
+                </div>
+                <SegToggle
+                  value={pctWindow}
+                  onChange={(v) => setPctWindow(v as WindowKey)}
+                  options={[
+                    { k: "netSpecPct6m" as const, l: "6M" },
+                    { k: "netSpecPct3y" as const, l: "3Y" },
+                  ]}
+                />
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-y divide-chart-grid">
+                {forward.map(f => {
+                  const pos = f.mean >= 0;
+                  return (
+                    <div key={f.horizon} className="p-2.5 flex flex-col gap-0.5">
+                      <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                        {f.horizon}w forward
+                      </span>
+                      <div
+                        className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums"
+                        style={{ color: pos ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
+                      >
+                        {pos ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                        {pos ? "+" : ""}{f.mean.toFixed(2)}%
+                      </div>
+                      <div className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+                        Hit {f.hitRate.toFixed(0)}% · n={f.count}
+                      </div>
+                    </div>
+                  );
+                })}
+                {!forward.length && (
+                  <div className="p-3 text-xs text-muted-foreground col-span-2">Insufficient history.</div>
+                )}
+              </div>
+            </div>
           </div>
           )}
         </div>
