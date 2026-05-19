@@ -365,15 +365,15 @@ export default function AssetDetail() {
               }
               height={300}
             >
-              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" barCategoryGap={1} barGap={0}>
                 <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
                 <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                 <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                <ReferenceLine y={0} stroke={gridColor} />
-                {disagg.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(var(--pos-long))" isAnimationActive={false} />}
-                {disagg.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(var(--primary))" isAnimationActive={false} />}
-                {disagg.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(var(--pos-short))" isAnimationActive={false} />}
+                <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
+                {disagg.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+                {disagg.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+                {disagg.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(354 82% 48%)" stroke="hsl(354 88% 35%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
               </ComposedChart>
             </ChartPanel>
 
