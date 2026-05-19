@@ -20,7 +20,6 @@ import { AppShell } from "@/components/hud/AppShell";
 import { PercentileGauge } from "@/components/hud/PercentileGauge";
 import { computeForwardPerformance, useAssetData, type AssetSeriesPoint } from "@/hooks/useAssetData";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat("en-US");
