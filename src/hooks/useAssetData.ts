@@ -11,6 +11,9 @@ export interface AssetSeriesPoint {
   netAssetMgr: number;
   netSpec: number;
   largeSpecPct: number;
+  largeSpecPct6m: number;
+  smallSpecPct: number;
+  smallSpecPct6m: number;
   levFundPct: number;
   levFundPct6m: number;
   assetMgrPct: number;
