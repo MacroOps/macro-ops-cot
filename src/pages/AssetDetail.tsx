@@ -346,9 +346,9 @@ export default function AssetDetail() {
               right={
                 <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
                   {([
-                    { k: "large" as const, l: "Large Specs", c: "hsl(var(--pos-long))" },
-                    { k: "small" as const, l: "Small Specs", c: "hsl(var(--primary))" },
-                    { k: "commercial" as const, l: "Commercials", c: "hsl(var(--pos-short))" },
+                    { k: "large" as const, l: "Large Specs", c: "hsl(152 85% 32%)" },
+                    { k: "small" as const, l: "Small Specs", c: "hsl(38 95% 50%)" },
+                    { k: "commercial" as const, l: "Commercials", c: "hsl(354 82% 48%)" },
                   ]).map(o => (
                     <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
                       <input
