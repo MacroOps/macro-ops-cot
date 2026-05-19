@@ -232,6 +232,8 @@ export default function AssetDetail() {
     { k: "netSpec", l: "Net Spec" },
     { k: "netSpecPct6m", l: "Spec 6M" },
     { k: "netSpecPct3y", l: "Spec 3Y" },
+    { k: "largeSmallPct6m", l: "L+S 6M" },
+    { k: "largeSmallPct3y", l: "L+S 3Y" },
     { k: "levFundPct6m", l: "Lev 6M", disabled: !hasLev },
     { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
