@@ -167,13 +167,17 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
   assetMgrPct: "Asset Mgrs %ile · 3Y",
+  extremity: "Extremity Score (blended)",
 };
 
 function isPercentileMetric(m: MetricKey) {
-  return m !== "netSpec";
+  return m !== "netSpec" && m !== "extremity";
 }
 function isDualMetric(m: MetricKey) {
   return m === "largeSmallPct6m" || m === "largeSmallPct3y";
+}
+function isExtremityMetric(m: MetricKey) {
+  return m === "extremity";
 }
 
 export default function AssetDetail() {
