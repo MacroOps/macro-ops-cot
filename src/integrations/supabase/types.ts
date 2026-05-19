@@ -300,7 +300,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
+      get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
     }
     Enums: {
       market_sector:

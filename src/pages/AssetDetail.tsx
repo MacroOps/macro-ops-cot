@@ -15,10 +15,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper, PanelRightClose, PanelRightOpen, Maximize2 } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PercentileGauge } from "@/components/hud/PercentileGauge";
 import { computeForwardPerformance, useAssetData, type AssetSeriesPoint } from "@/hooks/useAssetData";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat("en-US");
@@ -59,12 +60,14 @@ function ChartPanel({
   right,
   children,
   height = 200,
+  onExpand,
 }: {
   title: string;
   sub?: string;
   right?: React.ReactNode;
   children: React.ReactNode;
   height?: number;
+  onExpand?: () => void;
 }) {
   return (
     <div className="hud-chart flex flex-col">
@@ -75,7 +78,18 @@ function ChartPanel({
           </span>
           {sub && <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
         </div>
-        {right}
+        <div className="flex items-center gap-2">
+          {right}
+          {onExpand && (
+            <button
+              onClick={onExpand}
+              title="Expand"
+              className="text-[10px] uppercase tracking-wider px-1.5 py-1 border border-chart-grid rounded-sm text-chart-axis hover:text-chart-ink hover:border-chart-ink transition-colors"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="p-1.5" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">{children as any}</ResponsiveContainer>
@@ -83,6 +97,7 @@ function ChartPanel({
     </div>
   );
 }
+
 
 function SegToggle({ value, onChange, options }: {
   value: string;
@@ -164,6 +179,19 @@ export default function AssetDetail() {
   const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
     large: true, small: true, commercial: true,
   });
+  const [expanded, setExpanded] = useState<null | "price" | "positioning" | "disagg">(null);
+  const [expTimeframe, setExpTimeframe] = useState<TimeframeKey>("2y");
+  const [expMetric, setExpMetric] = useState<MetricKey>("netSpecPct3y");
+  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
+    large: true, small: true, commercial: true,
+  });
+  function openExpand(which: "price" | "positioning" | "disagg") {
+    setExpTimeframe(timeframe);
+    setExpMetric(metric);
+    setExpDisagg(disagg);
+    setExpanded(which);
+  }
+
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
@@ -178,33 +206,7 @@ export default function AssetDetail() {
     [data, pctWindow]
   );
 
-  const chartData: AssetSeriesPoint[] = useMemo(() => {
-    if (!data) return [];
-    const w = TF_WEEKS[timeframe];
-    return w == null ? data.series : data.series.slice(-w);
-  }, [data, timeframe]);
 
-  const priceChartData = useMemo(() => {
-    const ps = data?.priceSeries ?? [];
-    if (!ps.length) return [];
-    // Compute SMAs over the full series, then slice to the visible window.
-    const sma = (period: number) => {
-      const out: (number | null)[] = new Array(ps.length).fill(null);
-      let sum = 0;
-      for (let i = 0; i < ps.length; i++) {
-        sum += ps[i].price;
-        if (i >= period) sum -= ps[i - period].price;
-        if (i >= period - 1) out[i] = sum / period;
-      }
-      return out;
-    };
-    const s50 = sma(50);
-    const s200 = sma(200);
-    const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
-    const w = TF_WEEKS[timeframe];
-    const days = w == null ? null : w * 5;
-    return days == null ? enriched : enriched.slice(-days);
-  }, [data, timeframe]);
 
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
@@ -228,6 +230,127 @@ export default function AssetDetail() {
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
     { k: "assetMgrPct", l: "AM 3Y", disabled: !hasAssetMgr },
   ];
+
+  function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
+    if (!data) return [];
+    const w = TF_WEEKS[tf];
+    return w == null ? data.series : data.series.slice(-w);
+  }
+  function pricesByTf(tf: TimeframeKey) {
+    const ps = data?.priceSeries ?? [];
+    if (!ps.length) return [];
+    const sma = (period: number) => {
+      const out: (number | null)[] = new Array(ps.length).fill(null);
+      let sum = 0;
+      for (let i = 0; i < ps.length; i++) {
+        sum += ps[i].price;
+        if (i >= period) sum -= ps[i - period].price;
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    };
+    const s50 = sma(50);
+    const s200 = sma(200);
+    const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
+    const w = TF_WEEKS[tf];
+    const days = w == null ? null : w * 5;
+    return days == null ? enriched : enriched.slice(-days);
+  }
+
+  function renderPriceChart(tf: TimeframeKey) {
+    return (
+      <ComposedChart data={pricesByTf(tf)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+        <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
+        <Line type="monotone" dataKey="sma50" name="SMA 50" stroke="hsl(var(--primary))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
+        <Line type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
+      </ComposedChart>
+    );
+  }
+
+  function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
+    const cd = sliceByTf(tf);
+    if (isPercentileMetric(m)) {
+      return (
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+          <defs>
+            <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#7a2818" />
+              <stop offset="15%" stopColor="#a8391f" />
+              <stop offset="35%" stopColor="#c0542e" />
+              <stop offset="50%" stopColor="#c98a3a" />
+              <stop offset="65%" stopColor="#8a8a3e" />
+              <stop offset="85%" stopColor="#5e7536" />
+              <stop offset="100%" stopColor="#3f5a2a" />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
+          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
+          <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
+          <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <Line type="monotone" dataKey={m} name={METRIC_LABEL[m]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
+        </ComposedChart>
+      );
+    }
+    return (
+      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+        <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        <ReferenceLine y={0} stroke={gridColor} />
+        <Bar dataKey="netSpec" name="Net Specs" barSize={tf === "all" ? 1 : tf === "10y" ? 1.5 : 3} isAnimationActive={false}>
+          {cd.map((d, i) => (
+            <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
+          ))}
+        </Bar>
+      </ComposedChart>
+    );
+  }
+
+  function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean }) {
+    const cd = sliceByTf(tf);
+    return (
+      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" barCategoryGap={1} barGap={0}>
+        <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
+        {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+        {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+        {dis.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(354 82% 48%)" stroke="hsl(354 88% 35%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+      </ComposedChart>
+    );
+  }
+
+  const disaggToggles = (state: typeof disagg, setState: (s: typeof disagg) => void) => (
+    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
+      {([
+        { k: "large" as const, l: "Large Specs", c: "hsl(152 85% 32%)" },
+        { k: "small" as const, l: "Small Specs", c: "hsl(38 95% 50%)" },
+        { k: "commercial" as const, l: "Commercials", c: "hsl(354 82% 48%)" },
+      ]).map(o => (
+        <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
+          <input
+            type="checkbox"
+            checked={state[o.k]}
+            onChange={(e) => setState({ ...state, [o.k]: e.target.checked })}
+            className="accent-current h-3 w-3"
+          />
+          <span className="inline-block h-1.5 w-3" style={{ background: o.c }} />
+          {o.l}
+        </label>
+      ))}
+    </div>
+  );
 
   return (
     <AppShell title={`Asset · ${symbol}`}>
@@ -289,16 +412,8 @@ export default function AssetDetail() {
         <div className={`grid grid-cols-1 gap-3 ${showNews ? "lg:grid-cols-3" : ""}`}>
           <div className={showNews ? "lg:col-span-2 space-y-0" : "space-y-0"}>
             {/* Price chart (top) */}
-            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340}>
-              <ComposedChart data={priceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
-                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
-                <Line type="monotone" dataKey="sma50" name="SMA 50" stroke="hsl(var(--primary))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
-                <Line type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
-              </ComposedChart>
+            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340} onExpand={() => openExpand("price")}>
+              {renderPriceChart(timeframe)}
             </ChartPanel>
 
             {/* Positioning chart with metric toggle */}
@@ -308,86 +423,23 @@ export default function AssetDetail() {
               sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme" : "Bars: net contracts (weekly)"}
               right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
               height={360}
+              onExpand={() => openExpand("positioning")}
             >
-              {isPercentileMetric(metric) ? (
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
-                  <defs>
-                    <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7a2818" />
-                      <stop offset="15%" stopColor="#a8391f" />
-                      <stop offset="35%" stopColor="#c0542e" />
-                      <stop offset="50%" stopColor="#c98a3a" />
-                      <stop offset="65%" stopColor="#8a8a3e" />
-                      <stop offset="85%" stopColor="#5e7536" />
-                      <stop offset="100%" stopColor="#3f5a2a" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                  <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
-                  <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
-                  <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
-                  <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-                  <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
-                  <Line type="monotone" dataKey={metric} name={METRIC_LABEL[metric]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
-                </ComposedChart>
-              ) : (
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
-                  <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                  <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                  <ReferenceLine y={0} stroke={gridColor} />
-                  <Bar dataKey="netSpec" name="Net Specs" barSize={timeframe === "all" ? 1 : timeframe === "10y" ? 1.5 : 3} isAnimationActive={false}>
-                    {chartData.map((d, i) => (
-                      <Cell key={i} fill={d.netSpec >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} fillOpacity={0.6} />
-                    ))}
-                  </Bar>
-                </ComposedChart>
-              )}
+              {renderPositioningChart(timeframe, metric)}
             </ChartPanel>
-
-
 
             {/* Disaggregated trader categories */}
             <div className="mt-3" />
             <ChartPanel
               title="Disaggregated Net Positioning"
               sub="Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
-              right={
-                <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
-                  {([
-                    { k: "large" as const, l: "Large Specs", c: "hsl(152 85% 32%)" },
-                    { k: "small" as const, l: "Small Specs", c: "hsl(38 95% 50%)" },
-                    { k: "commercial" as const, l: "Commercials", c: "hsl(354 82% 48%)" },
-                  ]).map(o => (
-                    <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
-                      <input
-                        type="checkbox"
-                        checked={disagg[o.k]}
-                        onChange={(e) => setDisagg(s => ({ ...s, [o.k]: e.target.checked }))}
-                        className="accent-current h-3 w-3"
-                      />
-                      <span className="inline-block h-1.5 w-3" style={{ background: o.c }} />
-                      {o.l}
-                    </label>
-                  ))}
-                </div>
-              }
+              right={disaggToggles(disagg, (s) => setDisagg(s))}
               height={300}
+              onExpand={() => openExpand("disagg")}
             >
-              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" barCategoryGap={1} barGap={0}>
-                <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-                <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-                <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
-                {disagg.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
-                {disagg.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
-                {disagg.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(354 82% 48%)" stroke="hsl(354 88% 35%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
-              </ComposedChart>
+              {renderDisaggChart(timeframe, disagg)}
             </ChartPanel>
+
 
           </div>
 
@@ -524,6 +576,44 @@ export default function AssetDetail() {
         {error && <div className="text-xs text-destructive">Failed to load asset data.</div>}
         {!isLoading && !data && <div className="text-xs text-muted-foreground">Asset not found.</div>}
       </div>
+
+      <Dialog open={expanded !== null} onOpenChange={(o) => !o && setExpanded(null)}>
+        <DialogContent className="max-w-[96vw] w-[96vw] h-[92vh] p-0 flex flex-col bg-background border-border">
+          <div className="sr-only">
+            <DialogTitle>
+              {expanded === "price" ? `${symbol} Price` : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
+            </DialogTitle>
+            <DialogDescription>Expanded chart view with timeframe and metric controls.</DialogDescription>
+          </div>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="font-mono text-sm font-semibold text-surface-foreground">{symbol}</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                {expanded === "price" ? "Price" : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <SegToggle value={expTimeframe} onChange={(v) => setExpTimeframe(v as TimeframeKey)} options={tfOptions} />
+              {expanded === "positioning" && (
+                <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+              )}
+              {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 p-3">
+            <ResponsiveContainer width="100%" height="100%">
+              {expanded === "price"
+                ? renderPriceChart(expTimeframe)
+                : expanded === "positioning"
+                ? renderPositioningChart(expTimeframe, expMetric)
+                : expanded === "disagg"
+                ? renderDisaggChart(expTimeframe, expDisagg)
+                : <div />}
+            </ResponsiveContainer>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+

@@ -66,6 +66,9 @@ function percentileWindow(values: number[], window: number): number[] {
 export function useAssetData(symbol: string) {
   return useQuery({
     queryKey: ["asset-data", symbol],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<AssetData | null> => {
       const { data: market, error: mErr } = await supabase
         .from("markets")
@@ -75,44 +78,9 @@ export function useAssetData(symbol: string) {
       if (mErr) throw mErr;
       if (!market) return null;
 
-      const [reports, pricesAll, { data: news }] = await Promise.all([
-        (async () => {
-          // Supabase caps responses at 1000 rows; paginate to get full CoT history.
-          // CL already has >1000 report rows across legacy + disaggregated formats.
-          const PAGE = 1000;
-          const out: { id: string; report_date: string; format: string; open_interest: number | null }[] = [];
-          for (let from = 0; from < 20000; from += PAGE) {
-            const { data, error } = await supabase
-              .from("cot_reports")
-              .select("id,report_date,format,open_interest")
-              .eq("market_id", market.id)
-              .order("report_date", { ascending: true })
-              .range(from, from + PAGE - 1);
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            out.push(...data);
-            if (data.length < PAGE) break;
-          }
-          return out;
-        })(),
-        (async () => {
-          // Supabase caps responses at 1000 rows; paginate to get full price history.
-          const PAGE = 1000;
-          const out: { close: number; observed_on: string }[] = [];
-          for (let from = 0; from < 20000; from += PAGE) {
-            const { data, error } = await supabase
-              .from("price_history")
-              .select("close,observed_on")
-              .eq("market_id", market.id)
-              .order("observed_on", { ascending: true })
-              .range(from, from + PAGE - 1);
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            out.push(...data.map(p => ({ close: Number(p.close), observed_on: p.observed_on })));
-            if (data.length < PAGE) break;
-          }
-          return out;
-        })(),
+      const [cotRes, priceRes, newsRes] = await Promise.all([
+        supabase.rpc("get_asset_cot_series", { p_market_id: market.id }),
+        supabase.rpc("get_asset_price_series", { p_market_id: market.id }),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
@@ -120,102 +88,39 @@ export function useAssetData(symbol: string) {
           .order("published_at", { ascending: false })
           .limit(20),
       ]);
-      const prices = pricesAll;
+      if (cotRes.error) throw cotRes.error;
+      if (priceRes.error) throw priceRes.error;
 
-      const reportIds = (reports ?? []).map(r => r.id);
-      const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
-      // NOTE: Supabase caps responses at 1000 rows. Each report can have up to ~11 snapshot
-      // rows (legacy + disagg + tff categories), so we keep chunk size small AND paginate
-      // within each chunk until exhausted. Previously this silently truncated recent data.
-      const CHUNK = 100;
-      const PAGE = 1000;
-      for (let i = 0; i < reportIds.length; i += CHUNK) {
-        const chunk = reportIds.slice(i, i + CHUNK);
-        let from = 0;
-        // Loop pages until we get fewer than PAGE rows back.
-        // Hard ceiling protects against runaway loops.
-        for (let guard = 0; guard < 20; guard++) {
-          const { data, error } = await supabase
-            .from("positioning_snapshots")
-            .select("report_id,category,net_contracts")
-            .in("report_id", chunk)
-            .range(from, from + PAGE - 1);
-          if (error) throw error;
-          if (!data || data.length === 0) break;
-          snapRows.push(...data);
-          if (data.length < PAGE) break;
-          from += PAGE;
-        }
-      }
-      const snapMap = new Map<string, Map<string, number>>();
-      for (const s of snapRows) {
-        let m = snapMap.get(s.report_id);
-        if (!m) { m = new Map(); snapMap.set(s.report_id, m); }
-        m.set(s.category, s.net_contracts ?? 0);
-      }
+      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nam: number; hl: boolean; hlv: boolean; ham: boolean };
+      type PriceRow = { d: string; c: number | string };
+      const cotRows = ((cotRes.data ?? []) as CotRow[]);
+      const priceRows = ((priceRes.data ?? []) as PriceRow[]);
+      const news = newsRes.data;
 
-      // Build per-date map: legacy + disagg + tff merged
-      const byDate = new Map<string, { netLarge: number; netSmall: number; netCommercial: number; netLev: number; netAssetMgr: number; oi: number; hasLegacy: boolean; hasLev: boolean; hasAssetMgr: boolean }>();
-      for (const r of reports ?? []) {
-        const cats = snapMap.get(r.id);
-        if (!cats) continue;
-        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netCommercial: 0, netLev: 0, netAssetMgr: 0, oi: 0, hasLegacy: false, hasLev: false, hasAssetMgr: false };
-        if (r.format === "legacy") {
-          e.netLarge = cats.get("non_commercial") ?? 0;
-          e.netSmall = cats.get("non_reportable") ?? 0;
-          e.netCommercial = cats.get("commercial") ?? 0;
-          e.hasLegacy = true;
-        } else if (r.format === "disaggregated") {
-          const mm = cats.get("managed_money");
-          if (mm != null && !e.hasLev) {
-            e.netLev = mm;
-            e.hasLev = true;
-          }
-        } else if (r.format === "tff") {
-          const lev = cats.get("leveraged_fund");
-          if (lev != null) {
-            e.netLev = lev;
-            e.hasLev = true;
-          }
-          const am = cats.get("asset_manager");
-          if (am != null) {
-            e.netAssetMgr = am;
-            e.hasAssetMgr = true;
-          }
-        }
-        e.oi = Math.max(e.oi, r.open_interest ?? 0);
-        byDate.set(r.report_date, e);
-      }
-
-      const cotDates = Array.from(byDate.entries())
-        .filter(([, e]) => e.hasLegacy)
-        .map(([date]) => date)
-        .sort();
       const priceByDate = new Map<string, number>();
-      for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
-
-      const priceDatesSorted = (prices ?? []).map(p => p.observed_on);
+      const priceDatesSorted: string[] = [];
+      const priceCloses: number[] = [];
+      for (const p of priceRows) {
+        const c = Number(p.c);
+        priceByDate.set(p.d, c);
+        priceDatesSorted.push(p.d);
+        priceCloses.push(c);
+      }
       function priceOn(date: string): number {
-        if (priceByDate.has(date)) return priceByDate.get(date)!;
+        const v = priceByDate.get(date);
+        if (v != null) return v;
         let lo = 0, hi = priceDatesSorted.length - 1, best = 0;
         while (lo <= hi) {
           const mid = (lo + hi) >> 1;
           if (priceDatesSorted[mid] <= date) { best = mid; lo = mid + 1; } else hi = mid - 1;
         }
-        return priceDatesSorted.length ? Number((prices ?? [])[best].close) : 0;
+        return priceCloses.length ? priceCloses[best] : 0;
       }
 
-      const netLargeArr: number[] = [];
-      const netSpecArr: number[] = [];
-      const netLevArr: number[] = [];
-      const netAssetMgrArr: number[] = [];
-      for (const d of cotDates) {
-        const e = byDate.get(d)!;
-        netLargeArr.push(e.netLarge);
-        netSpecArr.push(e.netLarge + e.netSmall);
-        netLevArr.push(e.netLev);
-        netAssetMgrArr.push(e.netAssetMgr);
-      }
+      const netLargeArr = cotRows.map(r => r.nl);
+      const netSpecArr = cotRows.map(r => r.nl + r.ns);
+      const netLevArr = cotRows.map(r => r.nlv);
+      const netAssetMgrArr = cotRows.map(r => r.nam);
 
       const largePct = percentileWindow(netLargeArr, 156);
       const levPct = percentileWindow(netLevArr, 156);
@@ -225,33 +130,29 @@ export function useAssetData(symbol: string) {
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
-      const series: AssetSeriesPoint[] = cotDates.map((d, i) => {
-        const e = byDate.get(d)!;
-        return {
-          date: d,
-          price: priceOn(d),
-          netLargeSpec: e.netLarge,
-          netSmallSpec: e.netSmall,
-          netCommercial: e.netCommercial,
-          netLevFunds: e.netLev,
-          netAssetMgr: e.netAssetMgr,
-          netSpec: e.netLarge + e.netSmall,
-          largeSpecPct: largePct[i],
-          levFundPct: levPct[i],
-          levFundPct6m: levPct6m[i],
-          assetMgrPct: assetMgrPct[i],
-          assetMgrPct6m: assetMgrPct6m[i],
-          netSpecPct3y: spec3y[i],
-          netSpecPct6m: spec6m[i],
-          openInterest: e.oi,
-          hasLev: e.hasLev,
-          hasAssetMgr: e.hasAssetMgr,
-        };
-      });
+      const series: AssetSeriesPoint[] = cotRows.map((r, i) => ({
+        date: r.d,
+        price: priceOn(r.d),
+        netLargeSpec: r.nl,
+        netSmallSpec: r.ns,
+        netCommercial: r.nc,
+        netLevFunds: r.nlv,
+        netAssetMgr: r.nam,
+        netSpec: r.nl + r.ns,
+        largeSpecPct: largePct[i],
+        levFundPct: levPct[i],
+        levFundPct6m: levPct6m[i],
+        assetMgrPct: assetMgrPct[i],
+        assetMgrPct6m: assetMgrPct6m[i],
+        netSpecPct3y: spec3y[i],
+        netSpecPct6m: spec6m[i],
+        openInterest: r.oi,
+        hasLev: r.hlv,
+        hasAssetMgr: r.ham,
+      }));
 
-      const lastReportDate = cotDates.length ? cotDates[cotDates.length - 1] : null;
-
-      const priceSeries: PricePoint[] = (prices ?? []).map(p => ({ date: p.observed_on, price: Number(p.close) }));
+      const lastReportDate = series.length ? series[series.length - 1].date : null;
+      const priceSeries: PricePoint[] = priceRows.map(p => ({ date: p.d, price: Number(p.c) }));
 
       return {
         symbol: market.symbol,
