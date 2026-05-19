@@ -111,15 +111,28 @@ export function useAssetData(symbol: string) {
 
       const reportIds = (reports ?? []).map(r => r.id);
       const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
-      const CHUNK = 200;
+      // NOTE: Supabase caps responses at 1000 rows. Each report can have up to ~11 snapshot
+      // rows (legacy + disagg + tff categories), so we keep chunk size small AND paginate
+      // within each chunk until exhausted. Previously this silently truncated recent data.
+      const CHUNK = 100;
+      const PAGE = 1000;
       for (let i = 0; i < reportIds.length; i += CHUNK) {
         const chunk = reportIds.slice(i, i + CHUNK);
-        const { data, error } = await supabase
-          .from("positioning_snapshots")
-          .select("report_id,category,net_contracts")
-          .in("report_id", chunk);
-        if (error) throw error;
-        if (data) snapRows.push(...data);
+        let from = 0;
+        // Loop pages until we get fewer than PAGE rows back.
+        // Hard ceiling protects against runaway loops.
+        for (let guard = 0; guard < 20; guard++) {
+          const { data, error } = await supabase
+            .from("positioning_snapshots")
+            .select("report_id,category,net_contracts")
+            .in("report_id", chunk)
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          snapRows.push(...data);
+          if (data.length < PAGE) break;
+          from += PAGE;
+        }
       }
       const snapMap = new Map<string, Map<string, number>>();
       for (const s of snapRows) {
