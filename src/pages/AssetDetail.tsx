@@ -179,6 +179,19 @@ export default function AssetDetail() {
   const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
     large: true, small: true, commercial: true,
   });
+  const [expanded, setExpanded] = useState<null | "price" | "positioning" | "disagg">(null);
+  const [expTimeframe, setExpTimeframe] = useState<TimeframeKey>("2y");
+  const [expMetric, setExpMetric] = useState<MetricKey>("netSpecPct3y");
+  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
+    large: true, small: true, commercial: true,
+  });
+  function openExpand(which: "price" | "positioning" | "disagg") {
+    setExpTimeframe(timeframe);
+    setExpMetric(metric);
+    setExpDisagg(disagg);
+    setExpanded(which);
+  }
+
 
   const last = data?.series.at(-1);
   const prev = data?.series.at(-2);
