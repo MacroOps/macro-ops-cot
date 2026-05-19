@@ -31,6 +31,8 @@ type MetricKey =
   | "netSpec"
   | "netSpecPct6m"
   | "netSpecPct3y"
+  | "largeSmallPct6m"
+  | "largeSmallPct3y"
   | "levFundPct6m"
   | "levFundPct"
   | "assetMgrPct6m"
