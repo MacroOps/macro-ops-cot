@@ -206,9 +206,6 @@ export default function AssetDetail() {
     [data, pctWindow]
   );
 
-  const tickColor = "hsl(var(--chart-axis))";
-  const gridColor = "hsl(var(--chart-grid))";
-  const inkColor = "hsl(var(--chart-ink))";
 
 
   const tickColor = "hsl(var(--chart-axis))";
