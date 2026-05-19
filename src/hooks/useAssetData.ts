@@ -11,6 +11,9 @@ export interface AssetSeriesPoint {
   netAssetMgr: number;
   netSpec: number;
   largeSpecPct: number;
+  largeSpecPct6m: number;
+  smallSpecPct: number;
+  smallSpecPct6m: number;
   levFundPct: number;
   levFundPct6m: number;
   assetMgrPct: number;
@@ -118,11 +121,15 @@ export function useAssetData(symbol: string) {
       }
 
       const netLargeArr = cotRows.map(r => r.nl);
+      const netSmallArr = cotRows.map(r => r.ns);
       const netSpecArr = cotRows.map(r => r.nl + r.ns);
       const netLevArr = cotRows.map(r => r.nlv);
       const netAssetMgrArr = cotRows.map(r => r.nam);
 
       const largePct = percentileWindow(netLargeArr, 156);
+      const largePct6m = percentileWindow(netLargeArr, 26);
+      const smallPct = percentileWindow(netSmallArr, 156);
+      const smallPct6m = percentileWindow(netSmallArr, 26);
       const levPct = percentileWindow(netLevArr, 156);
       const levPct6m = percentileWindow(netLevArr, 26);
       const assetMgrPct = percentileWindow(netAssetMgrArr, 156);
@@ -140,6 +147,9 @@ export function useAssetData(symbol: string) {
         netAssetMgr: r.nam,
         netSpec: r.nl + r.ns,
         largeSpecPct: largePct[i],
+        largeSpecPct6m: largePct6m[i],
+        smallSpecPct: smallPct[i],
+        smallSpecPct6m: smallPct6m[i],
         levFundPct: levPct[i],
         levFundPct6m: levPct6m[i],
         assetMgrPct: assetMgrPct[i],

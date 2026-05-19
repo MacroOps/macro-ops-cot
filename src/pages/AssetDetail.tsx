@@ -31,6 +31,8 @@ type MetricKey =
   | "netSpec"
   | "netSpecPct6m"
   | "netSpecPct3y"
+  | "largeSmallPct6m"
+  | "largeSmallPct3y"
   | "levFundPct6m"
   | "levFundPct"
   | "assetMgrPct6m"
@@ -158,6 +160,8 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   netSpec: "Net Speculators (nominal)",
   netSpecPct6m: "Net Spec %ile · 6M",
   netSpecPct3y: "Net Spec %ile · 3Y",
+  largeSmallPct6m: "Large vs Small %ile · 6M",
+  largeSmallPct3y: "Large vs Small %ile · 3Y",
   levFundPct6m: "Lev Funds %ile · 6M",
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
@@ -166,6 +170,9 @@ const METRIC_LABEL: Record<MetricKey, string> = {
 
 function isPercentileMetric(m: MetricKey) {
   return m !== "netSpec";
+}
+function isDualMetric(m: MetricKey) {
+  return m === "largeSmallPct6m" || m === "largeSmallPct3y";
 }
 
 export default function AssetDetail() {
@@ -225,6 +232,8 @@ export default function AssetDetail() {
     { k: "netSpec", l: "Net Spec" },
     { k: "netSpecPct6m", l: "Spec 6M" },
     { k: "netSpecPct3y", l: "Spec 3Y" },
+    { k: "largeSmallPct6m", l: "L+S 6M" },
+    { k: "largeSmallPct3y", l: "L+S 3Y" },
     { k: "levFundPct6m", l: "Lev 6M", disabled: !hasLev },
     { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
@@ -273,6 +282,24 @@ export default function AssetDetail() {
 
   function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
     const cd = sliceByTf(tf);
+    if (isDualMetric(m)) {
+      const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
+      const smallKey = m === "largeSmallPct6m" ? "smallSpecPct6m" : "smallSpecPct";
+      return (
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+          <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} />
+          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.06} />
+          <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.06} />
+          <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.45} />
+          <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.45} />
+          <Line type="monotone" dataKey={largeKey} name="Large Specs %ile" stroke="hsl(152 85% 38%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+          <Line type="monotone" dataKey={smallKey} name="Small Specs %ile" stroke="hsl(38 95% 52%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+        </ComposedChart>
+      );
+    }
     if (isPercentileMetric(m)) {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
