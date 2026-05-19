@@ -246,10 +246,19 @@ export default function AssetDetail() {
     { k: "extremity", l: "Extremity" },
   ];
 
+  // Common start date so price and CoT charts share the same time domain.
+  const commonStart = useMemo(() => {
+    const firstCot = data?.series[0]?.date;
+    const firstPx = data?.priceSeries[0]?.date;
+    if (firstCot && firstPx) return firstCot > firstPx ? firstCot : firstPx;
+    return firstCot ?? firstPx ?? null;
+  }, [data]);
+
   function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
     if (!data) return [];
     const w = TF_WEEKS[tf];
-    return w == null ? data.series : data.series.slice(-w);
+    const base = w == null ? data.series : data.series.slice(-w);
+    return commonStart ? base.filter(p => p.date >= commonStart) : base;
   }
   function pricesByTf(tf: TimeframeKey) {
     const ps = data?.priceSeries ?? [];
@@ -269,7 +278,8 @@ export default function AssetDetail() {
     const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
     const w = TF_WEEKS[tf];
     const days = w == null ? null : w * 5;
-    return days == null ? enriched : enriched.slice(-days);
+    const windowed = days == null ? enriched : enriched.slice(-days);
+    return commonStart ? windowed.filter(p => p.date >= commonStart) : windowed;
   }
 
   function renderPriceChart(tf: TimeframeKey) {
