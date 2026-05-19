@@ -36,7 +36,8 @@ type MetricKey =
   | "levFundPct6m"
   | "levFundPct"
   | "assetMgrPct6m"
-  | "assetMgrPct";
+  | "assetMgrPct"
+  | "extremity";
 
 type TimeframeKey = "2y" | "10y" | "all";
 const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "10y": 520, all: null };
