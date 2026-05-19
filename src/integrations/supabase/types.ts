@@ -302,6 +302,7 @@ export type Database = {
     Functions: {
       get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
       get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
+      get_dashboard_payload: { Args: never; Returns: Json }
     }
     Enums: {
       market_sector:
