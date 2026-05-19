@@ -20,6 +20,7 @@ export interface AssetSeriesPoint {
   assetMgrPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
+  extremityScore: number;
   openInterest: number;
   hasLev: boolean;
   hasAssetMgr: boolean;
