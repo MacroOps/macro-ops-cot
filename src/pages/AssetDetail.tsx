@@ -306,6 +306,22 @@ export default function AssetDetail() {
         </ComposedChart>
       );
     }
+    if (isExtremityMetric(m)) {
+      return (
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+          <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
+          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          <ReferenceArea y1={70} y2={100} fill="#a8391f" fillOpacity={0.08} />
+          <ReferenceArea y1={-100} y2={-70} fill="#5e7536" fillOpacity={0.08} />
+          <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={-70} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={0} stroke={gridColor} />
+          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+        </ComposedChart>
+      );
+    }
     if (isPercentileMetric(m)) {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
