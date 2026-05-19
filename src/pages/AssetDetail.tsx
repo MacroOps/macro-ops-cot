@@ -284,7 +284,7 @@ export default function AssetDetail() {
 
   function renderPriceChart(tf: TimeframeKey) {
     return (
-      <ComposedChart data={pricesByTf(tf)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+      <ComposedChart data={pricesByTf(tf)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
@@ -302,7 +302,7 @@ export default function AssetDetail() {
       const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
       const smallKey = m === "largeSmallPct6m" ? "smallSpecPct6m" : "smallSpecPct";
       return (
-        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} />
@@ -318,7 +318,7 @@ export default function AssetDetail() {
     }
     if (isExtremityMetric(m)) {
       return (
-        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
@@ -334,7 +334,7 @@ export default function AssetDetail() {
     }
     if (isPercentileMetric(m)) {
       return (
-        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <defs>
             <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#7a2818" />
@@ -359,7 +359,7 @@ export default function AssetDetail() {
       );
     }
     return (
-      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
@@ -377,7 +377,7 @@ export default function AssetDetail() {
   function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean }) {
     const cd = sliceByTf(tf);
     return (
-      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" barCategoryGap={1} barGap={0}>
+      <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
