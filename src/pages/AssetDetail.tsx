@@ -243,6 +243,7 @@ export default function AssetDetail() {
     { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
     { k: "assetMgrPct", l: "AM 3Y", disabled: !hasAssetMgr },
+    { k: "extremity", l: "Extremity" },
   ];
 
   function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
