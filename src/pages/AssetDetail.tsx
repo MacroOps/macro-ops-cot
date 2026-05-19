@@ -60,12 +60,14 @@ function ChartPanel({
   right,
   children,
   height = 200,
+  onExpand,
 }: {
   title: string;
   sub?: string;
   right?: React.ReactNode;
   children: React.ReactNode;
   height?: number;
+  onExpand?: () => void;
 }) {
   return (
     <div className="hud-chart flex flex-col">
@@ -76,7 +78,18 @@ function ChartPanel({
           </span>
           {sub && <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
         </div>
-        {right}
+        <div className="flex items-center gap-2">
+          {right}
+          {onExpand && (
+            <button
+              onClick={onExpand}
+              title="Expand"
+              className="text-[10px] uppercase tracking-wider px-1.5 py-1 border border-chart-grid rounded-sm text-chart-axis hover:text-chart-ink hover:border-chart-ink transition-colors"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="p-1.5" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">{children as any}</ResponsiveContainer>
@@ -84,6 +97,7 @@ function ChartPanel({
     </div>
   );
 }
+
 
 function SegToggle({ value, onChange, options }: {
   value: string;
