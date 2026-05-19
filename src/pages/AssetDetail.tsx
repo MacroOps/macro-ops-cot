@@ -255,9 +255,21 @@ export default function AssetDetail() {
               {showNews ? <PanelRightClose className="h-3 w-3" /> : <PanelRightOpen className="h-3 w-3" />}
               <span className="hidden sm:inline">{showNews ? "Hide news" : "Show news"}</span>
             </button>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-              CFTC report · {data?.lastReportDate ?? "—"}
-            </div>
+            {(() => {
+              const d = data?.lastReportDate;
+              const ageDays = d ? Math.floor((Date.now() - new Date(d).getTime()) / 86400_000) : null;
+              const tone = ageDays == null ? "text-muted-foreground"
+                : ageDays <= 10 ? "text-pos-long"
+                : ageDays <= 21 ? "text-amber-500"
+                : "text-pos-short";
+              return (
+                <div className={`text-[10px] uppercase tracking-wider font-mono ${tone}`} title={d ? `CoT data last updated ${d} (${ageDays}d ago)` : "No CoT data yet"}>
+                  <span className="text-muted-foreground">CoT updated · </span>
+                  {d ?? "—"}
+                  {ageDays != null && <span className="ml-1 opacity-70">({ageDays}d)</span>}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
