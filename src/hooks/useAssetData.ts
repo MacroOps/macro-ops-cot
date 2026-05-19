@@ -20,6 +20,7 @@ export interface AssetSeriesPoint {
   assetMgrPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
+  extremityScore: number;
   openInterest: number;
   hasLev: boolean;
   hasAssetMgr: boolean;
@@ -137,6 +138,28 @@ export function useAssetData(symbol: string) {
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
+      // Rolling extremity score: blended 6M %ile, 3Y %ile, and WoW z-score (matches dashboard).
+      const W6M = 0.40 / 0.85;
+      const W3Y = 0.25 / 0.85;
+      const WWOW = 0.20 / 0.85;
+      const deltas: number[] = new Array(netSpecArr.length).fill(0);
+      for (let i = 1; i < netSpecArr.length; i++) deltas[i] = netSpecArr[i] - netSpecArr[i - 1];
+      const extremityArr: number[] = new Array(netSpecArr.length).fill(0);
+      for (let i = 0; i < netSpecArr.length; i++) {
+        const start = Math.max(1, i - 25);
+        const win = deltas.slice(start, i + 1);
+        let mean = 0;
+        for (const x of win) mean += x;
+        mean /= Math.max(1, win.length);
+        let v = 0;
+        for (const x of win) v += (x - mean) ** 2;
+        const sd = win.length > 1 ? Math.sqrt(v / win.length) : 0;
+        const wowZ = sd > 0 ? Math.max(-100, Math.min(100, (deltas[i] / sd) * 33.3)) : 0;
+        const s3y = (spec3y[i] - 50) * 2;
+        const s6m = (spec6m[i] - 50) * 2;
+        extremityArr[i] = Math.round(W6M * s6m + W3Y * s3y + WWOW * wowZ);
+      }
+
       const series: AssetSeriesPoint[] = cotRows.map((r, i) => ({
         date: r.d,
         price: priceOn(r.d),
@@ -156,6 +179,7 @@ export function useAssetData(symbol: string) {
         assetMgrPct6m: assetMgrPct6m[i],
         netSpecPct3y: spec3y[i],
         netSpecPct6m: spec6m[i],
+        extremityScore: extremityArr[i],
         openInterest: r.oi,
         hasLev: r.hlv,
         hasAssetMgr: r.ham,

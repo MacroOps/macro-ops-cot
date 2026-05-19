@@ -36,7 +36,8 @@ type MetricKey =
   | "levFundPct6m"
   | "levFundPct"
   | "assetMgrPct6m"
-  | "assetMgrPct";
+  | "assetMgrPct"
+  | "extremity";
 
 type TimeframeKey = "2y" | "10y" | "all";
 const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "10y": 520, all: null };
@@ -166,13 +167,17 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
   assetMgrPct: "Asset Mgrs %ile · 3Y",
+  extremity: "Extremity Score (blended)",
 };
 
 function isPercentileMetric(m: MetricKey) {
-  return m !== "netSpec";
+  return m !== "netSpec" && m !== "extremity";
 }
 function isDualMetric(m: MetricKey) {
   return m === "largeSmallPct6m" || m === "largeSmallPct3y";
+}
+function isExtremityMetric(m: MetricKey) {
+  return m === "extremity";
 }
 
 export default function AssetDetail() {
@@ -238,6 +243,7 @@ export default function AssetDetail() {
     { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
     { k: "assetMgrPct", l: "AM 3Y", disabled: !hasAssetMgr },
+    { k: "extremity", l: "Extremity" },
   ];
 
   function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
@@ -297,6 +303,22 @@ export default function AssetDetail() {
           <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.45} />
           <Line type="monotone" dataKey={largeKey} name="Large Specs %ile" stroke="hsl(152 85% 38%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
           <Line type="monotone" dataKey={smallKey} name="Small Specs %ile" stroke="hsl(38 95% 52%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+        </ComposedChart>
+      );
+    }
+    if (isExtremityMetric(m)) {
+      return (
+        <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail">
+          <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
+          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          <ReferenceArea y1={70} y2={100} fill="#a8391f" fillOpacity={0.08} />
+          <ReferenceArea y1={-100} y2={-70} fill="#5e7536" fillOpacity={0.08} />
+          <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={-70} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={0} stroke={gridColor} />
+          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
       );
     }
