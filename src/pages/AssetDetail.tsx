@@ -576,6 +576,44 @@ export default function AssetDetail() {
         {error && <div className="text-xs text-destructive">Failed to load asset data.</div>}
         {!isLoading && !data && <div className="text-xs text-muted-foreground">Asset not found.</div>}
       </div>
+
+      <Dialog open={expanded !== null} onOpenChange={(o) => !o && setExpanded(null)}>
+        <DialogContent className="max-w-[96vw] w-[96vw] h-[92vh] p-0 flex flex-col bg-background border-border">
+          <div className="sr-only">
+            <DialogTitle>
+              {expanded === "price" ? `${symbol} Price` : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
+            </DialogTitle>
+            <DialogDescription>Expanded chart view with timeframe and metric controls.</DialogDescription>
+          </div>
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="font-mono text-sm font-semibold text-surface-foreground">{symbol}</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
+                {expanded === "price" ? "Price" : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <SegToggle value={expTimeframe} onChange={(v) => setExpTimeframe(v as TimeframeKey)} options={tfOptions} />
+              {expanded === "positioning" && (
+                <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+              )}
+              {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 p-3">
+            <ResponsiveContainer width="100%" height="100%">
+              {expanded === "price"
+                ? renderPriceChart(expTimeframe)
+                : expanded === "positioning"
+                ? renderPositioningChart(expTimeframe, expMetric)
+                : expanded === "disagg"
+                ? renderDisaggChart(expTimeframe, expDisagg)
+                : <div />}
+            </ResponsiveContainer>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+
