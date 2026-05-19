@@ -160,6 +160,8 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   netSpec: "Net Speculators (nominal)",
   netSpecPct6m: "Net Spec %ile · 6M",
   netSpecPct3y: "Net Spec %ile · 3Y",
+  largeSmallPct6m: "Large vs Small %ile · 6M",
+  largeSmallPct3y: "Large vs Small %ile · 3Y",
   levFundPct6m: "Lev Funds %ile · 6M",
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
@@ -168,6 +170,9 @@ const METRIC_LABEL: Record<MetricKey, string> = {
 
 function isPercentileMetric(m: MetricKey) {
   return m !== "netSpec";
+}
+function isDualMetric(m: MetricKey) {
+  return m === "largeSmallPct6m" || m === "largeSmallPct3y";
 }
 
 export default function AssetDetail() {
