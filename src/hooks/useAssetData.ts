@@ -75,13 +75,26 @@ export function useAssetData(symbol: string) {
       if (mErr) throw mErr;
       if (!market) return null;
 
-      const [{ data: reports }, pricesAll, { data: news }] = await Promise.all([
-        supabase
-          .from("cot_reports")
-          .select("id,report_date,format,open_interest")
-          .eq("market_id", market.id)
-          .order("report_date", { ascending: true })
-          .limit(8000),
+      const [reports, pricesAll, { data: news }] = await Promise.all([
+        (async () => {
+          // Supabase caps responses at 1000 rows; paginate to get full CoT history.
+          // CL already has >1000 report rows across legacy + disaggregated formats.
+          const PAGE = 1000;
+          const out: { id: string; report_date: string; format: string; open_interest: number | null }[] = [];
+          for (let from = 0; from < 20000; from += PAGE) {
+            const { data, error } = await supabase
+              .from("cot_reports")
+              .select("id,report_date,format,open_interest")
+              .eq("market_id", market.id)
+              .order("report_date", { ascending: true })
+              .range(from, from + PAGE - 1);
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            out.push(...data);
+            if (data.length < PAGE) break;
+          }
+          return out;
+        })(),
         (async () => {
           // Supabase caps responses at 1000 rows; paginate to get full price history.
           const PAGE = 1000;
