@@ -474,6 +474,9 @@ export default function AssetDetail() {
           {hasAssetMgr && (
             <StatBlock label="Asset Mgr Net" value={last ? fmtInt.format(last.netAssetMgr) : "—"} tone={last && last.netAssetMgr >= 0 ? "long" : "short"} />
           )}
+          {hasMm && (
+            <StatBlock label="Managed Money Net" value={last ? fmtInt.format(last.netManagedMoney) : "—"} tone={last && last.netManagedMoney >= 0 ? "long" : "short"} />
+          )}
           <StatBlock label="Open Interest" value={last ? fmtInt.format(last.openInterest) : "—"} />
         </div>
 
