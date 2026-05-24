@@ -115,16 +115,48 @@ function Stat({ label, value, accent, mono }: { label: string; value: string; ac
   );
 }
 
-function ExtremesStat({ exLong, exShort }: { exLong: number; exShort: number }) {
+function ExtremesStat({
+  exLong,
+  exShort,
+  allExtremes,
+}: {
+  exLong: number;
+  exShort: number;
+  allExtremes: MarketSnapshot[];
+}) {
   const pulse = exLong + exShort > 0;
   return (
-    <div className="px-4 py-3 border-r border-border last:border-r-0">
+    <div className="px-4 py-3 border-r border-border last:border-r-0 min-w-0">
       <div className="hud-label">Extremes ≥75</div>
       <div className={`mt-1 text-lg font-semibold tabular-nums flex items-baseline gap-2 ${pulse ? "animate-extremity-pulse" : ""}`}>
         <span className="text-pos-long">{exLong}↑</span>
         <span className="text-muted-foreground text-xs">/</span>
         <span className="text-pos-short">{exShort}↓</span>
       </div>
+      {allExtremes.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 max-h-16 overflow-hidden">
+          {allExtremes.map(m => {
+            const color =
+              m.extremityScore >= 75
+                ? "text-pos-long"
+                : m.extremityScore <= -75
+                  ? "text-pos-short"
+                  : m.extremityScore > 0
+                    ? "text-pos-long/70"
+                    : "text-pos-short/70";
+            return (
+              <span
+                key={m.symbol}
+                className={`inline-flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-surface border border-border ${color}`}
+                title={`${m.name} · Score ${m.extremityScore > 0 ? "+" : ""}${m.extremityScore}`}
+              >
+                {m.symbol}
+                <span className="opacity-70">{m.extremityScore > 0 ? "+" : ""}{m.extremityScore}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
