@@ -37,6 +37,8 @@ type MetricKey =
   | "levFundPct"
   | "assetMgrPct6m"
   | "assetMgrPct"
+  | "mmPct6m"
+  | "mmPct"
   | "extremity";
 
 type TimeframeKey = "2y" | "10y" | "all";
