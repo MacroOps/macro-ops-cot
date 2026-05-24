@@ -216,6 +216,7 @@ export default function AssetDetail() {
 
   const hasLev = !!last?.hasLev;
   const hasAssetMgr = !!last?.hasAssetMgr;
+  const hasMm = !!last?.hasMm;
 
   const forward = useMemo(
     () => (data ? computeForwardPerformance(data.series, [1, 4, 12, 26], pctWindow) : []),
