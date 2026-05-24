@@ -175,6 +175,7 @@ export function useAssetData(symbol: string) {
         netCommercial: r.nc,
         netLevFunds: r.nlv,
         netAssetMgr: r.nam,
+        netManagedMoney: r.nmm,
         netSpec: r.nl + r.ns,
         largeSpecPct: largePct[i],
         largeSpecPct6m: largePct6m[i],
@@ -184,12 +185,15 @@ export function useAssetData(symbol: string) {
         levFundPct6m: levPct6m[i],
         assetMgrPct: assetMgrPct[i],
         assetMgrPct6m: assetMgrPct6m[i],
+        mmPct: mmPct[i],
+        mmPct6m: mmPct6m[i],
         netSpecPct3y: spec3y[i],
         netSpecPct6m: spec6m[i],
         extremityScore: extremityArr[i],
         openInterest: r.oi,
         hasLev: r.hlv,
         hasAssetMgr: r.ham,
+        hasMm: r.hmm,
       }));
 
       const lastReportDate = series.length ? series[series.length - 1].date : null;
