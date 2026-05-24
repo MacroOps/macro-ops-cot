@@ -589,6 +589,8 @@ export default function AssetDetail() {
                   {hasLev && <PercentileGauge value={last.levFundPct6m} label="Lev Funds · 6M" />}
                   {hasAssetMgr && <PercentileGauge value={last.assetMgrPct} label="Asset Mgrs · 3Y" />}
                   {hasAssetMgr && <PercentileGauge value={last.assetMgrPct6m} label="Asset Mgrs · 6M" />}
+                  {hasMm && <PercentileGauge value={last.mmPct} label="Managed Money · 3Y" />}
+                  {hasMm && <PercentileGauge value={last.mmPct6m} label="Managed Money · 6M" />}
                   <PercentileGauge value={last.largeSpecPct} label="Large Specs · 3Y (ref)" />
                 </>
               )}
