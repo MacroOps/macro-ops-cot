@@ -154,15 +154,29 @@ const SectorAggregates = () => {
                 {!isPctMetric && <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />}
                 {isPctMetric && (
                   <>
-                    <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" />
-                    <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" />
+                    <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
                   </>
                 )}
                 <Bar dataKey="value">
                   {chartData.map((d, i) => {
-                    const fill = isPctMetric
-                      ? pctColor(d.value)
-                      : d.value >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
+                    // Match the Spec 6M / 3Y %ile line-chart palette:
+                    // ≥85 crowded long  → #a8391f (brick)
+                    // ≤15 crowded short → #5e7536 (olive)
+                    let fill: string;
+                    if (isPctMetric) {
+                      const v = d.value;
+                      if (v >= 85) fill = "#a8391f";
+                      else if (v >= 65) fill = "#a8391f";
+                      else if (v > 35) fill = "hsl(var(--chart-ink-muted))";
+                      else if (v > 15) fill = "#5e7536";
+                      else fill = "#5e7536";
+                      // Soften the mid-extreme bands so the true extremes pop
+                      if (v < 85 && v >= 65) fill = "color-mix(in oklab, #a8391f 65%, hsl(var(--chart-surface)) 35%)";
+                      if (v > 15 && v <= 35) fill = "color-mix(in oklab, #5e7536 65%, hsl(var(--chart-surface)) 35%)";
+                    } else {
+                      fill = d.value >= 0 ? "#a8391f" : "#5e7536";
+                    }
                     return <Cell key={i} fill={fill} />;
                   })}
                 </Bar>
