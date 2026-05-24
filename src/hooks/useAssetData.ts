@@ -130,6 +130,7 @@ export function useAssetData(symbol: string) {
       const netSpecArr = cotRows.map(r => r.nl + r.ns);
       const netLevArr = cotRows.map(r => r.nlv);
       const netAssetMgrArr = cotRows.map(r => r.nam);
+      const netMmArr = cotRows.map(r => r.nmm);
 
       const largePct = percentileWindow(netLargeArr, 156);
       const largePct6m = percentileWindow(netLargeArr, 26);
@@ -139,6 +140,8 @@ export function useAssetData(symbol: string) {
       const levPct6m = percentileWindow(netLevArr, 26);
       const assetMgrPct = percentileWindow(netAssetMgrArr, 156);
       const assetMgrPct6m = percentileWindow(netAssetMgrArr, 26);
+      const mmPct = percentileWindow(netMmArr, 156);
+      const mmPct6m = percentileWindow(netMmArr, 26);
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
