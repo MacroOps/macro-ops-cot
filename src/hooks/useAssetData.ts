@@ -9,6 +9,7 @@ export interface AssetSeriesPoint {
   netCommercial: number;
   netLevFunds: number;
   netAssetMgr: number;
+  netManagedMoney: number;
   netSpec: number;
   largeSpecPct: number;
   largeSpecPct6m: number;
@@ -18,12 +19,15 @@ export interface AssetSeriesPoint {
   levFundPct6m: number;
   assetMgrPct: number;
   assetMgrPct6m: number;
+  mmPct: number;
+  mmPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
   extremityScore: number;
   openInterest: number;
   hasLev: boolean;
   hasAssetMgr: boolean;
+  hasMm: boolean;
 }
 
 export interface AssetNewsItem {
