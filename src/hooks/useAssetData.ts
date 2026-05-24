@@ -99,7 +99,7 @@ export function useAssetData(symbol: string) {
       if (cotRes.error) throw cotRes.error;
       if (priceRes.error) throw priceRes.error;
 
-      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nam: number; hl: boolean; hlv: boolean; ham: boolean };
+      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nmm: number; nam: number; hl: boolean; hlv: boolean; hmm: boolean; ham: boolean };
       type PriceRow = { d: string; c: number | string };
       const cotRows = ((cotRes.data ?? []) as CotRow[]);
       const priceRows = ((priceRes.data ?? []) as PriceRow[]);
