@@ -169,6 +169,8 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
   assetMgrPct: "Asset Mgrs %ile · 3Y",
+  mmPct6m: "Managed Money %ile · 6M",
+  mmPct: "Managed Money %ile · 3Y",
   extremity: "Extremity Score (blended)",
 };
 
