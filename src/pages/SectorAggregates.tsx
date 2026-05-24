@@ -154,8 +154,8 @@ const SectorAggregates = () => {
                 {!isPctMetric && <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />}
                 {isPctMetric && (
                   <>
-                    <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-                    <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" strokeOpacity={0.55} />
                   </>
                 )}
                 <Bar dataKey="value">
