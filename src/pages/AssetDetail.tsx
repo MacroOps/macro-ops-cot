@@ -282,7 +282,19 @@ export default function AssetDetail() {
     };
     const s50 = sma(50);
     const s200 = sma(200);
-    const enriched = ps.map((p, i) => ({ date: p.date, price: p.price, sma50: s50[i], sma200: s200[i] }));
+    // Map CoT report-date -> WoW net-spec delta for histogram overlay.
+    const wowByDate = new Map<string, number>();
+    const cot = data?.series ?? [];
+    for (let i = 1; i < cot.length; i++) {
+      wowByDate.set(cot[i].date, cot[i].netSpec - cot[i - 1].netSpec);
+    }
+    const enriched = ps.map((p, i) => ({
+      date: p.date,
+      price: p.price,
+      sma50: s50[i],
+      sma200: s200[i],
+      wowSpec: wowByDate.has(p.date) ? (wowByDate.get(p.date) as number) : null,
+    }));
     const w = TF_WEEKS[tf];
     const days = w == null ? null : w * 5;
     const windowed = days == null ? enriched : enriched.slice(-days);
@@ -290,15 +302,20 @@ export default function AssetDetail() {
   }
 
   function renderPriceChart(tf: TimeframeKey) {
+    const pd = pricesByTf(tf);
+    const wowVals = pd.map(d => Math.abs(d.wowSpec ?? 0)).filter(v => v > 0);
+    const wowMax = wowVals.length ? Math.max(...wowVals) : 1;
     return (
-      <ComposedChart data={pricesByTf(tf)} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
+      <ComposedChart data={pd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
-        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
-        <Line type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
-        <Line type="monotone" dataKey="sma50" name="SMA 50" stroke="hsl(var(--primary))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
-        <Line type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
+        <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
+        <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
+        <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" fill="hsl(var(--foreground))" fillOpacity={0.18} isAnimationActive={false} barSize={tf === "all" || tf === "10y" ? 1.5 : 3} />
+        <Line yAxisId="px" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
+        <Line yAxisId="px" type="monotone" dataKey="sma50" name="SMA 50" stroke="hsl(var(--primary))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
+        <Line yAxisId="px" type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
       </ComposedChart>
     );
   }
