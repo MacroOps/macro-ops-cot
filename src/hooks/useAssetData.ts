@@ -9,6 +9,7 @@ export interface AssetSeriesPoint {
   netCommercial: number;
   netLevFunds: number;
   netAssetMgr: number;
+  netManagedMoney: number;
   netSpec: number;
   largeSpecPct: number;
   largeSpecPct6m: number;
@@ -18,12 +19,15 @@ export interface AssetSeriesPoint {
   levFundPct6m: number;
   assetMgrPct: number;
   assetMgrPct6m: number;
+  mmPct: number;
+  mmPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
   extremityScore: number;
   openInterest: number;
   hasLev: boolean;
   hasAssetMgr: boolean;
+  hasMm: boolean;
 }
 
 export interface AssetNewsItem {
@@ -95,7 +99,7 @@ export function useAssetData(symbol: string) {
       if (cotRes.error) throw cotRes.error;
       if (priceRes.error) throw priceRes.error;
 
-      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nam: number; hl: boolean; hlv: boolean; ham: boolean };
+      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nmm: number; nam: number; hl: boolean; hlv: boolean; hmm: boolean; ham: boolean };
       type PriceRow = { d: string; c: number | string };
       const cotRows = ((cotRes.data ?? []) as CotRow[]);
       const priceRows = ((priceRes.data ?? []) as PriceRow[]);
@@ -126,6 +130,7 @@ export function useAssetData(symbol: string) {
       const netSpecArr = cotRows.map(r => r.nl + r.ns);
       const netLevArr = cotRows.map(r => r.nlv);
       const netAssetMgrArr = cotRows.map(r => r.nam);
+      const netMmArr = cotRows.map(r => r.nmm);
 
       const largePct = percentileWindow(netLargeArr, 156);
       const largePct6m = percentileWindow(netLargeArr, 26);
@@ -135,6 +140,8 @@ export function useAssetData(symbol: string) {
       const levPct6m = percentileWindow(netLevArr, 26);
       const assetMgrPct = percentileWindow(netAssetMgrArr, 156);
       const assetMgrPct6m = percentileWindow(netAssetMgrArr, 26);
+      const mmPct = percentileWindow(netMmArr, 156);
+      const mmPct6m = percentileWindow(netMmArr, 26);
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
@@ -168,6 +175,7 @@ export function useAssetData(symbol: string) {
         netCommercial: r.nc,
         netLevFunds: r.nlv,
         netAssetMgr: r.nam,
+        netManagedMoney: r.nmm,
         netSpec: r.nl + r.ns,
         largeSpecPct: largePct[i],
         largeSpecPct6m: largePct6m[i],
@@ -177,12 +185,15 @@ export function useAssetData(symbol: string) {
         levFundPct6m: levPct6m[i],
         assetMgrPct: assetMgrPct[i],
         assetMgrPct6m: assetMgrPct6m[i],
+        mmPct: mmPct[i],
+        mmPct6m: mmPct6m[i],
         netSpecPct3y: spec3y[i],
         netSpecPct6m: spec6m[i],
         extremityScore: extremityArr[i],
         openInterest: r.oi,
         hasLev: r.hlv,
         hasAssetMgr: r.ham,
+        hasMm: r.hmm,
       }));
 
       const lastReportDate = series.length ? series[series.length - 1].date : null;

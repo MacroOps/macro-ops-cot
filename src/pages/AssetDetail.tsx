@@ -37,6 +37,8 @@ type MetricKey =
   | "levFundPct"
   | "assetMgrPct6m"
   | "assetMgrPct"
+  | "mmPct6m"
+  | "mmPct"
   | "extremity";
 
 type TimeframeKey = "2y" | "10y" | "all";
@@ -167,6 +169,8 @@ const METRIC_LABEL: Record<MetricKey, string> = {
   levFundPct: "Lev Funds %ile · 3Y",
   assetMgrPct6m: "Asset Mgrs %ile · 6M",
   assetMgrPct: "Asset Mgrs %ile · 3Y",
+  mmPct6m: "Managed Money %ile · 6M",
+  mmPct: "Managed Money %ile · 3Y",
   extremity: "Extremity Score (blended)",
 };
 
@@ -188,14 +192,14 @@ export default function AssetDetail() {
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
   const [showNews, setShowNews] = useState(true);
-  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
-    large: true, small: true, commercial: true,
+  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }>({
+    large: true, small: true, commercial: true, managedMoney: false,
   });
   const [expanded, setExpanded] = useState<null | "price" | "positioning" | "disagg">(null);
   const [expTimeframe, setExpTimeframe] = useState<TimeframeKey>("2y");
   const [expMetric, setExpMetric] = useState<MetricKey>("netSpecPct3y");
-  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
-    large: true, small: true, commercial: true,
+  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }>({
+    large: true, small: true, commercial: true, managedMoney: false,
   });
   function openExpand(which: "price" | "positioning" | "disagg") {
     setExpTimeframe(timeframe);
@@ -212,6 +216,7 @@ export default function AssetDetail() {
 
   const hasLev = !!last?.hasLev;
   const hasAssetMgr = !!last?.hasAssetMgr;
+  const hasMm = !!last?.hasMm;
 
   const forward = useMemo(
     () => (data ? computeForwardPerformance(data.series, [1, 4, 12, 26], pctWindow) : []),
@@ -243,6 +248,8 @@ export default function AssetDetail() {
     { k: "levFundPct", l: "Lev 3Y", disabled: !hasLev },
     { k: "assetMgrPct6m", l: "AM 6M", disabled: !hasAssetMgr },
     { k: "assetMgrPct", l: "AM 3Y", disabled: !hasAssetMgr },
+    { k: "mmPct6m", l: "MM 6M", disabled: !hasMm },
+    { k: "mmPct", l: "MM 3Y", disabled: !hasMm },
     { k: "extremity", l: "Extremity" },
   ];
 
@@ -374,7 +381,7 @@ export default function AssetDetail() {
     );
   }
 
-  function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean }) {
+  function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
     const cd = sliceByTf(tf);
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
@@ -386,21 +393,24 @@ export default function AssetDetail() {
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(354 82% 48%)" stroke="hsl(354 88% 35%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+        {dis.managedMoney && <Bar dataKey="netManagedMoney" name="Managed Money" fill="hsl(212 85% 52%)" stroke="hsl(212 90% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
       </ComposedChart>
     );
   }
 
   const disaggToggles = (state: typeof disagg, setState: (s: typeof disagg) => void) => (
-    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
+    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider flex-wrap">
       {([
         { k: "large" as const, l: "Large Specs", c: "hsl(152 85% 32%)" },
         { k: "small" as const, l: "Small Specs", c: "hsl(38 95% 50%)" },
         { k: "commercial" as const, l: "Commercials", c: "hsl(354 82% 48%)" },
-      ]).map(o => (
-        <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
+        { k: "managedMoney" as const, l: "Managed Money", c: "hsl(212 85% 52%)", disabled: !hasMm },
+      ] as { k: keyof typeof disagg; l: string; c: string; disabled?: boolean }[]).map(o => (
+        <label key={o.k} className={`flex items-center gap-1.5 select-none ${o.disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`} style={{ color: "hsl(var(--chart-axis))" }}>
           <input
             type="checkbox"
             checked={state[o.k]}
+            disabled={o.disabled}
             onChange={(e) => setState({ ...state, [o.k]: e.target.checked })}
             className="accent-current h-3 w-3"
           />
@@ -463,6 +473,9 @@ export default function AssetDetail() {
           <StatBlock label="Lev Fund Net" value={last && hasLev ? fmtInt.format(last.netLevFunds) : "—"} tone={last && last.netLevFunds >= 0 ? "long" : "short"} />
           {hasAssetMgr && (
             <StatBlock label="Asset Mgr Net" value={last ? fmtInt.format(last.netAssetMgr) : "—"} tone={last && last.netAssetMgr >= 0 ? "long" : "short"} />
+          )}
+          {hasMm && (
+            <StatBlock label="Managed Money Net" value={last ? fmtInt.format(last.netManagedMoney) : "—"} tone={last && last.netManagedMoney >= 0 ? "long" : "short"} />
           )}
           <StatBlock label="Open Interest" value={last ? fmtInt.format(last.openInterest) : "—"} />
         </div>
@@ -576,6 +589,8 @@ export default function AssetDetail() {
                   {hasLev && <PercentileGauge value={last.levFundPct6m} label="Lev Funds · 6M" />}
                   {hasAssetMgr && <PercentileGauge value={last.assetMgrPct} label="Asset Mgrs · 3Y" />}
                   {hasAssetMgr && <PercentileGauge value={last.assetMgrPct6m} label="Asset Mgrs · 6M" />}
+                  {hasMm && <PercentileGauge value={last.mmPct} label="Managed Money · 3Y" />}
+                  {hasMm && <PercentileGauge value={last.mmPct6m} label="Managed Money · 6M" />}
                   <PercentileGauge value={last.largeSpecPct} label="Large Specs · 3Y (ref)" />
                 </>
               )}
