@@ -192,14 +192,14 @@ export default function AssetDetail() {
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
   const [showNews, setShowNews] = useState(true);
-  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
-    large: true, small: true, commercial: true,
+  const [disagg, setDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }>({
+    large: true, small: true, commercial: true, managedMoney: false,
   });
   const [expanded, setExpanded] = useState<null | "price" | "positioning" | "disagg">(null);
   const [expTimeframe, setExpTimeframe] = useState<TimeframeKey>("2y");
   const [expMetric, setExpMetric] = useState<MetricKey>("netSpecPct3y");
-  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean }>({
-    large: true, small: true, commercial: true,
+  const [expDisagg, setExpDisagg] = useState<{ large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }>({
+    large: true, small: true, commercial: true, managedMoney: false,
   });
   function openExpand(which: "price" | "positioning" | "disagg") {
     setExpTimeframe(timeframe);
