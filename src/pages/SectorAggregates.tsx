@@ -154,28 +154,23 @@ const SectorAggregates = () => {
                 {!isPctMetric && <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />}
                 {isPctMetric && (
                   <>
-                    <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-                    <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={85} stroke="hsl(var(--pos-long))" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={15} stroke="hsl(var(--pos-short))" strokeDasharray="2 3" strokeOpacity={0.55} />
                   </>
                 )}
                 <Bar dataKey="value">
                   {chartData.map((d, i) => {
-                    // Match the Spec 6M / 3Y %ile line-chart palette:
-                    // ≥85 crowded long  → #a8391f (brick)
-                    // ≤15 crowded short → #5e7536 (olive)
                     let fill: string;
                     if (isPctMetric) {
-                      const v = d.value;
-                      if (v >= 85) fill = "#a8391f";
-                      else if (v >= 65) fill = "#a8391f";
-                      else if (v > 35) fill = "hsl(var(--chart-ink-muted))";
-                      else if (v > 15) fill = "#5e7536";
-                      else fill = "#5e7536";
-                      // Soften the mid-extreme bands so the true extremes pop
-                      if (v < 85 && v >= 65) fill = "color-mix(in oklab, #a8391f 65%, hsl(var(--chart-surface)) 35%)";
-                      if (v > 15 && v <= 35) fill = "color-mix(in oklab, #5e7536 65%, hsl(var(--chart-surface)) 35%)";
+                      // Continuous gradient: neutral surface at 50 → pos-long at 100, pos-short at 0
+                      const v = Math.max(0, Math.min(100, d.value));
+                      const intensity = Math.min(1, Math.abs(v - 50) / 50);
+                      // Non-linear ramp so mid values (e.g. 38 vs 53) still differentiate
+                      const weight = 15 + Math.pow(intensity, 0.7) * 80;
+                      const target = v >= 50 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
+                      fill = `color-mix(in oklab, hsl(var(--chart-surface)) ${(100 - weight).toFixed(1)}%, ${target} ${weight.toFixed(1)}%)`;
                     } else {
-                      fill = d.value >= 0 ? "#a8391f" : "#5e7536";
+                      fill = d.value >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))";
                     }
                     return <Cell key={i} fill={fill} />;
                   })}
