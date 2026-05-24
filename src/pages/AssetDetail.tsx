@@ -381,7 +381,7 @@ export default function AssetDetail() {
     );
   }
 
-  function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean }) {
+  function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
     const cd = sliceByTf(tf);
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
@@ -393,21 +393,24 @@ export default function AssetDetail() {
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.commercial && <Bar dataKey="netCommercial" name="Commercials" fill="hsl(354 82% 48%)" stroke="hsl(354 88% 35%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
+        {dis.managedMoney && <Bar dataKey="netManagedMoney" name="Managed Money" fill="hsl(212 85% 52%)" stroke="hsl(212 90% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
       </ComposedChart>
     );
   }
 
   const disaggToggles = (state: typeof disagg, setState: (s: typeof disagg) => void) => (
-    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider">
+    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider flex-wrap">
       {([
         { k: "large" as const, l: "Large Specs", c: "hsl(152 85% 32%)" },
         { k: "small" as const, l: "Small Specs", c: "hsl(38 95% 50%)" },
         { k: "commercial" as const, l: "Commercials", c: "hsl(354 82% 48%)" },
-      ]).map(o => (
-        <label key={o.k} className="flex items-center gap-1.5 cursor-pointer select-none" style={{ color: "hsl(var(--chart-axis))" }}>
+        { k: "managedMoney" as const, l: "Managed Money", c: "hsl(212 85% 52%)", disabled: !hasMm },
+      ] as { k: keyof typeof disagg; l: string; c: string; disabled?: boolean }[]).map(o => (
+        <label key={o.k} className={`flex items-center gap-1.5 select-none ${o.disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`} style={{ color: "hsl(var(--chart-axis))" }}>
           <input
             type="checkbox"
             checked={state[o.k]}
+            disabled={o.disabled}
             onChange={(e) => setState({ ...state, [o.k]: e.target.checked })}
             className="accent-current h-3 w-3"
           />
