@@ -3,6 +3,7 @@ import { AppShell } from "@/components/hud/AppShell";
 import { MarketCard } from "@/components/hud/MarketCard";
 import { SECTORS, type Sector } from "@/lib/mockData";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import type { MarketSnapshot } from "@/lib/mockData";
 
 type Filter = Sector | "All" | "Extremes";
 
@@ -22,18 +23,32 @@ const Index = () => {
   }, [markets, filter]);
 
   const stats = useMemo(() => {
-    const exLong = markets.filter(m => m.extremityScore >= 75).length;
-    const exShort = markets.filter(m => m.extremityScore <= -75).length;
-    const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75).length;
-    const crowdedShort = markets.filter(m => m.extremityScore <= -50 && m.extremityScore > -75).length;
-    return { tracked: markets.length, exLong, exShort, crowdedLong, crowdedShort };
+    const exLong = markets.filter(m => m.extremityScore >= 75);
+    const exShort = markets.filter(m => m.extremityScore <= -75);
+    const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75);
+    const crowdedShort = markets.filter(m => m.extremityScore <= -50 && m.extremityScore > -75);
+    // Sort all extremes from most euphoric → most crowded short
+    const allExtremes = [...exLong, ...crowdedLong, ...crowdedShort, ...exShort]
+      .sort((a, b) => b.extremityScore - a.extremityScore);
+    return {
+      tracked: markets.length,
+      exLong: exLong.length,
+      exShort: exShort.length,
+      crowdedLong: crowdedLong.length,
+      crowdedShort: crowdedShort.length,
+      allExtremes,
+    };
   }, [markets]);
 
   return (
     <AppShell title="Global Positioning Dashboard">
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border bg-surface/30">
         <Stat label="Markets Tracked" value={stats.tracked.toString()} />
-        <ExtremesStat exLong={stats.exLong} exShort={stats.exShort} />
+        <ExtremesStat
+          exLong={stats.exLong}
+          exShort={stats.exShort}
+          allExtremes={stats.allExtremes}
+        />
         <Stat label="Crowded 50–74" value={`${stats.crowdedLong}↑ / ${stats.crowdedShort}↓`} />
         <Stat label="Report" value={data?.reportDate ?? "—"} mono />
       </div>
