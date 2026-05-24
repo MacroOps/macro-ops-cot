@@ -3,6 +3,7 @@ import { AppShell } from "@/components/hud/AppShell";
 import { MarketCard } from "@/components/hud/MarketCard";
 import { SECTORS, type Sector } from "@/lib/mockData";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import type { MarketSnapshot } from "@/lib/mockData";
 
 type Filter = Sector | "All" | "Extremes";
 
@@ -22,18 +23,32 @@ const Index = () => {
   }, [markets, filter]);
 
   const stats = useMemo(() => {
-    const exLong = markets.filter(m => m.extremityScore >= 75).length;
-    const exShort = markets.filter(m => m.extremityScore <= -75).length;
-    const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75).length;
-    const crowdedShort = markets.filter(m => m.extremityScore <= -50 && m.extremityScore > -75).length;
-    return { tracked: markets.length, exLong, exShort, crowdedLong, crowdedShort };
+    const exLong = markets.filter(m => m.extremityScore >= 75);
+    const exShort = markets.filter(m => m.extremityScore <= -75);
+    const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75);
+    const crowdedShort = markets.filter(m => m.extremityScore <= -50 && m.extremityScore > -75);
+    // Sort all extremes from most euphoric → most crowded short
+    const allExtremes = [...exLong, ...crowdedLong, ...crowdedShort, ...exShort]
+      .sort((a, b) => b.extremityScore - a.extremityScore);
+    return {
+      tracked: markets.length,
+      exLong: exLong.length,
+      exShort: exShort.length,
+      crowdedLong: crowdedLong.length,
+      crowdedShort: crowdedShort.length,
+      allExtremes,
+    };
   }, [markets]);
 
   return (
     <AppShell title="Global Positioning Dashboard">
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border bg-surface/30">
         <Stat label="Markets Tracked" value={stats.tracked.toString()} />
-        <ExtremesStat exLong={stats.exLong} exShort={stats.exShort} />
+        <ExtremesStat
+          exLong={stats.exLong}
+          exShort={stats.exShort}
+          allExtremes={stats.allExtremes}
+        />
         <Stat label="Crowded 50–74" value={`${stats.crowdedLong}↑ / ${stats.crowdedShort}↓`} />
         <Stat label="Report" value={data?.reportDate ?? "—"} mono />
       </div>
@@ -100,16 +115,48 @@ function Stat({ label, value, accent, mono }: { label: string; value: string; ac
   );
 }
 
-function ExtremesStat({ exLong, exShort }: { exLong: number; exShort: number }) {
+function ExtremesStat({
+  exLong,
+  exShort,
+  allExtremes,
+}: {
+  exLong: number;
+  exShort: number;
+  allExtremes: MarketSnapshot[];
+}) {
   const pulse = exLong + exShort > 0;
   return (
-    <div className="px-4 py-3 border-r border-border last:border-r-0">
+    <div className="px-4 py-3 border-r border-border last:border-r-0 min-w-0">
       <div className="hud-label">Extremes ≥75</div>
       <div className={`mt-1 text-lg font-semibold tabular-nums flex items-baseline gap-2 ${pulse ? "animate-extremity-pulse" : ""}`}>
         <span className="text-pos-long">{exLong}↑</span>
         <span className="text-muted-foreground text-xs">/</span>
         <span className="text-pos-short">{exShort}↓</span>
       </div>
+      {allExtremes.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 max-h-16 overflow-hidden">
+          {allExtremes.map(m => {
+            const color =
+              m.extremityScore >= 75
+                ? "text-pos-long"
+                : m.extremityScore <= -75
+                  ? "text-pos-short"
+                  : m.extremityScore > 0
+                    ? "text-pos-long/70"
+                    : "text-pos-short/70";
+            return (
+              <span
+                key={m.symbol}
+                className={`inline-flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-surface border border-border ${color}`}
+                title={`${m.name} · Score ${m.extremityScore > 0 ? "+" : ""}${m.extremityScore}`}
+              >
+                {m.symbol}
+                <span className="opacity-70">{m.extremityScore > 0 ? "+" : ""}{m.extremityScore}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
