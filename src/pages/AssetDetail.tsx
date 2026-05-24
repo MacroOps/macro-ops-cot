@@ -280,7 +280,6 @@ export default function AssetDetail() {
       }
       return out;
     };
-    const s50 = sma(50);
     const s200 = sma(200);
     // Map CoT report-date -> WoW net-spec delta for histogram overlay.
     const wowByDate = new Map<string, number>();
@@ -291,7 +290,6 @@ export default function AssetDetail() {
     const enriched = ps.map((p, i) => ({
       date: p.date,
       price: p.price,
-      sma50: s50[i],
       sma200: s200[i],
       wowSpec: wowByDate.has(p.date) ? (wowByDate.get(p.date) as number) : null,
     }));
