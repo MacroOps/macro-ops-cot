@@ -17,7 +17,7 @@ const Index = () => {
     if (filter === "Extremes") {
       return [...markets]
         .filter(m => Math.abs(m.extremityScore) >= 50)
-        .sort((a, b) => Math.abs(b.extremityScore) - Math.abs(a.extremityScore));
+        .sort((a, b) => b.extremityScore - a.extremityScore);
     }
     return markets.filter(m => m.sector === filter);
   }, [markets, filter]);
