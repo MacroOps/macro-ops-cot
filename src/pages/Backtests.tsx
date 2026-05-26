@@ -241,10 +241,15 @@ const Backtests = () => {
             <span className="flex items-center gap-1">
               <span className="inline-block w-3 border-t border-dotted border-chart-axis" /> Baseline drift
             </span>
+            {result?.current && (
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--pos-short))" }} /> Current signal · {result.current.weeksElapsed}w in
+              </span>
+            )}
             <span>{result?.count ?? 0} paths</span>
           </div>
         </div>
-        <div className="h-80">
+        <div className="h-[28rem]">
           {isLoading ? (
             <div className="h-full w-full animate-pulse bg-chart-grid/40" />
           ) : result && result.paths.length > 1 && result.trades.length ? (
