@@ -59,6 +59,13 @@ export interface BtBaseline {
   stdDev: number;
 }
 
+export interface BtCurrentSignal {
+  entryDate: string;
+  entryValue: number;
+  weeksElapsed: number;     // how many weeks of forward data we have so far (< horizon)
+  path: number[];           // partial raw % return path from entry through latest data
+}
+
 export interface BtResult {
   trades: BtTrade[];
   count: number;
@@ -70,7 +77,8 @@ export interface BtResult {
   baseline: BtBaseline;
   edgeMean: number;          // meanReturn - baseline.meanReturn
   zScore: number;            // (mean - baseline.mean) / (baseline.std / sqrt(n))
-  // Spaghetti: one row per week index 0..horizon. Each row has median/mean/baseline and one key per trade ("t0","t1"...).
+  current: BtCurrentSignal | null;  // most recent active trigger (in-progress forward path)
+  // Spaghetti: one row per week index 0..horizon. Each row has median/mean/baseline/current and one key per trade ("t0","t1"...).
   paths: Array<Record<string, number | string>>;
 }
 
