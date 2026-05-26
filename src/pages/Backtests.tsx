@@ -299,6 +299,17 @@ const Backtests = () => {
                 <Line type="monotone" dataKey="baseline" stroke="hsl(var(--chart-axis))" strokeWidth={1} strokeDasharray="1 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="mean" stroke="hsl(var(--chart-axis))" strokeWidth={1.25} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="median" stroke="hsl(var(--chart-ink))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+                {result.current && (
+                  <Line
+                    type="monotone"
+                    dataKey="current"
+                    stroke="hsl(var(--pos-short))"
+                    strokeWidth={2.5}
+                    dot={{ r: 2.5, fill: "hsl(var(--pos-short))", stroke: "hsl(var(--pos-short))" }}
+                    isAnimationActive={false}
+                    connectNulls={false}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           ) : (
