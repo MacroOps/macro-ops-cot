@@ -1,68 +1,50 @@
-# Extremity Score — Implementation Plan
+## Backtests Lab: remove direction flip + add market baseline
 
-Build a composite "Extremity Score" that flags markets at bullish or bearish extremes, and surface it across the Global Positioning dashboard.
+### 1. Replace Long/Short with a threshold condition
 
-## The score
+**`src/hooks/useBacktest.ts`**
+- `BtParams.direction: "long"|"short"` → `condition: "gte"|"lte"`
+- In `runBacktest`, remove all sign-flipping. `returnPct`, `rawReturnPct`, and every `path[k]` value are raw forward returns of the underlying (positive = market up).
+- Trigger logic: `condition === "gte" ? v >= threshold : v <= threshold`.
 
-Single signed score in **[-100, +100]**. Positive = crowded long / euphoric, negative = crowded short / capitulation.
+**`src/pages/Backtests.tsx`**
+- Rename the toggle to "Threshold" with options `≥` / `≤`.
+- Drop the sign-flip side-effect in `flipDirection`; keep only the threshold preset (≥ → ~85th pct of range, ≤ → ~15th).
+- Narration: *"When {indicator} {≥|≤} {threshold}, here's what {symbol} did over the next {N} weeks."*
+- Histogram coloring already keys off `lo >= 0`, so it now correctly shows up-weeks vs down-weeks.
 
-For percentiles, convert `p` (0–100) to a signed deviation: `s(p) = (p - 50) * 2`.
+### 2. Add a "blind market" baseline for significance
 
-For WoW change, compute a z-score of the latest weekly Δ in net spec contracts versus the trailing 26 weeks of weekly Δs; clamp to ±100 (a 1σ move ≈ 33, 2σ ≈ 66, 3σ ≈ 100). Signed by the direction of the change.
+The point: tell the user whether the filtered cohort is meaningfully different from what the market does on any random N-week window.
 
-```
-Extremity = 0.40 * s(netSpecPct6m)
-          + 0.25 * s(netSpecPct3y)
-          + 0.20 * z(WoW Δ net spec)
-```
+**Computation** (in `runBacktest`, returned as `baseline` on `BtResult`):
+- Walk every index `i` from 0 to `series.length - horizon - 1` (every week, no filter, overlapping is fine for a baseline distribution — more samples = stabler reference).
+- Compute raw forward return `(series[i+H].price - series[i].price) / series[i].price * 100`.
+- Aggregate: `count`, `meanReturn`, `medianReturn`, `pctPositive`, `stdDev`.
 
-Re-normalize the three weights to sum to 1.0 (= 0.471 / 0.294 / 0.235) so the score still maps cleanly to [-100, +100].
+**Display** — two changes to the stats panel:
 
-## Classification bands
+a. **Each KPI shows the baseline underneath in small mono text**, e.g.:
+   ```
+   % POSITIVE
+   62%
+   baseline 54%
+   ```
+   Applied to: % Positive, Mean Return, Median Return. (Best/Worst/Samples/Horizon/Indicator don't get a baseline.)
 
-| |score| | Label | Visual |
-|---|---|---|
-| ≥ 75 | Euphoric / Capitulation | bright pos-long / pos-short, subtle pulse |
-| 50–74 | Crowded | solid pos-long / pos-short |
-| 25–49 | Leaning | muted token |
-| < 25 | Neutral | chart-axis gray |
+b. **New "Edge vs Baseline" KPI** (replaces one of the less-useful cells, e.g. the "Indicator" tile):
+   - Value: `meanReturn - baseline.meanReturn` shown as `+X.XX% vs market`
+   - Tone: green if positive, red if negative
+   - This is the headline "is this signal doing anything?" number.
 
-## UI changes
+c. **Add a faint baseline reference band on the spaghetti chart**: a horizontal dotted line at `baseline.meanReturn × (week / horizon)` — i.e. the expected drift if you'd just held blindly. Lets the user eyeball whether the median path is meaningfully above/below "do nothing."
 
-**1. Header stat tile** on `src/pages/Index.tsx`
-- New tile "Extremes" showing count of markets with `|score| ≥ 75`, split as e.g. "3↑ / 1↓" (long / short) in pos-long / pos-short colors.
-- Replace the existing "Crowded Long ≥85" and "Crowded Short ≤15" tiles with this single combined tile to avoid redundancy.
+**Optional lightweight significance flag** (no scipy): compute a rough z-score
+`z = (meanReturn - baseline.mean) / (baseline.stdDev / sqrt(count))`
+and show a small `·sig` chip when `|z| > 2`. Keeps it honest without overstating; the cohort sizes are small so we won't claim p-values.
 
-**2. Badge on each `MarketCard`** in `src/components/hud/MarketCard.tsx`
-- Small top-right badge: signed numeric score + a compact horizontal "fever bar" (mirrors `PercentileGauge` visual language) running -100 → 0 → +100 with a current-position marker.
-- Color by band. Top band gets a subtle pulse animation (CSS keyframe, low intensity).
+### Files touched
+- `src/hooks/useBacktest.ts` — type changes, remove sign flip, add baseline calc
+- `src/pages/Backtests.tsx` — toggle rename, KPI baselines, edge tile, baseline reference on chart, narration copy
 
-**3. New "Extremes" filter chip** in the sector toolbar on `src/pages/Index.tsx`
-- Added next to "All" + sector chips.
-- When selected: filters to markets with `|score| ≥ 50` and sorts descending by `|score|`, ignoring sector filter.
-
-## Technical changes
-
-**`src/hooks/useDashboardData.ts`**
-- Add per-market computation:
-  - `weeklyDeltas`: differences between consecutive `netSpec` values in the existing `specSeries`.
-  - `wowZ`: latest delta divided by stddev of the trailing 26 deltas, signed, clamped to ±100 (* 33.3 scaling so 3σ ≈ 100). Guard against zero stddev.
-  - `extremityScore`: weighted sum per the formula above, rounded to integer.
-  - `extremityBand`: `"euphoric" | "capitulation" | "crowded-long" | "crowded-short" | "leaning-long" | "leaning-short" | "neutral"`.
-- Extend `MarketSnapshot` in `src/lib/mockData.ts` with `extremityScore: number` and `extremityBand: string`.
-
-**`src/pages/Index.tsx`**
-- Replace the two crowded tiles with one Extremes tile.
-- Add "Extremes" chip to the sector strip; route filtering + sorting through a new mode flag rather than the existing `sector` state (keep both independent — selecting Extremes overrides sector).
-
-**`src/components/hud/MarketCard.tsx`**
-- Add the badge component (small, top-right). New file `src/components/hud/ExtremityBadge.tsx` keeps it isolated and reusable.
-
-**`src/index.css`**
-- Add a `@keyframes extremity-pulse` and `.animate-extremity-pulse` utility (subtle opacity/box-shadow pulse using existing pos-long / pos-short HSL tokens).
-
-## Out of scope
-
-- OI is not included in the score per your decision.
-- Score breakdown on `AssetDetail` page — can follow in a later pass if you want the per-component transparency there.
-- User-adjustable weights — locked to the proposed values.
+No DB or edge function changes.

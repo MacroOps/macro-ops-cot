@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAssetData } from "@/hooks/useAssetData";
-import { runBacktest, INDICATOR_OPTIONS, type BtDirection, type BtIndicator } from "@/hooks/useBacktest";
+import { runBacktest, INDICATOR_OPTIONS, type BtCondition, type BtIndicator } from "@/hooks/useBacktest";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent, Zap } from "lucide-react";
 
 const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 const fmtInt = new Intl.NumberFormat("en-US");
@@ -20,7 +20,7 @@ const Backtests = () => {
   const [symbol, setSymbol] = useState<string>("");
   const activeSymbol = symbol || markets[0]?.symbol || "ES";
 
-  const [direction, setDirection] = useState<BtDirection>("long");
+  const [condition, setCondition] = useState<BtCondition>("gte");
   const [indicator, setIndicator] = useState<BtIndicator>("netSpecPct3y");
   const [threshold, setThreshold] = useState<number>(85);
   const [horizon, setHorizon] = useState<number>(12);
@@ -32,8 +32,8 @@ const Backtests = () => {
 
   const result = useMemo(() => {
     if (!asset?.series) return null;
-    return runBacktest(asset.series, { direction, threshold, horizonWeeks: horizon, indicator });
-  }, [asset, direction, threshold, horizon, indicator]);
+    return runBacktest(asset.series, { condition, threshold, horizonWeeks: horizon, indicator });
+  }, [asset, condition, threshold, horizon, indicator]);
 
   // Group + sort markets by sector
   const groupedMarkets = useMemo(() => {
@@ -54,7 +54,6 @@ const Backtests = () => {
     return ordered;
   }, [markets]);
 
-  // Group indicators
   const indicatorGroups = useMemo(() => {
     const g = new Map<string, typeof INDICATOR_OPTIONS>();
     for (const o of INDICATOR_OPTIONS) {
@@ -65,18 +64,16 @@ const Backtests = () => {
     return Array.from(g.entries());
   }, []);
 
-  const flipDirection = (d: BtDirection) => {
-    setDirection(d);
-    const mid = (thMin + thMax) / 2;
-    if (d === "long" && threshold < mid) setThreshold(Math.round(thMin + (thMax - thMin) * 0.85));
-    if (d === "short" && threshold >= mid) setThreshold(Math.round(thMin + (thMax - thMin) * 0.15));
+  const flipCondition = (c: BtCondition) => {
+    setCondition(c);
+    const pct = c === "gte" ? 0.85 : 0.15;
+    setThreshold(Math.round(thMin + (thMax - thMin) * pct));
   };
 
-  // Switch indicator: clamp threshold into new range
   const changeIndicator = (k: BtIndicator) => {
     const meta = INDICATOR_OPTIONS.find(o => o.key === k)!;
     const [lo, hi] = meta.range;
-    const pct = direction === "long" ? 0.85 : 0.15;
+    const pct = condition === "gte" ? 0.85 : 0.15;
     setThreshold(Math.round(lo + (hi - lo) * pct));
     setIndicator(k);
   };
@@ -96,6 +93,9 @@ const Backtests = () => {
       return { bucket: `${lo.toFixed(1)}–${hi.toFixed(1)}`, count, lo, hi };
     });
   }, [result]);
+
+  const condSym = condition === "gte" ? "≥" : "≤";
+  const sig = result && Math.abs(result.zScore) > 2;
 
   return (
     <AppShell title="Backtests Lab">
@@ -136,14 +136,14 @@ const Backtests = () => {
             </select>
           </Section>
 
-          <Section label="Direction">
+          <Section label="Threshold Condition">
             <Toggle
               options={[
-                { k: "long", l: "Long ≥" },
-                { k: "short", l: "Short ≤" },
+                { k: "gte", l: "Indicator ≥" },
+                { k: "lte", l: "Indicator ≤" },
               ]}
-              value={direction}
-              onChange={(v) => flipDirection(v as BtDirection)}
+              value={condition}
+              onChange={(v) => flipCondition(v as BtCondition)}
             />
           </Section>
 
@@ -178,39 +178,50 @@ const Backtests = () => {
           </Section>
 
           <div className="border-t border-chart-grid pt-3 text-[10px] leading-relaxed text-chart-axis">
-            Enter <span className="font-semibold text-chart-surface-foreground">{direction.toUpperCase()}</span> whenever{" "}
-            <span className="font-semibold text-chart-surface-foreground">{indicatorMeta.label}</span>{" "}
-            {direction === "long" ? "≥" : "≤"} {threshold}. Track forward price for {horizon} week{horizon > 1 ? "s" : ""}.
-            Non-overlapping samples.
+            When <span className="font-semibold text-chart-surface-foreground">{indicatorMeta.label}</span>{" "}
+            {condSym} <span className="font-semibold text-chart-surface-foreground">{threshold}</span>, observe
+            what <span className="font-semibold text-chart-surface-foreground">{activeSymbol}</span> did over the
+            next {horizon} week{horizon > 1 ? "s" : ""}. Baseline = all rolling {horizon}w windows in the series.
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-chart-grid">
-          <KPI icon={<Hash className="h-3 w-3" />} label="Samples" value={result?.count.toString() ?? "—"} />
+          <KPI icon={<Hash className="h-3 w-3" />} label="Samples" value={result?.count.toString() ?? "—"}
+               sub={result ? `baseline ${fmtInt.format(result.baseline.count)}` : undefined} />
           <KPI
             icon={<Target className="h-3 w-3" />}
-            label="Hit Rate"
-            value={result ? `${result.hitRate.toFixed(0)}%` : "—"}
-            tone={result && result.hitRate >= 55 ? "long" : result && result.hitRate <= 45 ? "short" : undefined}
+            label="% Positive"
+            value={result ? `${result.pctPositive.toFixed(0)}%` : "—"}
+            sub={result ? `baseline ${result.baseline.pctPositive.toFixed(0)}%` : undefined}
+            tone={result && result.pctPositive > result.baseline.pctPositive ? "long"
+                : result && result.pctPositive < result.baseline.pctPositive ? "short" : undefined}
           />
           <KPI
             icon={<Percent className="h-3 w-3" />}
             label="Mean Return"
             value={result ? fmtPct(result.meanReturn) : "—"}
+            sub={result ? `baseline ${fmtPct(result.baseline.meanReturn)}` : undefined}
             tone={result && result.meanReturn >= 0 ? "long" : "short"}
           />
           <KPI
             icon={<TrendingUp className="h-3 w-3" />}
             label="Median Return"
             value={result ? fmtPct(result.medianReturn) : "—"}
+            sub={result ? `baseline ${fmtPct(result.baseline.medianReturn)}` : undefined}
             tone={result && result.medianReturn >= 0 ? "long" : "short"}
-            big
           />
           <KPI label="Best" value={result ? fmtPct(result.bestReturn) : "—"} tone="long" />
           <KPI label="Worst" value={result ? fmtPct(result.worstReturn) : "—"} tone="short" />
           <KPI label="Horizon" value={`${horizon}w`} />
-          <KPI label="Indicator" value={indicatorMeta.label.split(" ")[0]} />
+          <KPI
+            icon={<Zap className="h-3 w-3" />}
+            label="Edge vs Baseline"
+            value={result ? `${fmtPct(result.edgeMean)}` : "—"}
+            sub={result ? `z ${result.zScore >= 0 ? "+" : ""}${result.zScore.toFixed(2)}${sig ? " · sig" : ""}` : undefined}
+            tone={result && result.edgeMean >= 0 ? "long" : "short"}
+            big
+          />
         </div>
       </div>
 
@@ -220,12 +231,15 @@ const Backtests = () => {
           <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis">
             Forward Returns · {activeSymbol} · each line = one past instance
           </div>
-          <div className="text-[10px] font-mono text-chart-axis flex items-center gap-3">
+          <div className="text-[10px] font-mono text-chart-axis flex items-center gap-3 flex-wrap">
             <span className="flex items-center gap-1">
               <span className="inline-block w-3 h-px bg-chart-ink" /> Median
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--chart-axis))", opacity: 0.5 }} /> Mean
+              <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--chart-axis))", opacity: 0.6 }} /> Mean
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 border-t border-dotted border-chart-axis" /> Baseline drift
             </span>
             <span>{result?.count ?? 0} paths</span>
           </div>
@@ -258,7 +272,7 @@ const Backtests = () => {
                     fontSize: 11, borderRadius: 2, color: "hsl(var(--chart-surface-foreground))",
                   }}
                   formatter={(v: number, name: string) => {
-                    if (name === "median" || name === "mean") return [`${fmtPct(v)}`, name];
+                    if (name === "median" || name === "mean" || name === "baseline") return [`${fmtPct(v)}`, name];
                     return null;
                   }}
                   labelFormatter={(l) => `Week ${l}`}
@@ -277,6 +291,7 @@ const Backtests = () => {
                     activeDot={false}
                   />
                 ))}
+                <Line type="monotone" dataKey="baseline" stroke="hsl(var(--chart-axis))" strokeWidth={1} strokeDasharray="1 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="mean" stroke="hsl(var(--chart-axis))" strokeWidth={1.25} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="median" stroke="hsl(var(--chart-ink))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
               </LineChart>
@@ -401,8 +416,8 @@ function Toggle<T extends string>({ options, value, onChange }: {
   );
 }
 
-function KPI({ icon, label, value, tone, big }: {
-  icon?: React.ReactNode; label: string; value: string;
+function KPI({ icon, label, value, sub, tone, big }: {
+  icon?: React.ReactNode; label: string; value: string; sub?: string;
   tone?: "long" | "short"; big?: boolean;
 }) {
   const color =
@@ -417,6 +432,9 @@ function KPI({ icon, label, value, tone, big }: {
       <div className={`mt-1 ${big ? "text-2xl" : "text-base"} font-semibold tabular-nums ${color} truncate`}>
         {value}
       </div>
+      {sub && (
+        <div className="text-[9px] font-mono text-chart-axis mt-0.5 truncate">{sub}</div>
+      )}
     </div>
   );
 }
