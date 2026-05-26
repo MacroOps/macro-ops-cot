@@ -1,6 +1,6 @@
 import type { AssetSeriesPoint } from "./useAssetData";
 
-export type BtDirection = "long" | "short";
+export type BtCondition = "gte" | "lte";
 
 export type BtIndicator =
   | "netSpecPct3y"
@@ -34,7 +34,7 @@ export const INDICATOR_OPTIONS: { key: BtIndicator; label: string; group: string
 ];
 
 export interface BtParams {
-  direction: BtDirection;
+  condition: BtCondition;
   threshold: number;
   horizonWeeks: number;
   indicator: BtIndicator;
@@ -46,20 +46,31 @@ export interface BtTrade {
   entryPrice: number;
   exitPrice: number;
   entryValue: number;
-  returnPct: number;        // signed for direction
-  rawReturnPct: number;
-  path: number[];           // cumulative signed % return at each week 0..horizon (length = horizon+1, starts at 0)
+  returnPct: number;        // raw forward return of underlying (positive = up)
+  rawReturnPct: number;     // same; kept for compatibility
+  path: number[];           // cumulative raw % return at each week 0..horizon (length = horizon+1, starts at 0)
+}
+
+export interface BtBaseline {
+  count: number;
+  meanReturn: number;
+  medianReturn: number;
+  pctPositive: number;
+  stdDev: number;
 }
 
 export interface BtResult {
   trades: BtTrade[];
   count: number;
-  hitRate: number;
+  pctPositive: number;       // % of cohort instances where market rose over horizon
   meanReturn: number;
   medianReturn: number;
   bestReturn: number;
   worstReturn: number;
-  // Spaghetti: one row per week index 0..horizon. Each row has median/mean and one key per trade ("t0","t1"...).
+  baseline: BtBaseline;
+  edgeMean: number;          // meanReturn - baseline.meanReturn
+  zScore: number;            // (mean - baseline.mean) / (baseline.std / sqrt(n))
+  // Spaghetti: one row per week index 0..horizon. Each row has median/mean/baseline and one key per trade ("t0","t1"...).
   paths: Array<Record<string, number | string>>;
 }
 
@@ -70,26 +81,58 @@ function median(arr: number[]) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
-  const trades: BtTrade[] = [];
-  if (series.length < p.horizonWeeks + 2) {
-    return { trades: [], count: 0, hitRate: 0, meanReturn: 0, medianReturn: 0, bestReturn: 0, worstReturn: 0, paths: [] };
-  }
+function stddev(arr: number[]) {
+  if (arr.length < 2) return 0;
+  const m = arr.reduce((a, b) => a + b, 0) / arr.length;
+  const v = arr.reduce((a, b) => a + (b - m) * (b - m), 0) / (arr.length - 1);
+  return Math.sqrt(v);
+}
 
+function computeBaseline(series: AssetSeriesPoint[], horizonWeeks: number): BtBaseline {
+  const rets: number[] = [];
+  for (let i = 0; i < series.length - horizonWeeks - 1; i++) {
+    const p0 = series[i].price;
+    const p1 = series[i + horizonWeeks].price;
+    if (p0 > 0 && p1 > 0) {
+      rets.push(((p1 - p0) / p0) * 100);
+    }
+  }
+  if (!rets.length) {
+    return { count: 0, meanReturn: 0, medianReturn: 0, pctPositive: 0, stdDev: 0 };
+  }
+  const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+  const pos = rets.filter(r => r > 0).length;
+  return {
+    count: rets.length,
+    meanReturn: mean,
+    medianReturn: median(rets),
+    pctPositive: (pos / rets.length) * 100,
+    stdDev: stddev(rets),
+  };
+}
+
+export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
+  const baseline = computeBaseline(series, p.horizonWeeks);
+  const empty: BtResult = {
+    trades: [], count: 0, pctPositive: 0, meanReturn: 0, medianReturn: 0,
+    bestReturn: 0, worstReturn: 0, baseline, edgeMean: 0, zScore: 0, paths: [],
+  };
+  if (series.length < p.horizonWeeks + 2) return empty;
+
+  const trades: BtTrade[] = [];
   let i = 0;
   while (i < series.length - p.horizonWeeks - 1) {
     const v = series[i][p.indicator] as number;
-    const triggered = p.direction === "long" ? v >= p.threshold : v <= p.threshold;
+    const triggered = p.condition === "gte" ? v >= p.threshold : v <= p.threshold;
 
     if (triggered && series[i].price > 0) {
       const entry = series[i];
       const exit = series[i + p.horizonWeeks];
-      const raw = (exit.price - entry.price) / entry.price;
-      const ret = p.direction === "long" ? raw : -raw;
+      const raw = ((exit.price - entry.price) / entry.price) * 100;
       const path: number[] = [];
       for (let k = 0; k <= p.horizonWeeks; k++) {
-        const r = (series[i + k].price - entry.price) / entry.price;
-        path.push((p.direction === "long" ? r : -r) * 100);
+        const r = ((series[i + k].price - entry.price) / entry.price) * 100;
+        path.push(r);
       }
       trades.push({
         entryDate: entry.date,
@@ -97,8 +140,8 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
         entryPrice: entry.price,
         exitPrice: exit.price,
         entryValue: v,
-        returnPct: ret * 100,
-        rawReturnPct: raw * 100,
+        returnPct: raw,
+        rawReturnPct: raw,
         path,
       });
       i += p.horizonWeeks;
@@ -108,7 +151,7 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
   }
 
   const returns = trades.map(t => t.returnPct);
-  const hits = returns.filter(r => r > 0).length;
+  const pos = returns.filter(r => r > 0).length;
   const mean = returns.length ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
 
   const paths: Array<Record<string, number | string>> = [];
@@ -121,17 +164,27 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
     });
     row.median = vals.length ? Number(median(vals).toFixed(3)) : 0;
     row.mean = vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3)) : 0;
+    // Linear baseline drift across the horizon (mean N-week return scaled by week/horizon)
+    row.baseline = Number(((baseline.meanReturn * k) / Math.max(1, p.horizonWeeks)).toFixed(3));
     paths.push(row);
   }
+
+  const edgeMean = mean - baseline.meanReturn;
+  const zScore = trades.length > 0 && baseline.stdDev > 0
+    ? edgeMean / (baseline.stdDev / Math.sqrt(trades.length))
+    : 0;
 
   return {
     trades,
     count: trades.length,
-    hitRate: returns.length ? (hits / returns.length) * 100 : 0,
+    pctPositive: returns.length ? (pos / returns.length) * 100 : 0,
     meanReturn: mean,
     medianReturn: median(returns),
     bestReturn: returns.length ? Math.max(...returns) : 0,
     worstReturn: returns.length ? Math.min(...returns) : 0,
+    baseline,
+    edgeMean,
+    zScore,
     paths,
   };
 }
