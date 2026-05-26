@@ -241,10 +241,15 @@ const Backtests = () => {
             <span className="flex items-center gap-1">
               <span className="inline-block w-3 border-t border-dotted border-chart-axis" /> Baseline drift
             </span>
+            {result?.current && (
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--pos-short))" }} /> Current signal · {result.current.weeksElapsed}w in
+              </span>
+            )}
             <span>{result?.count ?? 0} paths</span>
           </div>
         </div>
-        <div className="h-80">
+        <div className="h-[28rem]">
           {isLoading ? (
             <div className="h-full w-full animate-pulse bg-chart-grid/40" />
           ) : result && result.paths.length > 1 && result.trades.length ? (
@@ -272,7 +277,7 @@ const Backtests = () => {
                     fontSize: 11, borderRadius: 2, color: "hsl(var(--chart-surface-foreground))",
                   }}
                   formatter={(v: number, name: string) => {
-                    if (name === "median" || name === "mean" || name === "baseline") return [`${fmtPct(v)}`, name];
+                    if (name === "median" || name === "mean" || name === "baseline" || name === "current") return [`${fmtPct(v)}`, name];
                     return null;
                   }}
                   labelFormatter={(l) => `Week ${l}`}
@@ -294,6 +299,17 @@ const Backtests = () => {
                 <Line type="monotone" dataKey="baseline" stroke="hsl(var(--chart-axis))" strokeWidth={1} strokeDasharray="1 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="mean" stroke="hsl(var(--chart-axis))" strokeWidth={1.25} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
                 <Line type="monotone" dataKey="median" stroke="hsl(var(--chart-ink))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+                {result.current && (
+                  <Line
+                    type="monotone"
+                    dataKey="current"
+                    stroke="hsl(var(--pos-short))"
+                    strokeWidth={2.5}
+                    dot={{ r: 2.5, fill: "hsl(var(--pos-short))", stroke: "hsl(var(--pos-short))" }}
+                    isAnimationActive={false}
+                    connectNulls={false}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           ) : (

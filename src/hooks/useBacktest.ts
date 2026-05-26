@@ -59,6 +59,13 @@ export interface BtBaseline {
   stdDev: number;
 }
 
+export interface BtCurrentSignal {
+  entryDate: string;
+  entryValue: number;
+  weeksElapsed: number;     // how many weeks of forward data we have so far (< horizon)
+  path: number[];           // partial raw % return path from entry through latest data
+}
+
 export interface BtResult {
   trades: BtTrade[];
   count: number;
@@ -70,7 +77,8 @@ export interface BtResult {
   baseline: BtBaseline;
   edgeMean: number;          // meanReturn - baseline.meanReturn
   zScore: number;            // (mean - baseline.mean) / (baseline.std / sqrt(n))
-  // Spaghetti: one row per week index 0..horizon. Each row has median/mean/baseline and one key per trade ("t0","t1"...).
+  current: BtCurrentSignal | null;  // most recent active trigger (in-progress forward path)
+  // Spaghetti: one row per week index 0..horizon. Each row has median/mean/baseline/current and one key per trade ("t0","t1"...).
   paths: Array<Record<string, number | string>>;
 }
 
@@ -115,39 +123,52 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
   const baseline = computeBaseline(series, p.horizonWeeks);
   const empty: BtResult = {
     trades: [], count: 0, pctPositive: 0, meanReturn: 0, medianReturn: 0,
-    bestReturn: 0, worstReturn: 0, baseline, edgeMean: 0, zScore: 0, paths: [],
+    bestReturn: 0, worstReturn: 0, baseline, edgeMean: 0, zScore: 0, current: null, paths: [],
   };
   if (series.length < p.horizonWeeks + 2) return empty;
 
   const trades: BtTrade[] = [];
-  let i = 0;
-  while (i < series.length - p.horizonWeeks - 1) {
+  // Use overlapping windows so the cohort distribution is directly comparable to the baseline
+  // (which also overlaps) and so we get the full historical signal density.
+  for (let i = 0; i < series.length - p.horizonWeeks - 1; i++) {
     const v = series[i][p.indicator] as number;
     const triggered = p.condition === "gte" ? v >= p.threshold : v <= p.threshold;
+    if (!triggered || series[i].price <= 0) continue;
 
-    if (triggered && series[i].price > 0) {
-      const entry = series[i];
-      const exit = series[i + p.horizonWeeks];
-      const raw = ((exit.price - entry.price) / entry.price) * 100;
-      const path: number[] = [];
-      for (let k = 0; k <= p.horizonWeeks; k++) {
-        const r = ((series[i + k].price - entry.price) / entry.price) * 100;
-        path.push(r);
-      }
-      trades.push({
-        entryDate: entry.date,
-        exitDate: exit.date,
-        entryPrice: entry.price,
-        exitPrice: exit.price,
-        entryValue: v,
-        returnPct: raw,
-        rawReturnPct: raw,
-        path,
-      });
-      i += p.horizonWeeks;
-    } else {
-      i += 1;
+    const entry = series[i];
+    const exit = series[i + p.horizonWeeks];
+    const raw = ((exit.price - entry.price) / entry.price) * 100;
+    const path: number[] = [];
+    for (let k = 0; k <= p.horizonWeeks; k++) {
+      const r = ((series[i + k].price - entry.price) / entry.price) * 100;
+      path.push(r);
     }
+    trades.push({
+      entryDate: entry.date,
+      exitDate: exit.date,
+      entryPrice: entry.price,
+      exitPrice: exit.price,
+      entryValue: v,
+      returnPct: raw,
+      rawReturnPct: raw,
+      path,
+    });
+  }
+
+  // Current in-progress signal: most recent trigger whose forward window hasn't fully elapsed yet.
+  let current: BtCurrentSignal | null = null;
+  for (let i = series.length - 1; i >= Math.max(0, series.length - p.horizonWeeks - 1); i--) {
+    const v = series[i][p.indicator] as number;
+    const triggered = p.condition === "gte" ? v >= p.threshold : v <= p.threshold;
+    if (!triggered || series[i].price <= 0) continue;
+    const weeksElapsed = series.length - 1 - i;
+    const entry = series[i];
+    const path: number[] = [];
+    for (let k = 0; k <= weeksElapsed; k++) {
+      path.push(((series[i + k].price - entry.price) / entry.price) * 100);
+    }
+    current = { entryDate: entry.date, entryValue: v, weeksElapsed, path };
+    break;
   }
 
   const returns = trades.map(t => t.returnPct);
@@ -166,6 +187,9 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
     row.mean = vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3)) : 0;
     // Linear baseline drift across the horizon (mean N-week return scaled by week/horizon)
     row.baseline = Number(((baseline.meanReturn * k) / Math.max(1, p.horizonWeeks)).toFixed(3));
+    if (current && k <= current.weeksElapsed) {
+      row.current = Number(current.path[k].toFixed(3));
+    }
     paths.push(row);
   }
 
@@ -185,6 +209,7 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
     baseline,
     edgeMean,
     zScore,
+    current,
     paths,
   };
 }
