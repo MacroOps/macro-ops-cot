@@ -277,7 +277,7 @@ const Backtests = () => {
                     fontSize: 11, borderRadius: 2, color: "hsl(var(--chart-surface-foreground))",
                   }}
                   formatter={(v: number, name: string) => {
-                    if (name === "median" || name === "mean" || name === "baseline") return [`${fmtPct(v)}`, name];
+                    if (name === "median" || name === "mean" || name === "baseline" || name === "current") return [`${fmtPct(v)}`, name];
                     return null;
                   }}
                   labelFormatter={(l) => `Week ${l}`}
