@@ -15,6 +15,9 @@ import {
   LineChart,
   Calculator,
   ChevronDown,
+  Compass,
+  Crosshair,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
@@ -80,6 +83,31 @@ const NAV: Group[] = [
     title: "Tools",
     icon: Calculator,
     children: [{ title: "Position Sizing", url: "/tools/position-sizing" }],
+  },
+  { title: "TPMR Overview", icon: Compass, url: "/tpmr/market-overview" },
+  {
+    title: "Dual Trend",
+    icon: Crosshair,
+    children: [
+      { title: "S&P 500", url: "/tpmr/dual-trend/sp500" },
+      { title: "S&P 400", url: "/tpmr/dual-trend/sp400" },
+      { title: "S&P 600", url: "/tpmr/dual-trend/sp600" },
+      { title: "ETFs", url: "/tpmr/dual-trend/etfs" },
+      { title: "Gold & Silver Miners", url: "/tpmr/dual-trend/gold-silver-miners" },
+      { title: "Large Cap Cyclical", url: "/tpmr/dual-trend/large-cap-cyclical" },
+      { title: "Thematic Stocks", url: "/tpmr/dual-trend/thematic" },
+    ],
+  },
+  {
+    title: "TCTM Guides",
+    icon: ShieldAlert,
+    children: [
+      { title: "Risk-Off", url: "/tpmr/tctm/risk-off" },
+      { title: "Capitulation", url: "/tpmr/tctm/capitulation" },
+      { title: "Bottom", url: "/tpmr/tctm/bottom" },
+      { title: "Thrust", url: "/tpmr/tctm/thrust" },
+      { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
+    ],
   },
 ];
 

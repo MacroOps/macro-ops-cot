@@ -23,6 +23,9 @@ import {
 } from "./pages/Breadth.tsx";
 import MacroPage from "./pages/MacroPage.tsx";
 import PositionSizing from "./pages/PositionSizing.tsx";
+import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
+import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
+import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +59,19 @@ const App = () => (
             <Route path="/macro/recession" element={<MacroPage slug="recession" />} />
             <Route path="/macro/implied-regime" element={<MacroPage slug="implied-regime" />} />
             <Route path="/tools/position-sizing" element={<PositionSizing />} />
+            <Route path="/tpmr/market-overview" element={<MarketOverview />} />
+            <Route path="/tpmr/dual-trend/sp500" element={<DualTrendPage slug="sp500" />} />
+            <Route path="/tpmr/dual-trend/sp400" element={<DualTrendPage slug="sp400" />} />
+            <Route path="/tpmr/dual-trend/sp600" element={<DualTrendPage slug="sp600" />} />
+            <Route path="/tpmr/dual-trend/etfs" element={<DualTrendPage slug="etfs" />} />
+            <Route path="/tpmr/dual-trend/gold-silver-miners" element={<DualTrendPage slug="gold-silver-miners" />} />
+            <Route path="/tpmr/dual-trend/large-cap-cyclical" element={<DualTrendPage slug="large-cap-cyclical" />} />
+            <Route path="/tpmr/dual-trend/thematic" element={<DualTrendPage slug="thematic" />} />
+            <Route path="/tpmr/tctm/risk-off" element={<TctmGuide slug="risk-off" />} />
+            <Route path="/tpmr/tctm/capitulation" element={<TctmGuide slug="capitulation" />} />
+            <Route path="/tpmr/tctm/bottom" element={<TctmGuide slug="bottom" />} />
+            <Route path="/tpmr/tctm/thrust" element={<TctmGuide slug="thrust" />} />
+            <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
