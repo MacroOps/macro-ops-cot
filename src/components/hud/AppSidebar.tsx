@@ -15,6 +15,9 @@ import {
   LineChart,
   Calculator,
   ChevronDown,
+  Compass,
+  Crosshair,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
