@@ -23,6 +23,9 @@ import {
 } from "./pages/Breadth.tsx";
 import MacroPage from "./pages/MacroPage.tsx";
 import PositionSizing from "./pages/PositionSizing.tsx";
+import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
+import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
+import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 
 const queryClient = new QueryClient();
 
