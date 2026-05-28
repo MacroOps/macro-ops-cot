@@ -1,6 +1,9 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
+import { CompositePanel } from "@/components/hud/CompositePanel";
+import { InputsRequired } from "@/components/hud/InputsRequired";
+import { MO_LIQUIDITY, MO_INFLATION_LEAD, type IndicatorSpec } from "@/lib/indicatorSpecs";
 
 type Section = {
   title: string;
