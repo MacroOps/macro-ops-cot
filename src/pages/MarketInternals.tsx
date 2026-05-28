@@ -2,28 +2,24 @@ import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
-
-const RATIOS = [
-  { title: "SOXX / SPY", seed: 301 },
-  { title: "Cyclical / Defensives", seed: 302 },
-  { title: "Discretionary / Staples", seed: 303 },
-  { title: "LQD / IEF", seed: 304 },
-  { title: "VIX3M / VIX", seed: 305 },
-  { title: "High Beta / Low Volatility", seed: 306 },
-];
+import { CompositePanel } from "@/components/hud/CompositePanel";
+import { InputsRequired } from "@/components/hud/InputsRequired";
+import { MARKET_INTERNALS } from "@/lib/indicatorSpecs";
+import type { ComponentSpec } from "@/lib/indicatorSpecs";
 
 type View = "internals" | "divergence";
 
-function RatioCard({ title, seed }: { title: string; seed: number }) {
+function RatioCard({ component, seed }: { component: ComponentSpec; seed: number }) {
   const [view, setView] = useState<View>("internals");
+  const isDiv = view === "divergence";
   return (
     <IndicatorCard
-      title={title}
-      subtitle={view === "internals" ? "Ratio · 0–100%" : "Divergence vs SPX"}
-      seed={seed + (view === "divergence" ? 10_000 : 0)}
+      component={component}
+      subtitle={isDiv ? "Divergence vs SPX (63D stoch)" : "Raw ratio"}
+      seed={seed + (isDiv ? 10_000 : 0)}
       variant="line"
-      min={view === "divergence" ? -50 : 0}
-      max={view === "divergence" ? 50 : 100}
+      min={isDiv ? -50 : undefined}
+      max={isDiv ? 50 : undefined}
       actions={
         <select
           value={view}
@@ -43,27 +39,16 @@ export default function MarketInternals() {
     <AppShell title="Market Internals">
       <PageHeader
         eyebrow="MO Indicator"
-        title="Market Internals"
-        description="Risk-on / risk-off ratio panels. Toggle each card between raw internals and divergence vs SPX."
+        title={MARKET_INTERNALS.name}
+        description={MARKET_INTERNALS.description}
       />
-      <div className="px-3 pt-3">
-        <IndicatorCard
-          title="Macro Ops | Market Internals (Composite)"
-          subtitle="Net signal · ±80%"
-          seed={300}
-          variant="area"
-          height={240}
-          min={-80}
-          max={80}
-          drift={0.4}
-          thresholds={{ hi: 50, lo: -50 }}
-        />
-      </div>
+      <CompositePanel spec={MARKET_INTERNALS} seed={300} drift={0.4} />
       <CardGrid cols={3}>
-        {RATIOS.map((r) => (
-          <RatioCard key={r.seed} title={r.title} seed={r.seed} />
+        {MARKET_INTERNALS.components.map((c, i) => (
+          <RatioCard key={c.id} component={c} seed={301 + i} />
         ))}
       </CardGrid>
+      <InputsRequired inputs={MARKET_INTERNALS.inputs} />
     </AppShell>
   );
 }

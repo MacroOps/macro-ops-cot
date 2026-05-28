@@ -1,48 +1,31 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
-
-const COMPONENTS = [
-  { title: "Call/Put Ratio", seed: 101 },
-  { title: "AAII Bull-Bear Index", seed: 102 },
-  { title: "Pairwise Correlation", seed: 103, volatility: 0.08 },
-  { title: "Aggregate Fund Flows", seed: 104, volatility: 0.3 },
-  { title: "Net Speculators (L+S)", seed: 105 },
-  { title: "Market Regime Index", seed: 106 },
-];
+import { CompositePanel } from "@/components/hud/CompositePanel";
+import { InputsRequired } from "@/components/hud/InputsRequired";
+import { TREND_FRAGILITY } from "@/lib/indicatorSpecs";
 
 export default function TrendFragility() {
   return (
     <AppShell title="Trend Fragility">
       <PageHeader
         eyebrow="MO Indicator"
-        title="Trend Fragility"
-        description="Composite of 6 sentiment, positioning, and regime components. Rolling 10-year percentile."
+        title={TREND_FRAGILITY.name}
+        description={TREND_FRAGILITY.description}
       />
-      <div className="px-3 pt-3">
-        <IndicatorCard
-          title="Macro Ops | Trend Fragility (Composite)"
-          subtitle="0–100% percentile"
-          seed={100}
-          variant="area"
-          height={240}
-          drift={-0.5}
-          thresholds={{ hi: 90, lo: 20 }}
-        />
-      </div>
+      <CompositePanel spec={TREND_FRAGILITY} seed={100} drift={-0.5} />
       <CardGrid cols={3}>
-        {COMPONENTS.map((c) => (
+        {TREND_FRAGILITY.components.map((c, i) => (
           <IndicatorCard
-            key={c.seed}
-            title={c.title}
+            key={c.id}
+            component={c}
             subtitle="0–100% percentile"
-            seed={c.seed}
+            seed={101 + i}
             variant="line"
-            volatility={c.volatility}
-            thresholds={{ hi: 90, lo: 20 }}
           />
         ))}
       </CardGrid>
+      <InputsRequired inputs={TREND_FRAGILITY.inputs} />
     </AppShell>
   );
 }
