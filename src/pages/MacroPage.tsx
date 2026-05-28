@@ -89,7 +89,38 @@ const SECTIONS: Record<string, Section> = {
   },
 };
 
+const SPEC_OVERRIDES: Partial<Record<string, IndicatorSpec>> = {
+  liquidity: MO_LIQUIDITY,
+  inflation: MO_INFLATION_LEAD,
+};
+
 export default function MacroPage({ slug }: { slug: keyof typeof SECTIONS }) {
+  const spec = SPEC_OVERRIDES[slug as string];
+  if (spec) {
+    return (
+      <AppShell title={`Macro · ${spec.name}`}>
+        <PageHeader
+          eyebrow="Macro"
+          title={spec.name}
+          description={spec.description}
+        />
+        <CompositePanel spec={spec} seed={600 + slug.length} />
+        <CardGrid cols={spec.components.length <= 4 ? 2 : 3}>
+          {spec.components.map((c, i) => (
+            <IndicatorCard
+              key={c.id}
+              component={c}
+              subtitle={c.output === "zscore" ? "Z-score" : "0–100%"}
+              seed={610 + slug.length * 3 + i}
+              variant="line"
+            />
+          ))}
+        </CardGrid>
+        <InputsRequired inputs={spec.inputs} />
+      </AppShell>
+    );
+  }
+
   const s = SECTIONS[slug];
   const cols = s.charts.length <= 4 ? 2 : 3;
   return (
