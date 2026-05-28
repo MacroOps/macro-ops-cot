@@ -25,7 +25,7 @@ async function fetchSocrata(base: string, code: string, sinceISO: string, untilI
     : `report_date_as_yyyy_mm_dd >= '${sinceISO}'`;
   url.searchParams.set("$where", where);
   url.searchParams.set("$order", "report_date_as_yyyy_mm_dd DESC");
-  url.searchParams.set("$limit", "50000");
+  url.searchParams.set("$limit", "600");
   const r = await fetch(url.toString());
   if (!r.ok) throw new Error(`Socrata ${r.status} ${url}`);
   return r.json() as Promise<Record<string, string>[]>;
@@ -64,68 +64,18 @@ Deno.serve(async (req) => {
         const disagg = wantDisagg ? await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride) : [];
         const tff    = wantTff    ? await fetchSocrata(SOCRATA_TFF,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
 
-        // Bulk-upsert helper: upsert all reports for a format, get IDs back,
-        // then bulk-upsert snapshots in chunks.
-        async function flush(
-          rows: Record<string, string>[],
-          format: "legacy" | "disaggregated" | "tff",
-          buildSnaps: (row: Record<string, string>, oi: number) => Array<{
-            category: string; long_contracts: number; short_contracts: number;
-            spread_contracts: number; pct_of_oi: number | null;
-          }>,
-        ) {
-          if (!rows.length) return;
-          const reportPayload = rows
-            .map((row) => {
-              const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
-              if (!reportDate) return null;
-              return { market_id: m.id, report_date: reportDate, format, open_interest: num(row.open_interest_all) };
-            })
-            .filter((x): x is NonNullable<typeof x> => x !== null);
+        // ---- Legacy ----
+        for (const row of legacy) {
+          const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
+          if (!reportDate) continue;
+          const oi = num(row.open_interest_all);
+          const { data: rep, error: rErr } = await sb
+            .from("cot_reports")
+            .upsert({ market_id: m.id, report_date: reportDate, format: "legacy", open_interest: oi },
+                    { onConflict: "market_id,report_date,format" })
+            .select("id").single();
+          if (rErr) throw rErr;
 
-          // Chunked upsert of reports.
-          for (let i = 0; i < reportPayload.length; i += 500) {
-            const chunk = reportPayload.slice(i, i + 500);
-            const { error } = await sb.from("cot_reports")
-              .upsert(chunk, { onConflict: "market_id,report_date,format" });
-            if (error) throw error;
-          }
-
-          // Map dates to IDs.
-          const dates = reportPayload.map((r) => r.report_date);
-          const idMap = new Map<string, string>();
-          for (let i = 0; i < dates.length; i += 500) {
-            const dchunk = dates.slice(i, i + 500);
-            const { data, error } = await sb.from("cot_reports")
-              .select("id,report_date")
-              .eq("market_id", m.id).eq("format", format).in("report_date", dchunk);
-            if (error) throw error;
-            for (const r of (data ?? []) as { id: string; report_date: string }[]) {
-              idMap.set(r.report_date, r.id);
-            }
-          }
-
-          // Build snapshots.
-          const allSnaps: Array<Record<string, unknown>> = [];
-          for (const row of rows) {
-            const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
-            const reportId = idMap.get(reportDate);
-            if (!reportId) continue;
-            const oi = num(row.open_interest_all);
-            for (const s of buildSnaps(row, oi)) {
-              allSnaps.push({ ...s, report_id: reportId });
-            }
-          }
-          for (let i = 0; i < allSnaps.length; i += 1000) {
-            const chunk = allSnaps.slice(i, i + 1000);
-            const { error } = await sb.from("positioning_snapshots")
-              .upsert(chunk, { onConflict: "report_id,category" });
-            if (error) throw error;
-            written += chunk.length;
-          }
-        }
-
-        await flush(legacy, "legacy", (row, oi) => {
           const ncL = num(row.noncomm_positions_long_all);
           const ncS = num(row.noncomm_positions_short_all);
           const ncSp = num(row.noncomm_postions_spread_all ?? row.noncomm_positions_spread);
@@ -133,14 +83,30 @@ Deno.serve(async (req) => {
           const cS = num(row.comm_positions_short_all);
           const nrL = num(row.nonrept_positions_long_all);
           const nrS = num(row.nonrept_positions_short_all);
-          return [
+
+          const snapshots = [
             { category: "non_commercial", long_contracts: ncL, short_contracts: ncS, spread_contracts: ncSp, pct_of_oi: oi ? (ncL - ncS) / oi * 100 : null },
             { category: "commercial",     long_contracts: cL,  short_contracts: cS,  spread_contracts: 0,    pct_of_oi: oi ? (cL - cS) / oi * 100 : null },
             { category: "non_reportable", long_contracts: nrL, short_contracts: nrS, spread_contracts: 0,    pct_of_oi: oi ? (nrL - nrS) / oi * 100 : null },
-          ];
-        });
+          ].map(s => ({ ...s, report_id: rep.id }));
+          const { error: sErr } = await sb.from("positioning_snapshots")
+            .upsert(snapshots, { onConflict: "report_id,category" });
+          if (sErr) throw sErr;
+          written += snapshots.length;
+        }
 
-        await flush(disagg, "disaggregated", (row, oi) => {
+        // ---- Disaggregated ----
+        for (const row of disagg) {
+          const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
+          if (!reportDate) continue;
+          const oi = num(row.open_interest_all);
+          const { data: rep, error: rErr } = await sb
+            .from("cot_reports")
+            .upsert({ market_id: m.id, report_date: reportDate, format: "disaggregated", open_interest: oi },
+                    { onConflict: "market_id,report_date,format" })
+            .select("id").single();
+          if (rErr) throw rErr;
+
           const pmL = num(row.prod_merc_positions_long);
           const pmS = num(row.prod_merc_positions_short);
           const swL = num(row.swap_positions_long_all);
@@ -152,16 +118,32 @@ Deno.serve(async (req) => {
           const orL = num(row.other_rept_positions_long);
           const orS = num(row.other_rept_positions_short);
           const orSp = num(row.other_rept_positions_spread);
-          return [
+
+          const snapshots = [
             { category: "producer_merchant", long_contracts: pmL, short_contracts: pmS, spread_contracts: 0,   pct_of_oi: oi ? (pmL - pmS) / oi * 100 : null },
             { category: "swap_dealer",       long_contracts: swL, short_contracts: swS, spread_contracts: swSp, pct_of_oi: oi ? (swL - swS) / oi * 100 : null },
             { category: "managed_money",     long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
             { category: "other_reportable",  long_contracts: orL, short_contracts: orS, spread_contracts: orSp, pct_of_oi: oi ? (orL - orS) / oi * 100 : null },
             { category: "leveraged_fund",    long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
-          ];
-        });
+          ].map(s => ({ ...s, report_id: rep.id }));
+          const { error: sErr } = await sb.from("positioning_snapshots")
+            .upsert(snapshots, { onConflict: "report_id,category" });
+          if (sErr) throw sErr;
+          written += snapshots.length;
+        }
 
-        await flush(tff, "tff", (row, oi) => {
+        // ---- TFF (Traders in Financial Futures) ----
+        for (const row of tff) {
+          const reportDate = String(row.report_date_as_yyyy_mm_dd ?? "").slice(0, 10);
+          if (!reportDate) continue;
+          const oi = num(row.open_interest_all);
+          const { data: rep, error: rErr } = await sb
+            .from("cot_reports")
+            .upsert({ market_id: m.id, report_date: reportDate, format: "tff", open_interest: oi },
+                    { onConflict: "market_id,report_date,format" })
+            .select("id").single();
+          if (rErr) throw rErr;
+
           const dL = num(row.dealer_positions_long_all);
           const dS = num(row.dealer_positions_short_all);
           const dSp = num(row.dealer_positions_spread_all);
@@ -171,12 +153,17 @@ Deno.serve(async (req) => {
           const lmL = num(row.lev_money_positions_long);
           const lmS = num(row.lev_money_positions_short);
           const lmSp = num(row.lev_money_positions_spread);
-          return [
+
+          const snapshots = [
             { category: "dealer_intermediary", long_contracts: dL,  short_contracts: dS,  spread_contracts: dSp,  pct_of_oi: oi ? (dL - dS) / oi * 100 : null },
             { category: "asset_manager",       long_contracts: amL, short_contracts: amS, spread_contracts: amSp, pct_of_oi: oi ? (amL - amS) / oi * 100 : null },
             { category: "leveraged_fund",      long_contracts: lmL, short_contracts: lmS, spread_contracts: lmSp, pct_of_oi: oi ? (lmL - lmS) / oi * 100 : null },
-          ];
-        });
+          ].map(s => ({ ...s, report_id: rep.id }));
+          const { error: sErr } = await sb.from("positioning_snapshots")
+            .upsert(snapshots, { onConflict: "report_id,category" });
+          if (sErr) throw sErr;
+          written += snapshots.length;
+        }
         console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length}`);
       } catch (e) {
         console.error(`cftc ${m.symbol} failed`, e);
