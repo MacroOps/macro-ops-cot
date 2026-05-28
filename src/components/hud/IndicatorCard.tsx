@@ -43,8 +43,8 @@ export function IndicatorCard({
   seed,
   variant = "line",
   height = 160,
-  min = 0,
-  max = 100,
+  min,
+  max,
   drift = 0,
   volatility = 0.2,
   points = 78,
@@ -52,10 +52,26 @@ export function IndicatorCard({
   unit = "",
   actions,
   mockOverride,
+  component,
 }: IndicatorCardProps) {
+  // Spec-derived defaults (props still override).
+  const resolvedTitle = title ?? component?.title ?? "";
+  const resolvedMin = min ?? component?.scale?.min ?? 0;
+  const resolvedMax = max ?? component?.scale?.max ?? 100;
+  const resolvedThresholds = thresholds ?? component?.thresholds;
+
   const data = useMemo(
-    () => mockSeries({ seed, min, max, drift, volatility, points, ...mockOverride }),
-    [seed, min, max, drift, volatility, points, mockOverride],
+    () =>
+      mockSeries({
+        seed,
+        min: resolvedMin,
+        max: resolvedMax,
+        drift,
+        volatility,
+        points,
+        ...mockOverride,
+      }),
+    [seed, resolvedMin, resolvedMax, drift, volatility, points, mockOverride],
   );
   const v = lastValue(data);
 
