@@ -5,19 +5,29 @@ export interface AssetSeriesPoint {
   date: string;
   price: number;
   netLargeSpec: number;
+  netSmallSpec: number;
+  netCommercial: number;
   netLevFunds: number;
   netAssetMgr: number;
+  netManagedMoney: number;
   netSpec: number;
   largeSpecPct: number;
+  largeSpecPct6m: number;
+  smallSpecPct: number;
+  smallSpecPct6m: number;
   levFundPct: number;
   levFundPct6m: number;
   assetMgrPct: number;
   assetMgrPct6m: number;
+  mmPct: number;
+  mmPct6m: number;
   netSpecPct3y: number;
   netSpecPct6m: number;
+  extremityScore: number;
   openInterest: number;
   hasLev: boolean;
   hasAssetMgr: boolean;
+  hasMm: boolean;
 }
 
 export interface AssetNewsItem {
@@ -64,6 +74,9 @@ function percentileWindow(values: number[], window: number): number[] {
 export function useAssetData(symbol: string) {
   return useQuery({
     queryKey: ["asset-data", symbol],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<AssetData | null> => {
       const { data: market, error: mErr } = await supabase
         .from("markets")
@@ -73,31 +86,9 @@ export function useAssetData(symbol: string) {
       if (mErr) throw mErr;
       if (!market) return null;
 
-      const [{ data: reports }, pricesAll, { data: news }] = await Promise.all([
-        supabase
-          .from("cot_reports")
-          .select("id,report_date,format,open_interest")
-          .eq("market_id", market.id)
-          .order("report_date", { ascending: true })
-          .limit(8000),
-        (async () => {
-          // Supabase caps responses at 1000 rows; paginate to get full price history.
-          const PAGE = 1000;
-          const out: { close: number; observed_on: string }[] = [];
-          for (let from = 0; from < 20000; from += PAGE) {
-            const { data, error } = await supabase
-              .from("price_history")
-              .select("close,observed_on")
-              .eq("market_id", market.id)
-              .order("observed_on", { ascending: true })
-              .range(from, from + PAGE - 1);
-            if (error) throw error;
-            if (!data || data.length === 0) break;
-            out.push(...data.map(p => ({ close: Number(p.close), observed_on: p.observed_on })));
-            if (data.length < PAGE) break;
-          }
-          return out;
-        })(),
+      const [cotRes, priceRes, newsRes] = await Promise.all([
+        supabase.rpc("get_asset_cot_series", { p_market_id: market.id }),
+        supabase.rpc("get_asset_price_series", { p_market_id: market.id }),
         supabase
           .from("news_events")
           .select("id,headline,source,url,published_at,expected_direction,observed_return_1d,is_divergence,divergence_note")
@@ -105,122 +96,108 @@ export function useAssetData(symbol: string) {
           .order("published_at", { ascending: false })
           .limit(20),
       ]);
-      const prices = pricesAll;
+      if (cotRes.error) throw cotRes.error;
+      if (priceRes.error) throw priceRes.error;
 
-      const reportIds = (reports ?? []).map(r => r.id);
-      const snapRows: { report_id: string; category: string; net_contracts: number | null }[] = [];
-      const CHUNK = 200;
-      for (let i = 0; i < reportIds.length; i += CHUNK) {
-        const chunk = reportIds.slice(i, i + CHUNK);
-        const { data, error } = await supabase
-          .from("positioning_snapshots")
-          .select("report_id,category,net_contracts")
-          .in("report_id", chunk);
-        if (error) throw error;
-        if (data) snapRows.push(...data);
-      }
-      const snapMap = new Map<string, Map<string, number>>();
-      for (const s of snapRows) {
-        let m = snapMap.get(s.report_id);
-        if (!m) { m = new Map(); snapMap.set(s.report_id, m); }
-        m.set(s.category, s.net_contracts ?? 0);
-      }
+      type CotRow = { d: string; oi: number; nl: number; ns: number; nc: number; nlv: number; nmm: number; nam: number; hl: boolean; hlv: boolean; hmm: boolean; ham: boolean };
+      type PriceRow = { d: string; c: number | string };
+      const cotRows = ((cotRes.data ?? []) as CotRow[]);
+      const priceRows = ((priceRes.data ?? []) as PriceRow[]);
+      const news = newsRes.data;
 
-      // Build per-date map: legacy + disagg + tff merged
-      const byDate = new Map<string, { netLarge: number; netSmall: number; netLev: number; netAssetMgr: number; oi: number; hasLegacy: boolean; hasLev: boolean; hasAssetMgr: boolean }>();
-      for (const r of reports ?? []) {
-        const cats = snapMap.get(r.id);
-        if (!cats) continue;
-        const e = byDate.get(r.report_date) ?? { netLarge: 0, netSmall: 0, netLev: 0, netAssetMgr: 0, oi: 0, hasLegacy: false, hasLev: false, hasAssetMgr: false };
-        if (r.format === "legacy") {
-          e.netLarge = cats.get("non_commercial") ?? 0;
-          e.netSmall = cats.get("non_reportable") ?? 0;
-          e.hasLegacy = true;
-        } else if (r.format === "disaggregated") {
-          const mm = cats.get("managed_money");
-          if (mm != null && !e.hasLev) {
-            e.netLev = mm;
-            e.hasLev = true;
-          }
-        } else if (r.format === "tff") {
-          const lev = cats.get("leveraged_fund");
-          if (lev != null) {
-            e.netLev = lev;
-            e.hasLev = true;
-          }
-          const am = cats.get("asset_manager");
-          if (am != null) {
-            e.netAssetMgr = am;
-            e.hasAssetMgr = true;
-          }
-        }
-        e.oi = Math.max(e.oi, r.open_interest ?? 0);
-        byDate.set(r.report_date, e);
-      }
-
-      const cotDates = Array.from(byDate.entries())
-        .filter(([, e]) => e.hasLegacy)
-        .map(([date]) => date)
-        .sort();
       const priceByDate = new Map<string, number>();
-      for (const p of prices ?? []) priceByDate.set(p.observed_on, Number(p.close));
-
-      const priceDatesSorted = (prices ?? []).map(p => p.observed_on);
+      const priceDatesSorted: string[] = [];
+      const priceCloses: number[] = [];
+      for (const p of priceRows) {
+        const c = Number(p.c);
+        priceByDate.set(p.d, c);
+        priceDatesSorted.push(p.d);
+        priceCloses.push(c);
+      }
       function priceOn(date: string): number {
-        if (priceByDate.has(date)) return priceByDate.get(date)!;
+        const v = priceByDate.get(date);
+        if (v != null) return v;
         let lo = 0, hi = priceDatesSorted.length - 1, best = 0;
         while (lo <= hi) {
           const mid = (lo + hi) >> 1;
           if (priceDatesSorted[mid] <= date) { best = mid; lo = mid + 1; } else hi = mid - 1;
         }
-        return priceDatesSorted.length ? Number((prices ?? [])[best].close) : 0;
+        return priceCloses.length ? priceCloses[best] : 0;
       }
 
-      const netLargeArr: number[] = [];
-      const netSpecArr: number[] = [];
-      const netLevArr: number[] = [];
-      const netAssetMgrArr: number[] = [];
-      for (const d of cotDates) {
-        const e = byDate.get(d)!;
-        netLargeArr.push(e.netLarge);
-        netSpecArr.push(e.netLarge + e.netSmall);
-        netLevArr.push(e.netLev);
-        netAssetMgrArr.push(e.netAssetMgr);
-      }
+      const netLargeArr = cotRows.map(r => r.nl);
+      const netSmallArr = cotRows.map(r => r.ns);
+      const netSpecArr = cotRows.map(r => r.nl + r.ns);
+      const netLevArr = cotRows.map(r => r.nlv);
+      const netAssetMgrArr = cotRows.map(r => r.nam);
+      const netMmArr = cotRows.map(r => r.nmm);
 
       const largePct = percentileWindow(netLargeArr, 156);
+      const largePct6m = percentileWindow(netLargeArr, 26);
+      const smallPct = percentileWindow(netSmallArr, 156);
+      const smallPct6m = percentileWindow(netSmallArr, 26);
       const levPct = percentileWindow(netLevArr, 156);
       const levPct6m = percentileWindow(netLevArr, 26);
       const assetMgrPct = percentileWindow(netAssetMgrArr, 156);
       const assetMgrPct6m = percentileWindow(netAssetMgrArr, 26);
+      const mmPct = percentileWindow(netMmArr, 156);
+      const mmPct6m = percentileWindow(netMmArr, 26);
       const spec3y = percentileWindow(netSpecArr, 156);
       const spec6m = percentileWindow(netSpecArr, 26);
 
-      const series: AssetSeriesPoint[] = cotDates.map((d, i) => {
-        const e = byDate.get(d)!;
-        return {
-          date: d,
-          price: priceOn(d),
-          netLargeSpec: e.netLarge,
-          netLevFunds: e.netLev,
-          netAssetMgr: e.netAssetMgr,
-          netSpec: e.netLarge + e.netSmall,
-          largeSpecPct: largePct[i],
-          levFundPct: levPct[i],
-          levFundPct6m: levPct6m[i],
-          assetMgrPct: assetMgrPct[i],
-          assetMgrPct6m: assetMgrPct6m[i],
-          netSpecPct3y: spec3y[i],
-          netSpecPct6m: spec6m[i],
-          openInterest: e.oi,
-          hasLev: e.hasLev,
-          hasAssetMgr: e.hasAssetMgr,
-        };
-      });
+      // Rolling extremity score: blended 6M %ile, 3Y %ile, and WoW z-score (matches dashboard).
+      const W6M = 0.40 / 0.85;
+      const W3Y = 0.25 / 0.85;
+      const WWOW = 0.20 / 0.85;
+      const deltas: number[] = new Array(netSpecArr.length).fill(0);
+      for (let i = 1; i < netSpecArr.length; i++) deltas[i] = netSpecArr[i] - netSpecArr[i - 1];
+      const extremityArr: number[] = new Array(netSpecArr.length).fill(0);
+      for (let i = 0; i < netSpecArr.length; i++) {
+        const start = Math.max(1, i - 25);
+        const win = deltas.slice(start, i + 1);
+        let mean = 0;
+        for (const x of win) mean += x;
+        mean /= Math.max(1, win.length);
+        let v = 0;
+        for (const x of win) v += (x - mean) ** 2;
+        const sd = win.length > 1 ? Math.sqrt(v / win.length) : 0;
+        const wowZ = sd > 0 ? Math.max(-100, Math.min(100, (deltas[i] / sd) * 33.3)) : 0;
+        const s3y = (spec3y[i] - 50) * 2;
+        const s6m = (spec6m[i] - 50) * 2;
+        extremityArr[i] = Math.round(W6M * s6m + W3Y * s3y + WWOW * wowZ);
+      }
 
-      const lastReportDate = cotDates.length ? cotDates[cotDates.length - 1] : null;
+      const series: AssetSeriesPoint[] = cotRows.map((r, i) => ({
+        date: r.d,
+        price: priceOn(r.d),
+        netLargeSpec: r.nl,
+        netSmallSpec: r.ns,
+        netCommercial: r.nc,
+        netLevFunds: r.nlv,
+        netAssetMgr: r.nam,
+        netManagedMoney: r.nmm,
+        netSpec: r.nl + r.ns,
+        largeSpecPct: largePct[i],
+        largeSpecPct6m: largePct6m[i],
+        smallSpecPct: smallPct[i],
+        smallSpecPct6m: smallPct6m[i],
+        levFundPct: levPct[i],
+        levFundPct6m: levPct6m[i],
+        assetMgrPct: assetMgrPct[i],
+        assetMgrPct6m: assetMgrPct6m[i],
+        mmPct: mmPct[i],
+        mmPct6m: mmPct6m[i],
+        netSpecPct3y: spec3y[i],
+        netSpecPct6m: spec6m[i],
+        extremityScore: extremityArr[i],
+        openInterest: r.oi,
+        hasLev: r.hlv,
+        hasAssetMgr: r.ham,
+        hasMm: r.hmm,
+      }));
 
-      const priceSeries: PricePoint[] = (prices ?? []).map(p => ({ date: p.observed_on, price: Number(p.close) }));
+      const lastReportDate = series.length ? series[series.length - 1].date : null;
+      const priceSeries: PricePoint[] = priceRows.map(p => ({ date: p.d, price: Number(p.c) }));
 
       return {
         symbol: market.symbol,
