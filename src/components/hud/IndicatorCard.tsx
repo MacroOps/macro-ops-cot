@@ -13,11 +13,13 @@ import {
   YAxis,
 } from "recharts";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
+import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
+import type { ComponentSpec } from "@/lib/indicatorSpecs";
 
 type Variant = "line" | "area" | "bar";
 
 interface IndicatorCardProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   seed: number;
   variant?: Variant;
@@ -31,6 +33,8 @@ interface IndicatorCardProps {
   unit?: string;
   actions?: ReactNode;
   mockOverride?: MockOptions;
+  /** When provided, the card derives title/scale/thresholds from the spec and adds an info popover. */
+  component?: ComponentSpec;
 }
 
 export function IndicatorCard({
@@ -39,8 +43,8 @@ export function IndicatorCard({
   seed,
   variant = "line",
   height = 160,
-  min = 0,
-  max = 100,
+  min,
+  max,
   drift = 0,
   volatility = 0.2,
   points = 78,
@@ -48,10 +52,26 @@ export function IndicatorCard({
   unit = "",
   actions,
   mockOverride,
+  component,
 }: IndicatorCardProps) {
+  // Spec-derived defaults (props still override).
+  const resolvedTitle = title ?? component?.title ?? "";
+  const resolvedMin = min ?? component?.scale?.min ?? 0;
+  const resolvedMax = max ?? component?.scale?.max ?? 100;
+  const resolvedThresholds = thresholds ?? component?.thresholds;
+
   const data = useMemo(
-    () => mockSeries({ seed, min, max, drift, volatility, points, ...mockOverride }),
-    [seed, min, max, drift, volatility, points, mockOverride],
+    () =>
+      mockSeries({
+        seed,
+        min: resolvedMin,
+        max: resolvedMax,
+        drift,
+        volatility,
+        points,
+        ...mockOverride,
+      }),
+    [seed, resolvedMin, resolvedMax, drift, volatility, points, mockOverride],
   );
   const v = lastValue(data);
 
@@ -64,7 +84,7 @@ export function IndicatorCard({
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate">
-            {title}
+            {resolvedTitle}
           </div>
           {subtitle && (
             <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5 truncate">
@@ -78,6 +98,7 @@ export function IndicatorCard({
             {unit}
           </span>
           {actions}
+          {component && <ConstructionPopover spec={component} />}
         </div>
       </div>
       <div className="p-1 hud-chart rounded-none" style={{ height }}>
@@ -85,18 +106,18 @@ export function IndicatorCard({
           {variant === "bar" ? (
             <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
               <XAxis dataKey="t" hide />
-              <YAxis domain={[min, max]} hide />
+              <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
                 contentStyle={{ fontSize: 10, padding: "4px 8px" }}
                 labelFormatter={(l) => l as string}
-                formatter={(val: number) => [val.toFixed(2) + unit, title]}
+                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
               <Bar dataKey="v" fill={stroke} />
-              {thresholds?.hi != null && (
-                <ReferenceLine y={thresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+              {resolvedThresholds?.hi != null && (
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
               )}
-              {thresholds?.lo != null && (
-                <ReferenceLine y={thresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+              {resolvedThresholds?.lo != null && (
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
               )}
             </BarChart>
           ) : variant === "area" ? (
@@ -108,33 +129,33 @@ export function IndicatorCard({
                 </linearGradient>
               </defs>
               <XAxis dataKey="t" hide />
-              <YAxis domain={[min, max]} hide />
+              <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
                 contentStyle={{ fontSize: 10, padding: "4px 8px" }}
-                formatter={(val: number) => [val.toFixed(2) + unit, title]}
+                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
               <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} fill={`url(#g${seed})`} />
-              {thresholds?.hi != null && (
-                <ReferenceLine y={thresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+              {resolvedThresholds?.hi != null && (
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
               )}
-              {thresholds?.lo != null && (
-                <ReferenceLine y={thresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+              {resolvedThresholds?.lo != null && (
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
               )}
             </AreaChart>
           ) : (
             <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
               <XAxis dataKey="t" hide />
-              <YAxis domain={[min, max]} hide />
+              <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
                 contentStyle={{ fontSize: 10, padding: "4px 8px" }}
-                formatter={(val: number) => [val.toFixed(2) + unit, title]}
+                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
               <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} dot={false} />
-              {thresholds?.hi != null && (
-                <ReferenceLine y={thresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+              {resolvedThresholds?.hi != null && (
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
               )}
-              {thresholds?.lo != null && (
-                <ReferenceLine y={thresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+              {resolvedThresholds?.lo != null && (
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
               )}
             </LineChart>
           )}

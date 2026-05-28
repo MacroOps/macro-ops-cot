@@ -1,123 +1,109 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
+import { CompositePanel } from "@/components/hud/CompositePanel";
+import { InputsRequired } from "@/components/hud/InputsRequired";
+import { BREADTH_AGGREGATOR, THRUST_AGGREGATOR } from "@/lib/indicatorSpecs";
 
 export function BreadthOverview() {
   return (
     <AppShell title="Breadth · Overview">
-      <PageHeader eyebrow="Breadth" title="Breadth & Thrust Score" />
-      <div className="p-3 space-y-3">
-        <IndicatorCard
-          title="MO: Breadth & Thrust Score"
-          subtitle="Composite · 0–15"
-          seed={401}
-          variant="bar"
-          height={220}
-          min={0}
-          max={15}
-        />
-        <IndicatorCard
-          title="Macro Ops | Breadth Components"
-          subtitle="5-series stacked · 0–4 each"
-          seed={402}
-          variant="bar"
-          height={220}
-          min={0}
-          max={4}
-        />
-        <IndicatorCard
-          title="Macro Ops | Breadth Thrust Components"
-          subtitle="10-series stacked · 0–10"
-          seed={403}
-          variant="bar"
-          height={220}
-          min={0}
-          max={10}
-        />
-      </div>
+      <PageHeader
+        eyebrow="Breadth"
+        title="Breadth & Thrust"
+        description="Two composites: a five-rule participation aggregator (max 6) and a ten-signal thrust/capitulation aggregator (max 10)."
+      />
+      <CompositePanel spec={BREADTH_AGGREGATOR} seed={400} height={200} />
+      <CompositePanel spec={THRUST_AGGREGATOR} seed={450} height={200} />
+      <InputsRequired
+        inputs={Array.from(
+          new Set([...BREADTH_AGGREGATOR.inputs, ...THRUST_AGGREGATOR.inputs]),
+        )}
+      />
     </AppShell>
   );
 }
 
-const COMPONENTS = [
-  "Breadth: 50 & 200 Day SMA",
-  "McClellan Summation & Oscillator",
-  "S&P 500 | Sectors Above 200 SMA",
-  "NYSE | Advance-Decline Line",
-  "NYSE | New Lows (All US)",
-  "NYSE | New Highs − New Lows",
-];
 export function BreadthComponents() {
   return (
-    <AppShell title="Breadth · Components">
-      <PageHeader eyebrow="Breadth" title="Components" />
-      <CardGrid cols={3}>
-        {COMPONENTS.map((t, i) => (
+    <AppShell title="Breadth · Aggregator">
+      <PageHeader
+        eyebrow="Breadth"
+        title={BREADTH_AGGREGATOR.name}
+        description={BREADTH_AGGREGATOR.description}
+      />
+      <CompositePanel spec={BREADTH_AGGREGATOR} seed={400} height={200} />
+      <CardGrid cols={2}>
+        {BREADTH_AGGREGATOR.components.map((c, i) => (
           <IndicatorCard
-            key={t}
-            title={t}
-            subtitle="% of stocks / index"
+            key={c.id}
+            component={c}
+            subtitle={`Score 0 – ${c.weight ?? 1}`}
             seed={410 + i}
-            variant="line"
-            thresholds={{ hi: 90, lo: 20 }}
+            variant="bar"
           />
         ))}
       </CardGrid>
+      <InputsRequired inputs={BREADTH_AGGREGATOR.inputs} />
     </AppShell>
   );
 }
 
-const THRUSTS = [
-  "Russell 3000 | % > 10D SMA",
-  "S&P 500 | % Making New 20D Highs",
-  "S&P 500 | % > 50D SMA (15%→90% in <50D)",
-  "NYSE | Zweig Breadth Thrust",
-  "S&P 500 | % With MACD Buy",
-  "S&P 500 | % With RSI > 70",
-];
+const THRUST_IDS = new Set([
+  "thrust-roc5",
+  "thrust-above-10",
+  "thrust-15-90",
+  "thrust-nh4w",
+  "thrust-rsi70",
+  "thrust-bb-upper",
+]);
+
 export function BreadthThrusts() {
+  const items = THRUST_AGGREGATOR.components.filter((c) => THRUST_IDS.has(c.id));
   return (
     <AppShell title="Breadth · Thrusts">
-      <PageHeader eyebrow="Breadth" title="Thrusts" />
+      <PageHeader
+        eyebrow="Breadth"
+        title="Thrust Signals (6)"
+        description="Binary thrust signals from the Breadth Thrust Aggregator."
+      />
       <CardGrid cols={3}>
-        {THRUSTS.map((t, i) => (
+        {items.map((c, i) => (
           <IndicatorCard
-            key={t}
-            title={t}
+            key={c.id}
+            component={c}
+            subtitle="Signal · 0 / 1"
             seed={420 + i}
-            variant="line"
-            thresholds={{ hi: 90 }}
+            variant="bar"
           />
         ))}
       </CardGrid>
+      <InputsRequired inputs={THRUST_AGGREGATOR.inputs} />
     </AppShell>
   );
 }
 
-const CAPS = [
-  "S&P 500 | % Making New 20D Lows",
-  "S&P 500 | % Below Upper BB",
-  "S&P 500 | % With RSI < 30",
-  "S&P 500 | 5D ROC Price Capitulation",
-  "S&P 500 | Correlation Between Sectors",
-];
 export function BreadthCapitulation() {
+  const items = THRUST_AGGREGATOR.components.filter((c) => !THRUST_IDS.has(c.id));
   return (
     <AppShell title="Breadth · Capitulation">
-      <PageHeader eyebrow="Breadth" title="Capitulation" />
-      <CardGrid cols={3}>
-        {CAPS.map((t, i) => (
+      <PageHeader
+        eyebrow="Breadth"
+        title="Capitulation / Oversold Signals (4)"
+        description="Binary capitulation signals from the Breadth Thrust Aggregator."
+      />
+      <CardGrid cols={2}>
+        {items.map((c, i) => (
           <IndicatorCard
-            key={t}
-            title={t}
+            key={c.id}
+            component={c}
+            subtitle="Signal · 0 / 1"
             seed={430 + i}
-            variant="line"
-            min={t.includes("ROC") ? -15 : 0}
-            max={t.includes("ROC") ? 5 : 100}
-            thresholds={{ lo: 20 }}
+            variant="bar"
           />
         ))}
       </CardGrid>
+      <InputsRequired inputs={THRUST_AGGREGATOR.inputs} />
     </AppShell>
   );
 }
