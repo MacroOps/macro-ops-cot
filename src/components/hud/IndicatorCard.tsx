@@ -13,11 +13,13 @@ import {
   YAxis,
 } from "recharts";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
+import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
+import type { ComponentSpec } from "@/lib/indicatorSpecs";
 
 type Variant = "line" | "area" | "bar";
 
 interface IndicatorCardProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   seed: number;
   variant?: Variant;
@@ -31,6 +33,8 @@ interface IndicatorCardProps {
   unit?: string;
   actions?: ReactNode;
   mockOverride?: MockOptions;
+  /** When provided, the card derives title/scale/thresholds from the spec and adds an info popover. */
+  component?: ComponentSpec;
 }
 
 export function IndicatorCard({
