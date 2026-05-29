@@ -26,6 +26,7 @@ import PositionSizing from "./pages/PositionSizing.tsx";
 import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
+import EurexPositioning from "./pages/EurexPositioning.tsx";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/tpmr/tctm/bottom" element={<TctmGuide slug="bottom" />} />
             <Route path="/tpmr/tctm/thrust" element={<TctmGuide slug="thrust" />} />
             <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
+            <Route path="/eurex" element={<EurexPositioning />} />
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

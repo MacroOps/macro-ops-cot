@@ -18,6 +18,7 @@ import {
   Compass,
   Crosshair,
   ShieldAlert,
+  Globe2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -109,6 +110,7 @@ const NAV: Group[] = [
       { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
     ],
   },
+  { title: "Eurex Positioning", icon: Globe2, url: "/eurex" },
 ];
 
 function isLeafActive(pathname: string, url: string) {
