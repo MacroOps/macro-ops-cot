@@ -52,6 +52,47 @@ export type Database = {
           },
         ]
       }
+      eurex_oi_history: {
+        Row: {
+          block_volume: number | null
+          created_at: string
+          id: string
+          market_id: string
+          observed_on: string
+          oi_change: number | null
+          open_interest: number | null
+          volume: number | null
+        }
+        Insert: {
+          block_volume?: number | null
+          created_at?: string
+          id?: string
+          market_id: string
+          observed_on: string
+          oi_change?: number | null
+          open_interest?: number | null
+          volume?: number | null
+        }
+        Update: {
+          block_volume?: number | null
+          created_at?: string
+          id?: string
+          market_id?: string
+          observed_on?: string
+          oi_change?: number | null
+          open_interest?: number | null
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eurex_oi_history_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_log: {
         Row: {
           finished_at: string | null
@@ -313,7 +354,7 @@ export type Database = {
         | "Metals"
         | "Agriculture"
         | "Crypto"
-      report_format: "legacy" | "disaggregated" | "tff"
+      report_format: "legacy" | "disaggregated" | "tff" | "eurex"
       trader_category:
         | "commercial"
         | "non_commercial"
@@ -461,7 +502,7 @@ export const Constants = {
         "Agriculture",
         "Crypto",
       ],
-      report_format: ["legacy", "disaggregated", "tff"],
+      report_format: ["legacy", "disaggregated", "tff", "eurex"],
       trader_category: [
         "commercial",
         "non_commercial",
