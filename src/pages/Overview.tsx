@@ -1,8 +1,15 @@
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
+import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { Link } from "react-router-dom";
+import {
+  TCTM_STATUS,
+  DUAL_TREND_UNIVERSES,
+  type DualTrendStock,
+} from "@/lib/turningPointSpecs";
 
 const TILES = [
   { title: "Trend Fragility", subtitle: "Composite (0–100%)", seed: 11, hi: 90, lo: 20, drift: -0.4 },
@@ -13,8 +20,116 @@ const TILES = [
   { title: "Implied Recession (6m)", subtitle: "Market-implied prob.", seed: 16, drift: -0.2 },
 ];
 
+// Visual specs for each TCTM composite chart (count of components triggered over time).
+const TCTM_CHARTS: Array<{
+  key: (typeof TCTM_STATUS)[number]["name"];
+  title: string;
+  subtitle: string;
+  trigger: number;
+  drift: number;
+  variant: "area" | "bar";
+  to: string;
+}> = [
+  { key: "RISK", title: "TCTM Risk-Off", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.1, variant: "bar", to: "/tpmr/tctm/risk-off" },
+  { key: "CAPITULATION", title: "TCTM Capitulation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: -0.2, variant: "bar", to: "/tpmr/tctm/capitulation" },
+  { key: "BOTTOM", title: "TCTM Bottom", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.0, variant: "bar", to: "/tpmr/tctm/bottom" },
+  { key: "THRUST", title: "TCTM Thrust", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.4, variant: "area", to: "/tpmr/tctm/thrust" },
+  { key: "CONFIRMATION", title: "TCTM Confirmation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.3, variant: "area", to: "/tpmr/tctm/confirmation" },
+];
+
+const TCTM_SEEDS: Record<string, number> = {
+  RISK: 71,
+  CAPITULATION: 72,
+  BOTTOM: 73,
+  THRUST: 74,
+  CONFIRMATION: 75,
+};
+
+function useTopDualTrend() {
+  return useMemo(() => {
+    const all: Array<DualTrendStock & { universeSlug: string; universeTitle: string }> = [];
+    Object.values(DUAL_TREND_UNIVERSES).forEach((u) => {
+      u.stocks.forEach((s) => all.push({ ...s, universeSlug: u.slug, universeTitle: u.title }));
+    });
+    const bull = [...all]
+      .filter((s) => s.ltSignal === "BULLISH")
+      .sort((a, b) => b.ltTrend + b.ltRelative - (a.ltTrend + a.ltRelative))
+      .slice(0, 8);
+    const bear = [...all]
+      .filter((s) => s.ltSignal === "BEARISH")
+      .sort((a, b) => a.ltTrend + a.ltRelative - (b.ltTrend + b.ltRelative))
+      .slice(0, 8);
+    return { bull, bear };
+  }, []);
+}
+
+function DualTrendList({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: Array<DualTrendStock & { universeSlug: string }>;
+  tone: "bull" | "bear";
+}) {
+  return (
+    <div className="hud-panel">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
+          {title}
+        </div>
+        <span
+          className={`text-[9px] font-mono uppercase tracking-wider ${
+            tone === "bull" ? "text-success" : "text-destructive"
+          }`}
+        >
+          {rows.length} names
+        </span>
+      </div>
+      <table className="w-full text-xs">
+        <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="text-left py-1 pl-3 font-medium">Sym</th>
+            <th className="text-left py-1 font-medium">Universe</th>
+            <th className="text-left py-1 font-medium">LT Trend</th>
+            <th className="text-left py-1 font-medium">LT Rel</th>
+            <th className="text-left py-1 font-medium">Sig</th>
+            <th className="text-right py-1 pr-3 font-medium">LT Ret</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((s) => (
+            <tr key={`${s.universeSlug}-${s.symbol}`} className="border-t border-border/50">
+              <td className="py-1.5 pl-3 font-mono font-medium">
+                <Link to={`/tpmr/dual-trend/${s.universeSlug}`} className="hover:text-primary">
+                  {s.symbol}
+                </Link>
+              </td>
+              <td className="py-1.5 text-[10px] text-muted-foreground truncate max-w-[140px]">
+                {s.etf}
+              </td>
+              <td className="py-1.5 w-[100px]"><LevelBar value={s.ltTrend} /></td>
+              <td className="py-1.5 w-[100px]"><LevelBar value={s.ltRelative} /></td>
+              <td className="py-1.5"><SignalBadge value={s.ltSignal} /></td>
+              <td
+                className={`py-1.5 pr-3 text-right font-mono tabular-nums ${
+                  s.ltReturn >= 0 ? "text-success" : "text-destructive"
+                }`}
+              >
+                {s.ltReturn > 0 ? "+" : ""}
+                {s.ltReturn}%
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Overview() {
   const { data } = useDashboardData();
+  const { bull, bear } = useTopDualTrend();
   const extremes = (data?.markets ?? [])
     .filter((m) => Math.abs(m.extremityScore) >= 50)
     .sort((a, b) => b.extremityScore - a.extremityScore)
@@ -25,7 +140,7 @@ export default function Overview() {
       <PageHeader
         eyebrow="Macro HUD"
         title="Market Overview"
-        description="Top-of-funnel snapshot across positioning, internals, breadth, and macro."
+        description="Top-of-funnel snapshot across positioning, internals, breadth, macro and TurningPoint composites."
       />
       <CardGrid cols={3}>
         {TILES.map((t) => (
@@ -42,6 +157,74 @@ export default function Overview() {
           />
         ))}
       </CardGrid>
+
+      {/* TCTM composite charts */}
+      <div className="px-3 pb-1 flex items-end justify-between">
+        <div>
+          <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            TurningPoint
+          </div>
+          <div className="text-[13px] font-semibold uppercase tracking-wider text-surface-foreground">
+            TCTM Composite Status
+          </div>
+        </div>
+        <Link
+          to="/tpmr/market-overview"
+          className="text-[10px] uppercase tracking-wider text-primary hover:underline"
+        >
+          Open TPMR →
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3 pt-2">
+        {TCTM_CHARTS.map((c) => {
+          const status = TCTM_STATUS.find((s) => s.name === c.key)!;
+          return (
+            <div key={c.key} className="relative">
+              <IndicatorCard
+                title={c.title}
+                subtitle={c.subtitle}
+                seed={TCTM_SEEDS[c.key]}
+                variant={c.variant}
+                min={0}
+                max={status.total}
+                drift={c.drift}
+                volatility={0.5}
+                points={90}
+                thresholds={{ hi: c.trigger }}
+                unit={`/${status.total}`}
+                actions={<SignalBadge value={status.signal} />}
+              />
+              <Link
+                to={c.to}
+                className="absolute inset-0"
+                aria-label={`Open ${c.title} guide`}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Top Dual Trend Readings */}
+      <div className="px-3 pb-1 pt-2 flex items-end justify-between">
+        <div>
+          <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            TurningPoint · Dual Trend
+          </div>
+          <div className="text-[13px] font-semibold uppercase tracking-wider text-surface-foreground">
+            Top Dual Trend Readings
+          </div>
+        </div>
+        <Link
+          to="/tpmr/dual-trend/sp500"
+          className="text-[10px] uppercase tracking-wider text-primary hover:underline"
+        >
+          Open Dual Trend →
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 pt-2">
+        <DualTrendList title="Strongest LT Bullish" rows={bull} tone="bull" />
+        <DualTrendList title="Weakest LT Bearish" rows={bear} tone="bear" />
+      </div>
 
       <div className="px-3 pb-4">
         <div className="hud-panel">
