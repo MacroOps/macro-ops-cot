@@ -155,9 +155,13 @@ export function runBacktest(series: AssetSeriesPoint[], p: BtParams): BtResult {
     });
   }
 
-  // Current in-progress signal: most recent trigger whose forward window hasn't fully elapsed yet.
+  // Current in-progress signal: EARLIEST trigger whose forward window hasn't fully elapsed yet.
+  // We scan from oldest-still-in-window forward so the visible path is as long as possible.
+  // (Previously we scanned newest→oldest and broke on the first hit, which made a fresh trigger
+  // at the latest bar collapse to a single point at week 0 and appear invisible on the chart.)
   let current: BtCurrentSignal | null = null;
-  for (let i = series.length - 1; i >= Math.max(0, series.length - p.horizonWeeks - 1); i--) {
+  const startIdx = Math.max(0, series.length - p.horizonWeeks - 1);
+  for (let i = startIdx; i <= series.length - 1; i++) {
     const v = series[i][p.indicator] as number;
     const triggered = p.condition === "gte" ? v >= p.threshold : v <= p.threshold;
     if (!triggered || series[i].price <= 0) continue;
