@@ -242,8 +242,10 @@ const Backtests = () => {
               <span className="inline-block w-3 border-t border-dotted border-chart-axis" /> Baseline drift
             </span>
             {result?.current && (
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--pos-short))" }} /> Current signal · {result.current.weeksElapsed}w in
+              <span className="flex items-center gap-1" style={{ color: "hsl(var(--pos-short))" }}>
+                <span className="inline-block w-3 h-px" style={{ background: "hsl(var(--pos-short))" }} />
+                Current signal · entry {result.current.entryDate} @ {result.current.entryValue.toFixed(1)} ·{" "}
+                {result.current.weeksElapsed === 0 ? "triggered this week" : `${result.current.weeksElapsed}w in`}
               </span>
             )}
             <span>{result?.count ?? 0} paths</span>
