@@ -253,19 +253,35 @@ export default function AssetDetail() {
     { k: "extremity", l: "Extremity" },
   ];
 
-  // Common start date so price and CoT charts share the same time domain.
-  const commonStart = useMemo(() => {
-    const firstCot = data?.series[0]?.date;
-    const firstPx = data?.priceSeries[0]?.date;
-    if (firstCot && firstPx) return firstCot > firstPx ? firstCot : firstPx;
-    return firstCot ?? firstPx ?? null;
+  // Shared [startMs, endMs] domain so all charts align vertically on the same time axis.
+  const sharedDomain = useMemo(() => {
+    return (tf: TimeframeKey): [number, number] | null => {
+      const cot = data?.series ?? [];
+      const px = data?.priceSeries ?? [];
+      if (!cot.length && !px.length) return null;
+      const firstCotMs = cot.length ? new Date(cot[0].date).getTime() : Infinity;
+      const firstPxMs = px.length ? new Date(px[0].date).getTime() : Infinity;
+      const lastCotMs = cot.length ? new Date(cot[cot.length - 1].date).getTime() : -Infinity;
+      const lastPxMs = px.length ? new Date(px[px.length - 1].date).getTime() : -Infinity;
+      // Intersection of data availability — guarantees both series render across the same span.
+      const dataStart = Math.max(firstCotMs, firstPxMs);
+      const dataEnd = Math.min(lastCotMs, lastPxMs);
+      if (!Number.isFinite(dataStart) || !Number.isFinite(dataEnd) || dataEnd <= dataStart) return null;
+      const w = TF_WEEKS[tf];
+      const tfStart = w == null ? dataStart : Math.max(dataStart, dataEnd - w * 7 * 86_400_000);
+      return [tfStart, dataEnd];
+    };
   }, [data]);
 
-  function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
+  function sliceByTf(tf: TimeframeKey): (AssetSeriesPoint & { ts: number })[] {
     if (!data) return [];
-    const w = TF_WEEKS[tf];
-    const base = w == null ? data.series : data.series.slice(-w);
-    return commonStart ? base.filter(p => p.date >= commonStart) : base;
+    const d = sharedDomain(tf);
+    return data.series
+      .filter(p => {
+        const t = new Date(p.date).getTime();
+        return !d || (t >= d[0] && t <= d[1]);
+      })
+      .map(p => ({ ...p, ts: new Date(p.date).getTime() }));
   }
   function pricesByTf(tf: TimeframeKey) {
     const ps = data?.priceSeries ?? [];
@@ -289,14 +305,23 @@ export default function AssetDetail() {
     }
     const enriched = ps.map((p, i) => ({
       date: p.date,
+      ts: new Date(p.date).getTime(),
       price: p.price,
       sma200: s200[i],
       wowSpec: wowByDate.has(p.date) ? (wowByDate.get(p.date) as number) : null,
     }));
-    const w = TF_WEEKS[tf];
-    const days = w == null ? null : w * 5;
-    const windowed = days == null ? enriched : enriched.slice(-days);
-    return commonStart ? windowed.filter(p => p.date >= commonStart) : windowed;
+    const d = sharedDomain(tf);
+    return d ? enriched.filter(p => p.ts >= d[0] && p.ts <= d[1]) : enriched;
+  }
+
+  function fmtTick(ts: number) {
+    const d = new Date(ts);
+    return `${d.toLocaleString("en-US", { month: "short" })} ${String(d.getFullYear()).slice(2)}`;
+  }
+  function fmtTooltipLabel(ts: number | string) {
+    const n = typeof ts === "number" ? ts : Number(ts);
+    if (!Number.isFinite(n)) return String(ts);
+    return new Date(n).toISOString().slice(0, 10);
   }
 
   function renderPriceChart(tf: TimeframeKey) {
