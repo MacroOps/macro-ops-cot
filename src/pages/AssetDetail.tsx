@@ -576,25 +576,26 @@ export default function AssetDetail() {
             <div className="mt-3" />
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
-              sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme" : "Bars: net contracts (weekly)"}
-              right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
-              height={360}
+              sub={
+                metric === "netSpec"
+                  ? "Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
+                  : isPercentileMetric(metric)
+                    ? "Color: green = bearish-extreme · red = bullish-extreme"
+                    : "Bars: net contracts (weekly)"
+              }
+              right={
+                <div className="flex items-center gap-3 flex-wrap">
+                  {metric === "netSpec" && disaggToggles(disagg, (s) => setDisagg(s))}
+                  <SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />
+                </div>
+              }
+              height={380}
               onExpand={() => openExpand("positioning")}
             >
-              {renderPositioningChart(timeframe, metric)}
+              {renderPositioningChart(timeframe, metric, disagg)}
             </ChartPanel>
 
-            {/* Disaggregated trader categories */}
-            <div className="mt-3" />
-            <ChartPanel
-              title="Disaggregated Net Positioning"
-              sub="Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
-              right={disaggToggles(disagg, (s) => setDisagg(s))}
-              height={300}
-              onExpand={() => openExpand("disagg")}
-            >
-              {renderDisaggChart(timeframe, disagg)}
-            </ChartPanel>
+
 
 
           </div>
