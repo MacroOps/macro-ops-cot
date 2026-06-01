@@ -530,11 +530,16 @@ export default function AssetDetail() {
               {!marketList?.some(m => m.symbol === symbol) && (
                 <option value={symbol}>{symbol}</option>
               )}
-              {(marketList ?? []).map(m => (
-                <option key={m.symbol} value={m.symbol}>
-                  {m.symbol} · {m.name}
-                </option>
+              {(groupedMarkets).map(g => (
+                <optgroup key={g.sector} label={g.sector}>
+                  {g.items.map(m => (
+                    <option key={m.symbol} value={m.symbol}>
+                      {m.symbol} · {m.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
+
             </select>
             <span className="hud-label">{data?.sector ?? "—"}</span>
             <span className="text-xs text-muted-foreground truncate hidden md:inline">{data?.name}</span>
