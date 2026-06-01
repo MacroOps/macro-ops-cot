@@ -345,15 +345,22 @@ export default function AssetDetail() {
 
   function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
     const cd = sliceByTf(tf);
+    const dom = sharedDomain(tf);
+    const xAxis = (
+      <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
+    );
+    const tooltip = (
+      <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+    );
     if (isDualMetric(m)) {
       const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
       const smallKey = m === "largeSmallPct6m" ? "smallSpecPct6m" : "smallSpecPct";
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.06} />
           <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.06} />
           <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.45} />
@@ -367,9 +374,9 @@ export default function AssetDetail() {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={70} y2={100} fill="#a8391f" fillOpacity={0.08} />
           <ReferenceArea y1={-100} y2={-70} fill="#5e7536" fillOpacity={0.08} />
           <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
@@ -394,9 +401,9 @@ export default function AssetDetail() {
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
           <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
           <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
@@ -408,9 +415,9 @@ export default function AssetDetail() {
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        {xAxis}
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        {tooltip}
         <ReferenceLine y={0} stroke={gridColor} />
         <Bar dataKey="netSpec" name="Net Specs" barSize={tf === "all" ? 1 : tf === "10y" ? 1.5 : 3} isAnimationActive={false}>
           {cd.map((d, i) => (
@@ -423,12 +430,13 @@ export default function AssetDetail() {
 
   function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
     const cd = sliceByTf(tf);
+    const dom = sharedDomain(tf);
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
