@@ -162,7 +162,7 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
 }
 
 const METRIC_LABEL: Record<MetricKey, string> = {
-  netSpec: "Net Speculators (nominal)",
+  netSpec: "Disaggregated Net Positioning",
   netSpecPct6m: "Net Spec %ile · 6M",
   netSpecPct3y: "Net Spec %ile · 3Y",
   largeSmallPct6m: "Large vs Small %ile · 6M",
