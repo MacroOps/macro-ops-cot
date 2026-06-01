@@ -253,19 +253,35 @@ export default function AssetDetail() {
     { k: "extremity", l: "Extremity" },
   ];
 
-  // Common start date so price and CoT charts share the same time domain.
-  const commonStart = useMemo(() => {
-    const firstCot = data?.series[0]?.date;
-    const firstPx = data?.priceSeries[0]?.date;
-    if (firstCot && firstPx) return firstCot > firstPx ? firstCot : firstPx;
-    return firstCot ?? firstPx ?? null;
+  // Shared [startMs, endMs] domain so all charts align vertically on the same time axis.
+  const sharedDomain = useMemo(() => {
+    return (tf: TimeframeKey): [number, number] | null => {
+      const cot = data?.series ?? [];
+      const px = data?.priceSeries ?? [];
+      if (!cot.length && !px.length) return null;
+      const firstCotMs = cot.length ? new Date(cot[0].date).getTime() : Infinity;
+      const firstPxMs = px.length ? new Date(px[0].date).getTime() : Infinity;
+      const lastCotMs = cot.length ? new Date(cot[cot.length - 1].date).getTime() : -Infinity;
+      const lastPxMs = px.length ? new Date(px[px.length - 1].date).getTime() : -Infinity;
+      // Intersection of data availability — guarantees both series render across the same span.
+      const dataStart = Math.max(firstCotMs, firstPxMs);
+      const dataEnd = Math.min(lastCotMs, lastPxMs);
+      if (!Number.isFinite(dataStart) || !Number.isFinite(dataEnd) || dataEnd <= dataStart) return null;
+      const w = TF_WEEKS[tf];
+      const tfStart = w == null ? dataStart : Math.max(dataStart, dataEnd - w * 7 * 86_400_000);
+      return [tfStart, dataEnd];
+    };
   }, [data]);
 
-  function sliceByTf(tf: TimeframeKey): AssetSeriesPoint[] {
+  function sliceByTf(tf: TimeframeKey): (AssetSeriesPoint & { ts: number })[] {
     if (!data) return [];
-    const w = TF_WEEKS[tf];
-    const base = w == null ? data.series : data.series.slice(-w);
-    return commonStart ? base.filter(p => p.date >= commonStart) : base;
+    const d = sharedDomain(tf);
+    return data.series
+      .filter(p => {
+        const t = new Date(p.date).getTime();
+        return !d || (t >= d[0] && t <= d[1]);
+      })
+      .map(p => ({ ...p, ts: new Date(p.date).getTime() }));
   }
   function pricesByTf(tf: TimeframeKey) {
     const ps = data?.priceSeries ?? [];
@@ -289,27 +305,37 @@ export default function AssetDetail() {
     }
     const enriched = ps.map((p, i) => ({
       date: p.date,
+      ts: new Date(p.date).getTime(),
       price: p.price,
       sma200: s200[i],
       wowSpec: wowByDate.has(p.date) ? (wowByDate.get(p.date) as number) : null,
     }));
-    const w = TF_WEEKS[tf];
-    const days = w == null ? null : w * 5;
-    const windowed = days == null ? enriched : enriched.slice(-days);
-    return commonStart ? windowed.filter(p => p.date >= commonStart) : windowed;
+    const d = sharedDomain(tf);
+    return d ? enriched.filter(p => p.ts >= d[0] && p.ts <= d[1]) : enriched;
+  }
+
+  function fmtTick(ts: number) {
+    const d = new Date(ts);
+    return `${d.toLocaleString("en-US", { month: "short" })} ${String(d.getFullYear()).slice(2)}`;
+  }
+  function fmtTooltipLabel(ts: number | string) {
+    const n = typeof ts === "number" ? ts : Number(ts);
+    if (!Number.isFinite(n)) return String(ts);
+    return new Date(n).toISOString().slice(0, 10);
   }
 
   function renderPriceChart(tf: TimeframeKey) {
     const pd = pricesByTf(tf);
     const wowVals = pd.map(d => Math.abs(d.wowSpec ?? 0)).filter(v => v > 0);
     const wowMax = wowVals.length ? Math.max(...wowVals) : 1;
+    const dom = sharedDomain(tf);
     return (
       <ComposedChart data={pd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={["auto", "auto"]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
         <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
         <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" fill="hsl(var(--foreground))" fillOpacity={0.85} isAnimationActive={false} barSize={tf === "all" || tf === "10y" ? 1.5 : 3} />
         <Line yAxisId="px" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
         <Line yAxisId="px" type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
@@ -319,15 +345,22 @@ export default function AssetDetail() {
 
   function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
     const cd = sliceByTf(tf);
+    const dom = sharedDomain(tf);
+    const xAxis = (
+      <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
+    );
+    const tooltip = (
+      <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+    );
     if (isDualMetric(m)) {
       const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
       const smallKey = m === "largeSmallPct6m" ? "smallSpecPct6m" : "smallSpecPct";
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.06} />
           <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.06} />
           <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.45} />
@@ -341,9 +374,9 @@ export default function AssetDetail() {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={70} y2={100} fill="#a8391f" fillOpacity={0.08} />
           <ReferenceArea y1={-100} y2={-70} fill="#5e7536" fillOpacity={0.08} />
           <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
@@ -368,9 +401,9 @@ export default function AssetDetail() {
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+          {xAxis}
           <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
-          <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+          {tooltip}
           <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
           <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
           <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
@@ -382,9 +415,9 @@ export default function AssetDetail() {
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        {xAxis}
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        {tooltip}
         <ReferenceLine y={0} stroke={gridColor} />
         <Bar dataKey="netSpec" name="Net Specs" barSize={tf === "all" ? 1 : tf === "10y" ? 1.5 : 3} isAnimationActive={false}>
           {cd.map((d, i) => (
@@ -397,12 +430,13 @@ export default function AssetDetail() {
 
   function renderDisaggChart(tf: TimeframeKey, dis: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
     const cd = sliceByTf(tf);
+    const dom = sharedDomain(tf);
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={32} />
+        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} />
+        <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
