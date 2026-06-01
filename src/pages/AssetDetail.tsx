@@ -43,8 +43,8 @@ type MetricKey =
   | "mmPct"
   | "extremity";
 
-type TimeframeKey = "2y" | "10y" | "all";
-const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "10y": 520, all: null };
+type TimeframeKey = "2y" | "5y" | "10y" | "all";
+const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "5y": 260, "10y": 520, all: null };
 
 function StatBlock({ label, value, sub, tone = "default" }: { label: string; value: string; sub?: string; tone?: "default" | "long" | "short" | "primary" }) {
   const toneCls =
