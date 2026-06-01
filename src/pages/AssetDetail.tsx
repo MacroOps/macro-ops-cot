@@ -188,7 +188,23 @@ function isExtremityMetric(m: MetricKey) {
 
 export default function AssetDetail() {
   const { symbol = "ES" } = useParams();
+  const navigate = useNavigate();
   const { data, isLoading, error } = useAssetData(symbol);
+
+  const { data: marketList } = useQuery({
+    queryKey: ["asset-detail-markets"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("markets")
+        .select("symbol,name,sector")
+        .eq("is_active", true)
+        .order("sector", { ascending: true })
+        .order("symbol", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
