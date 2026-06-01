@@ -754,7 +754,10 @@ export default function AssetDetail() {
             <div className="flex items-center gap-3 flex-wrap">
               <SegToggle value={expTimeframe} onChange={(v) => setExpTimeframe(v as TimeframeKey)} options={tfOptions} />
               {expanded === "positioning" && (
-                <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+                <>
+                  {expMetric === "netSpec" && disaggToggles(expDisagg, setExpDisagg)}
+                  <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+                </>
               )}
               {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
             </div>
@@ -764,7 +767,7 @@ export default function AssetDetail() {
               {expanded === "price"
                 ? renderPriceChart(expTimeframe)
                 : expanded === "positioning"
-                ? renderPositioningChart(expTimeframe, expMetric)
+                ? renderPositioningChart(expTimeframe, expMetric, expDisagg)
                 : expanded === "disagg"
                 ? renderDisaggChart(expTimeframe, expDisagg)
                 : <div />}
