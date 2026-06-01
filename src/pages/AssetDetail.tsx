@@ -500,9 +500,23 @@ export default function AssetDetail() {
             <Link to="/" className="text-muted-foreground hover:text-surface-foreground">
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <span className="font-mono text-lg font-semibold text-surface-foreground">{symbol}</span>
+            <select
+              value={symbol}
+              onChange={(e) => navigate(`/asset/${e.target.value}`)}
+              className="font-mono text-sm font-semibold bg-surface border border-border rounded-sm px-2 py-1 text-surface-foreground hover:border-primary/60 focus:outline-none focus:border-primary"
+              title="Switch asset"
+            >
+              {!marketList?.some(m => m.symbol === symbol) && (
+                <option value={symbol}>{symbol}</option>
+              )}
+              {(marketList ?? []).map(m => (
+                <option key={m.symbol} value={m.symbol}>
+                  {m.symbol} · {m.name}
+                </option>
+              ))}
+            </select>
             <span className="hud-label">{data?.sector ?? "—"}</span>
-            <span className="text-xs text-muted-foreground truncate">{data?.name}</span>
+            <span className="text-xs text-muted-foreground truncate hidden md:inline">{data?.name}</span>
             {data?.exchange && (
               <span className="hud-label border border-border px-1.5 py-0.5 rounded-sm">{data.exchange}</span>
             )}
