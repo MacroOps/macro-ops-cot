@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Area,
   AreaChart,
@@ -41,8 +43,8 @@ type MetricKey =
   | "mmPct"
   | "extremity";
 
-type TimeframeKey = "2y" | "10y" | "all";
-const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "10y": 520, all: null };
+type TimeframeKey = "2y" | "5y" | "10y" | "all";
+const TF_WEEKS: Record<TimeframeKey, number | null> = { "2y": 104, "5y": 260, "10y": 520, all: null };
 
 function StatBlock({ label, value, sub, tone = "default" }: { label: string; value: string; sub?: string; tone?: "default" | "long" | "short" | "primary" }) {
   const toneCls =
@@ -160,7 +162,7 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
 }
 
 const METRIC_LABEL: Record<MetricKey, string> = {
-  netSpec: "Net Speculators (nominal)",
+  netSpec: "Disaggregated Net Positioning",
   netSpecPct6m: "Net Spec %ile · 6M",
   netSpecPct3y: "Net Spec %ile · 3Y",
   largeSmallPct6m: "Large vs Small %ile · 6M",
@@ -186,7 +188,23 @@ function isExtremityMetric(m: MetricKey) {
 
 export default function AssetDetail() {
   const { symbol = "ES" } = useParams();
+  const navigate = useNavigate();
   const { data, isLoading, error } = useAssetData(symbol);
+
+  const { data: marketList } = useQuery({
+    queryKey: ["asset-detail-markets"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("markets")
+        .select("symbol,name,sector")
+        .eq("is_active", true)
+        .order("sector", { ascending: true })
+        .order("symbol", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
@@ -234,12 +252,13 @@ export default function AssetDetail() {
 
   const tfOptions = [
     { k: "2y" as const, l: "2Y" },
+    { k: "5y" as const, l: "5Y" },
     { k: "10y" as const, l: "10Y" },
     { k: "all" as const, l: "All" },
   ];
 
   const metricOptions: { k: MetricKey; l: string; disabled?: boolean }[] = [
-    { k: "netSpec", l: "Net Spec" },
+    { k: "netSpec", l: "Disagg" },
     { k: "netSpecPct6m", l: "Spec 6M" },
     { k: "netSpecPct3y", l: "Spec 3Y" },
     { k: "largeSmallPct6m", l: "L+S 6M" },
@@ -343,7 +362,10 @@ export default function AssetDetail() {
     );
   }
 
-  function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
+  function renderPositioningChart(tf: TimeframeKey, m: MetricKey, dis?: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
+    if (m === "netSpec") {
+      return renderDisaggChart(tf, dis ?? disagg);
+    }
     const cd = sliceByTf(tf);
     const dom = sharedDomain(tf);
     const xAxis = (
@@ -478,9 +500,23 @@ export default function AssetDetail() {
             <Link to="/" className="text-muted-foreground hover:text-surface-foreground">
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <span className="font-mono text-lg font-semibold text-surface-foreground">{symbol}</span>
+            <select
+              value={symbol}
+              onChange={(e) => navigate(`/asset/${e.target.value}`)}
+              className="font-mono text-sm font-semibold bg-surface border border-border rounded-sm px-2 py-1 text-surface-foreground hover:border-primary/60 focus:outline-none focus:border-primary"
+              title="Switch asset"
+            >
+              {!marketList?.some(m => m.symbol === symbol) && (
+                <option value={symbol}>{symbol}</option>
+              )}
+              {(marketList ?? []).map(m => (
+                <option key={m.symbol} value={m.symbol}>
+                  {m.symbol} · {m.name}
+                </option>
+              ))}
+            </select>
             <span className="hud-label">{data?.sector ?? "—"}</span>
-            <span className="text-xs text-muted-foreground truncate">{data?.name}</span>
+            <span className="text-xs text-muted-foreground truncate hidden md:inline">{data?.name}</span>
             {data?.exchange && (
               <span className="hud-label border border-border px-1.5 py-0.5 rounded-sm">{data.exchange}</span>
             )}
@@ -540,25 +576,26 @@ export default function AssetDetail() {
             <div className="mt-3" />
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
-              sub={isPercentileMetric(metric) ? "Color: green = bearish-extreme · red = bullish-extreme" : "Bars: net contracts (weekly)"}
-              right={<SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />}
-              height={360}
+              sub={
+                metric === "netSpec"
+                  ? "Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
+                  : isPercentileMetric(metric)
+                    ? "Color: green = bearish-extreme · red = bullish-extreme"
+                    : "Bars: net contracts (weekly)"
+              }
+              right={
+                <div className="flex items-center gap-3 flex-wrap">
+                  {metric === "netSpec" && disaggToggles(disagg, (s) => setDisagg(s))}
+                  <SegToggle value={metric} onChange={(v) => setMetric(v as MetricKey)} options={metricOptions} />
+                </div>
+              }
+              height={380}
               onExpand={() => openExpand("positioning")}
             >
-              {renderPositioningChart(timeframe, metric)}
+              {renderPositioningChart(timeframe, metric, disagg)}
             </ChartPanel>
 
-            {/* Disaggregated trader categories */}
-            <div className="mt-3" />
-            <ChartPanel
-              title="Disaggregated Net Positioning"
-              sub="Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
-              right={disaggToggles(disagg, (s) => setDisagg(s))}
-              height={300}
-              onExpand={() => openExpand("disagg")}
-            >
-              {renderDisaggChart(timeframe, disagg)}
-            </ChartPanel>
+
 
 
           </div>
@@ -717,7 +754,10 @@ export default function AssetDetail() {
             <div className="flex items-center gap-3 flex-wrap">
               <SegToggle value={expTimeframe} onChange={(v) => setExpTimeframe(v as TimeframeKey)} options={tfOptions} />
               {expanded === "positioning" && (
-                <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+                <>
+                  {expMetric === "netSpec" && disaggToggles(expDisagg, setExpDisagg)}
+                  <SegToggle value={expMetric} onChange={(v) => setExpMetric(v as MetricKey)} options={metricOptions} />
+                </>
               )}
               {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
             </div>
@@ -727,7 +767,7 @@ export default function AssetDetail() {
               {expanded === "price"
                 ? renderPriceChart(expTimeframe)
                 : expanded === "positioning"
-                ? renderPositioningChart(expTimeframe, expMetric)
+                ? renderPositioningChart(expTimeframe, expMetric, expDisagg)
                 : expanded === "disagg"
                 ? renderDisaggChart(expTimeframe, expDisagg)
                 : <div />}
