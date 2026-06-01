@@ -252,6 +252,7 @@ export default function AssetDetail() {
 
   const tfOptions = [
     { k: "2y" as const, l: "2Y" },
+    { k: "5y" as const, l: "5Y" },
     { k: "10y" as const, l: "10Y" },
     { k: "all" as const, l: "All" },
   ];
