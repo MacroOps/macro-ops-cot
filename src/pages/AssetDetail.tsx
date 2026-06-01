@@ -258,7 +258,7 @@ export default function AssetDetail() {
   ];
 
   const metricOptions: { k: MetricKey; l: string; disabled?: boolean }[] = [
-    { k: "netSpec", l: "Net Spec" },
+    { k: "netSpec", l: "Disagg" },
     { k: "netSpecPct6m", l: "Spec 6M" },
     { k: "netSpecPct3y", l: "Spec 3Y" },
     { k: "largeSmallPct6m", l: "L+S 6M" },
