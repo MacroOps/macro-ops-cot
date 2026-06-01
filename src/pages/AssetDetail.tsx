@@ -362,7 +362,10 @@ export default function AssetDetail() {
     );
   }
 
-  function renderPositioningChart(tf: TimeframeKey, m: MetricKey) {
+  function renderPositioningChart(tf: TimeframeKey, m: MetricKey, dis?: { large: boolean; small: boolean; commercial: boolean; managedMoney: boolean }) {
+    if (m === "netSpec") {
+      return renderDisaggChart(tf, dis ?? disagg);
+    }
     const cd = sliceByTf(tf);
     const dom = sharedDomain(tf);
     const xAxis = (
