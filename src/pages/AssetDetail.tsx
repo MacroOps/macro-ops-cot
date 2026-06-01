@@ -206,6 +206,27 @@ export default function AssetDetail() {
     },
   });
 
+  const groupedMarkets = useMemo(() => {
+    const SECTOR_ORDER = ["Equities", "Rates", "FX", "Energy", "Metals", "Ags", "Softs", "Crypto"];
+    const list = marketList ?? [];
+    const groups = new Map<string, typeof list>();
+    for (const m of list) {
+      const arr = groups.get(m.sector) ?? [];
+      arr.push(m);
+      groups.set(m.sector, arr);
+    }
+    const ordered: { sector: string; items: typeof list }[] = [];
+    for (const s of SECTOR_ORDER) {
+      const g = groups.get(s);
+      if (g) ordered.push({ sector: s, items: [...g].sort((a, b) => a.symbol.localeCompare(b.symbol)) });
+    }
+    for (const [s, g] of groups) {
+      if (!SECTOR_ORDER.includes(s)) ordered.push({ sector: s, items: [...g].sort((a, b) => a.symbol.localeCompare(b.symbol)) });
+    }
+    return ordered;
+  }, [marketList]);
+
+
   const [pctWindow, setPctWindow] = useState<WindowKey>("netSpecPct3y");
   const [timeframe, setTimeframe] = useState<TimeframeKey>("2y");
   const [metric, setMetric] = useState<MetricKey>("netSpecPct3y");
@@ -509,11 +530,16 @@ export default function AssetDetail() {
               {!marketList?.some(m => m.symbol === symbol) && (
                 <option value={symbol}>{symbol}</option>
               )}
-              {(marketList ?? []).map(m => (
-                <option key={m.symbol} value={m.symbol}>
-                  {m.symbol} · {m.name}
-                </option>
+              {(groupedMarkets).map(g => (
+                <optgroup key={g.sector} label={g.sector}>
+                  {g.items.map(m => (
+                    <option key={m.symbol} value={m.symbol}>
+                      {m.symbol} · {m.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
+
             </select>
             <span className="hud-label">{data?.sector ?? "—"}</span>
             <span className="text-xs text-muted-foreground truncate hidden md:inline">{data?.name}</span>
