@@ -141,15 +141,15 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
           <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-mono text-xs font-bold">
-            MO
+            FR
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-[11px] font-semibold tracking-wider uppercase text-surface-foreground">
-                Macro HUD
+                Foundation Research
               </span>
               <span className="text-[9px] text-muted-foreground tracking-widest uppercase">
-                Research Platform
+                Terminus Platform
               </span>
             </div>
           )}
