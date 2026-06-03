@@ -148,6 +148,13 @@ function IndicatorCardInner({
 
   const headerValue = hoverPoint ? hoverPoint.v : v;
   const headerLabel = hoverPoint ? hoverPoint.t : null;
+  const wow = useMemo(() => {
+    if (data.length < 2) return 0;
+    const prev = data[data.length - 2].v;
+    const last = data[data.length - 1].v;
+    return last - prev;
+  }, [data]);
+  const wowTone = wow > 0 ? "text-success" : wow < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
     <>
@@ -164,10 +171,17 @@ function IndicatorCardInner({
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
-              {headerValue.toFixed(1)}
-              {unit}
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
+                {headerValue.toFixed(1)}
+                {unit}
+              </span>
+              {!hoverPoint && (
+                <span className={`font-mono tabular-nums text-[9px] ${wowTone}`}>
+                  {wow > 0 ? "▲" : wow < 0 ? "▼" : "·"}{Math.abs(wow).toFixed(2)}
+                </span>
+              )}
+            </div>
             <ChartToolbar
               title={resolvedTitle}
               subtitle={subtitle}
