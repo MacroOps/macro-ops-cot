@@ -4,17 +4,18 @@ import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { useCopilot } from "./CopilotContext";
-import { Sparkles, LayoutDashboard, Activity, TrendingDown, Layers, Newspaper, LineChart, Boxes } from "lucide-react";
+import { Sparkles, LayoutDashboard, Activity, TrendingDown, Layers, Newspaper, LineChart, Boxes, FlaskConical } from "lucide-react";
 
 const ROUTES = [
   { label: "Overview", to: "/overview", icon: LayoutDashboard },
+  { label: "Backtests Lab", to: "/backtests", icon: FlaskConical },
+  { label: "Backtests · History", to: "/backtests?tab=history", icon: FlaskConical },
   { label: "Global Positioning", to: "/", icon: Boxes },
   { label: "Trend Fragility", to: "/trend-fragility", icon: TrendingDown },
   { label: "Risk Cycle", to: "/risk-cycle", icon: Activity },
   { label: "Market Internals", to: "/market-internals", icon: LineChart },
   { label: "Breadth Overview", to: "/breadth/overview", icon: Layers },
   { label: "TPMR Market Overview", to: "/tpmr/market-overview", icon: LineChart },
-  { label: "Backtests", to: "/backtests", icon: Activity },
   { label: "News", to: "/news", icon: Newspaper },
 ];
 
