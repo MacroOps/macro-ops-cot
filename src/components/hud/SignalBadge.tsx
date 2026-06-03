@@ -12,10 +12,10 @@ export function SignalBadge({
   const v = value as Variant;
   const styles =
     v === "BULLISH" || v === "Triggered"
-      ? "bg-success/15 text-success border-success/30"
+      ? "bg-primary/10 text-primary border-primary/30"
       : v === "BEARISH"
-        ? "bg-destructive/15 text-destructive border-destructive/30"
-        : "bg-warning/15 text-warning border-warning/30";
+        ? "bg-destructive/10 text-destructive border-destructive/30"
+        : "bg-muted text-muted-foreground border-border";
   return (
     <span
       className={cn(

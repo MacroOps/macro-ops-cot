@@ -2,140 +2,146 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Macro HUD Design System
- * Two themes: Solar (light, default) and Charcoal (dark)
- * Aesthetic: Institutional Professional — high density, clean borders, no shadows.
+/* Macro HUD Design System — Porcelain & Electric
+ * Institutional, light-forward palette: cool greys + restrained vivid blue accent.
+ * Light is default; dark mode mirrors the same accents on deep slate-navy.
  * All colors MUST be HSL.
  */
 
 @layer base {
   :root {
-    /* Solarized Light (default) ---------------------------------- */
-    --background: 44 87% 94%;            /* #FDF6E3 base3 */
-    --foreground: 196 13% 45%;           /* #657B83 base00 */
+    /* Porcelain & Electric (light, default) -------------------- */
+    --background: 213 33% 97%;            /* #f6f8fb porcelain */
+    --foreground: 217 33% 15%;            /* #1a2433 near-navy ink */
 
-    --surface: 46 42% 88%;               /* #EEE8D5 base2 — paper */
-    --surface-foreground: 192 81% 14%;   /* #073642 base02 */
+    --surface: 0 0% 100%;                 /* #ffffff paper */
+    --surface-foreground: 217 33% 15%;
+    --surface-2: 214 32% 95%;             /* #eef2f7 muted surface */
 
-    --card: 46 42% 88%;
-    --card-foreground: 192 81% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 217 33% 15%;
 
-    --popover: 44 87% 94%;
-    --popover-foreground: 196 13% 45%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 33% 15%;
 
-    --primary: 18 80% 44%;               /* #CB4B16 orange */
-    --primary-foreground: 44 87% 94%;
+    --primary: 220 100% 56%;              /* #1e63ff electric blue */
+    --primary-foreground: 0 0% 100%;
+    --accent-soft: 216 100% 74%;          /* #7aa8ff layered light blue */
 
-    --secondary: 46 42% 88%;
-    --secondary-foreground: 192 81% 14%;
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 217 33% 15%;
 
-    --muted: 46 42% 88%;
-    --muted-foreground: 180 7% 60%;      /* #93A1A1 base1 */
+    --muted: 214 32% 95%;
+    --muted-foreground: 216 16% 43%;      /* #5b6b80 slate */
 
-    --accent: 175 59% 40%;               /* #2AA198 cyan */
-    --accent-foreground: 44 87% 94%;
+    --accent: 220 100% 56%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 1 71% 52%;            /* #DC322F red */
-    --destructive-foreground: 44 87% 94%;
+    --destructive: 355 67% 54%;           /* #d83a4a muted red */
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 68 100% 30%;              /* #859900 green */
-    --warning: 45 100% 35%;              /* #B58900 yellow */
-    --info: 205 69% 49%;                 /* #268BD2 blue */
-    --violet: 237 45% 49%;               /* #6C71C4 */
+    --success: 155 87% 30%;               /* #0a8f5f forest green */
+    --warning: 36 79% 45%;                /* #c8861a amber */
+    --info: 220 100% 56%;
+    --violet: 250 70% 60%;
 
-    --border: 46 25% 78%;
-    --input: 46 25% 78%;
-    --ring: 18 80% 44%;
+    --border: 213 27% 93%;                /* #e6ecf3 hairline */
+    --input: 213 27% 93%;
+    --ring: 220 100% 56%;
+    --ledger: 214 26% 89%;                /* #dbe3ed stronger divider */
 
-    --radius: 0.25rem;
+    --radius: 0.1875rem;
 
     /* Sidebar */
-    --sidebar-background: 46 42% 88%;
-    --sidebar-foreground: 196 13% 45%;
-    --sidebar-primary: 18 80% 44%;
-    --sidebar-primary-foreground: 44 87% 94%;
-    --sidebar-accent: 44 87% 94%;
-    --sidebar-accent-foreground: 192 81% 14%;
-    --sidebar-border: 46 25% 78%;
-    --sidebar-ring: 18 80% 44%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 216 16% 43%;
+    --sidebar-primary: 220 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 32% 95%;
+    --sidebar-accent-foreground: 217 33% 15%;
+    --sidebar-border: 213 27% 93%;
+    --sidebar-ring: 220 100% 56%;
 
     /* Semantic positioning colors */
-    --pos-long: 152 76% 28%;       /* sharper institutional green */
-    --pos-short: 354 78% 44%;      /* sharper institutional red */
-    --pos-neutral: 215 16% 47%;
+    --pos-long: 155 87% 30%;
+    --pos-short: 355 67% 54%;
+    --pos-neutral: 216 16% 43%;
 
-    /* Chart / data table surface — warm cream parchment (FT/editorial) */
-    --chart-surface: 40 45% 93%;             /* parchment cream */
-    --chart-surface-foreground: 25 15% 15%;  /* near-black warm ink */
-    --chart-grid: 38 22% 78%;
-    --chart-axis: 28 14% 35%;
-    --chart-ink: 25 15% 14%;                 /* primary line color */
-    --chart-ink-muted: 28 12% 45%;
-    --chart-accent: 12 60% 42%;              /* terracotta red */
-    --chart-accent-2: 40 55% 50%;            /* warm amber */
+    /* Chart canvas — pure paper, layered-blues series */
+    --chart-surface: 0 0% 100%;
+    --chart-surface-foreground: 217 33% 15%;
+    --chart-grid: 214 32% 92%;             /* hairline grid */
+    --chart-axis: 216 16% 43%;
+    --chart-ink: 217 33% 15%;
+    --chart-ink-muted: 215 19% 35%;        /* #475569 reference series */
+    --chart-accent: 211 100% 52%;          /* #0a84ff primary series */
+    --chart-accent-2: 216 100% 74%;        /* #7aa8ff secondary series */
   }
 
   .dark {
-    /* Deep Charcoal / Navy ---------------------------------------- */
-    --background: 220 26% 8%;            /* deep charcoal navy */
-    --foreground: 210 17% 82%;
+    /* Deep Slate-Navy (institutional dark, not pure black) ------ */
+    --background: 220 49% 8%;             /* #0b1220 */
+    --foreground: 213 27% 93%;            /* #e6ecf3 */
 
-    --surface: 220 22% 12%;
-    --surface-foreground: 210 17% 92%;
+    --surface: 220 39% 12%;               /* #121a2b */
+    --surface-foreground: 213 27% 93%;
+    --surface-2: 220 35% 16%;
 
-    --card: 220 22% 12%;
-    --card-foreground: 210 17% 92%;
+    --card: 220 39% 12%;
+    --card-foreground: 213 27% 93%;
 
-    --popover: 220 26% 8%;
-    --popover-foreground: 210 17% 82%;
+    --popover: 220 39% 12%;
+    --popover-foreground: 213 27% 93%;
 
-    --primary: 18 90% 55%;
-    --primary-foreground: 220 26% 8%;
+    --primary: 219 100% 62%;              /* #3b7bff lifted */
+    --primary-foreground: 0 0% 100%;
+    --accent-soft: 216 90% 70%;
 
-    --secondary: 220 22% 16%;
-    --secondary-foreground: 210 17% 92%;
+    --secondary: 220 35% 16%;
+    --secondary-foreground: 213 27% 93%;
 
-    --muted: 220 22% 14%;
-    --muted-foreground: 215 12% 55%;
+    --muted: 220 35% 16%;
+    --muted-foreground: 215 18% 62%;
 
-    --accent: 175 70% 45%;
-    --accent-foreground: 220 26% 8%;
+    --accent: 219 100% 62%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 1 75% 58%;
-    --destructive-foreground: 210 17% 92%;
+    --destructive: 355 75% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 65% 45%;
-    --warning: 45 95% 55%;
-    --info: 205 80% 60%;
-    --violet: 237 60% 65%;
+    --success: 155 70% 45%;
+    --warning: 36 90% 55%;
+    --info: 219 100% 62%;
+    --violet: 250 75% 70%;
 
-    --border: 220 18% 20%;
-    --input: 220 18% 20%;
-    --ring: 18 90% 55%;
+    --border: 220 35% 19%;                /* #1f2a40 */
+    --input: 220 35% 19%;
+    --ring: 219 100% 62%;
+    --ledger: 220 35% 22%;
 
-    --sidebar-background: 220 26% 6%;
-    --sidebar-foreground: 210 17% 75%;
-    --sidebar-primary: 18 90% 55%;
-    --sidebar-primary-foreground: 220 26% 8%;
-    --sidebar-accent: 220 22% 14%;
-    --sidebar-accent-foreground: 210 17% 92%;
-    --sidebar-border: 220 18% 18%;
-    --sidebar-ring: 18 90% 55%;
+    --sidebar-background: 220 49% 6%;
+    --sidebar-foreground: 215 18% 65%;
+    --sidebar-primary: 219 100% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 35% 16%;
+    --sidebar-accent-foreground: 213 27% 93%;
+    --sidebar-border: 220 35% 18%;
+    --sidebar-ring: 219 100% 62%;
 
-    --pos-long: 152 70% 48%;
-    --pos-short: 354 82% 60%;
-    --pos-neutral: 215 12% 55%;
+    --pos-long: 155 70% 45%;
+    --pos-short: 355 75% 60%;
+    --pos-neutral: 215 18% 62%;
 
-    /* Chart surface — warm parchment (editorial) even in dark theme,
-       to match reference styling. */
-    --chart-surface: 40 45% 93%;
-    --chart-surface-foreground: 25 15% 15%;
-    --chart-grid: 38 22% 78%;
-    --chart-axis: 28 14% 35%;
-    --chart-ink: 25 15% 14%;
-    --chart-ink-muted: 28 12% 45%;
-    --chart-accent: 12 60% 42%;
-    --chart-accent-2: 40 55% 50%;
+    /* Chart canvas in dark mode: keep paper-bright for data legibility
+       (Bridgewater/Two Sigma research-deck pattern). */
+    --chart-surface: 0 0% 100%;
+    --chart-surface-foreground: 217 33% 15%;
+    --chart-grid: 214 32% 92%;
+    --chart-axis: 216 16% 43%;
+    --chart-ink: 217 33% 15%;
+    --chart-ink-muted: 215 19% 35%;
+    --chart-accent: 211 100% 52%;
+    --chart-accent-2: 216 100% 74%;
   }
 }
 
@@ -150,9 +156,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
       "Helvetica Neue", Arial, sans-serif;
-    font-feature-settings: "tnum" 1, "cv11" 1;
+    font-feature-settings: "tnum" 1, "cv11" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .font-mono {
@@ -168,7 +176,7 @@
   }
 
   .hud-label {
-    @apply text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium;
+    @apply text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium;
   }
 
   .hud-stat {
@@ -179,14 +187,17 @@
     @apply border-t border-border;
   }
 
-  /* White (or near-white) surface for charts and data tables.
-     Used to keep an institutional, terminal-like data canvas
-     regardless of the surrounding solar template. */
+  /* Ledger underline — single hairline used under sticky headers */
+  .hud-ledger {
+    box-shadow: inset 0 -1px 0 hsl(var(--ledger));
+  }
+
+  /* Chart / data table surface — always paper-bright */
   .hud-chart {
     background: hsl(var(--chart-surface));
     color: hsl(var(--chart-surface-foreground));
     border: 1px solid hsl(var(--chart-grid));
-    border-radius: calc(var(--radius) - 2px);
+    border-radius: calc(var(--radius));
   }
 
   .hud-chart-header {
@@ -206,7 +217,7 @@
 @layer utilities {
   @keyframes extremity-pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
+    50% { opacity: 0.6; }
   }
   .animate-extremity-pulse {
     animation: extremity-pulse 1.8s ease-in-out infinite;

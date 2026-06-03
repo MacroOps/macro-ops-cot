@@ -75,9 +75,20 @@ export function IndicatorCard({
   );
   const v = lastValue(data);
 
-  const stroke = "hsl(var(--primary))";
+  const stroke = "hsl(var(--chart-accent))";
+  const strokeSoft = "hsl(var(--chart-accent-2))";
   const grid = "hsl(var(--chart-grid))";
   const axis = "hsl(var(--chart-axis))";
+  const tooltipStyle = {
+    fontSize: 10,
+    padding: "6px 8px",
+    background: "hsl(var(--chart-surface))",
+    border: "1px solid hsl(var(--chart-grid))",
+    borderRadius: 2,
+    color: "hsl(var(--chart-surface-foreground))",
+    boxShadow: "0 1px 2px hsl(217 33% 15% / 0.06)",
+  };
+  const cursorStyle = { stroke: "hsl(var(--chart-axis))", strokeWidth: 1, strokeDasharray: "2 3" };
 
   return (
     <div className="hud-panel flex flex-col">
@@ -108,16 +119,17 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }}
                 labelFormatter={(l) => l as string}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
               <Bar dataKey="v" fill={stroke} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </BarChart>
           ) : variant === "area" ? (
@@ -131,15 +143,16 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={cursorStyle}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
-              <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} fill={`url(#g${seed})`} />
+              <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} fill={`url(#g${seed})`} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </AreaChart>
           ) : (
@@ -147,15 +160,16 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={cursorStyle}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
-              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} dot={false} />
+              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} dot={false} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </LineChart>
           )}
