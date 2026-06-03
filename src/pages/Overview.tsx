@@ -142,6 +142,13 @@ export default function Overview() {
         title="Market Overview"
         description="Top-of-funnel snapshot across positioning, internals, breadth, macro and TurningPoint composites."
       />
+
+      <div className="hud-section-head">
+        <div>
+          <div className="hud-section-eyebrow">Composite Signals</div>
+          <div className="hud-section-title">Cycle, Trend & Breadth</div>
+        </div>
+      </div>
       <CardGrid cols={3}>
         {TILES.map((t) => (
           <IndicatorCard
@@ -159,23 +166,19 @@ export default function Overview() {
       </CardGrid>
 
       {/* TCTM composite charts */}
-      <div className="px-3 pb-1 flex items-end justify-between">
+      <div className="hud-section-head">
         <div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            TurningPoint
-          </div>
-          <div className="text-[13px] font-semibold uppercase tracking-wider text-surface-foreground">
-            TCTM Composite Status
-          </div>
+          <div className="hud-section-eyebrow">TurningPoint</div>
+          <div className="hud-section-title">TCTM Composite Status</div>
         </div>
         <Link
           to="/tpmr/market-overview"
-          className="text-[10px] uppercase tracking-wider text-primary hover:underline"
+          className="text-[10px] uppercase tracking-[0.14em] text-primary hover:underline"
         >
           Open TPMR →
         </Link>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 pt-0">
         {TCTM_CHARTS.map((c) => {
           const status = TCTM_STATUS.find((s) => s.name === c.key)!;
           return (
@@ -205,26 +208,23 @@ export default function Overview() {
       </div>
 
       {/* Top Dual Trend Readings */}
-      <div className="px-3 pb-1 pt-2 flex items-end justify-between">
+      <div className="hud-section-head">
         <div>
-          <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            TurningPoint · Dual Trend
-          </div>
-          <div className="text-[13px] font-semibold uppercase tracking-wider text-surface-foreground">
-            Top Dual Trend Readings
-          </div>
+          <div className="hud-section-eyebrow">TurningPoint · Dual Trend</div>
+          <div className="hud-section-title">Top Dual Trend Readings</div>
         </div>
         <Link
           to="/tpmr/dual-trend/sp500"
-          className="text-[10px] uppercase tracking-wider text-primary hover:underline"
+          className="text-[10px] uppercase tracking-[0.14em] text-primary hover:underline"
         >
           Open Dual Trend →
         </Link>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 pt-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 px-3 pt-0">
         <DualTrendList title="Strongest LT Bullish" rows={bull} tone="bull" />
         <DualTrendList title="Weakest LT Bearish" rows={bear} tone="bear" />
       </div>
+
 
       <div className="px-3 pb-4">
         <div className="hud-panel">
