@@ -16,6 +16,8 @@ import {
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
+import { useCopilot } from "@/components/copilot/CopilotContext";
+import { Sparkles } from "lucide-react";
 
 type Variant = "line" | "area" | "bar";
 
