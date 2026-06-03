@@ -114,6 +114,17 @@ export function IndicatorCard({
             {v.toFixed(1)}
             {unit}
           </span>
+          <AskCopilotButton
+            title={resolvedTitle}
+            subtitle={subtitle}
+            seed={seed}
+            value={v}
+            min={resolvedMin}
+            max={resolvedMax}
+            unit={unit}
+            thresholds={resolvedThresholds}
+            recent={data.slice(-12)}
+          />
           {actions}
           {component && <ConstructionPopover spec={component} />}
         </div>
