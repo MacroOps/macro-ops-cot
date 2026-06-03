@@ -145,6 +145,8 @@ export default function Overview() {
         description="Top-of-funnel snapshot across positioning, internals, breadth, macro and TurningPoint composites."
       />
 
+      <RangeBar />
+
       <div className="hud-section-head">
         <div>
           <div className="hud-section-eyebrow">Live</div>
