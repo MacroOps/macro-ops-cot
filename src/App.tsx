@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/hud/ThemeProvider";
 import { CopilotProvider } from "@/components/copilot/CopilotContext";
 import { CopilotDrawer, CopilotLauncher } from "@/components/copilot/CopilotDrawer";
 import { CommandPalette } from "@/components/copilot/CommandPalette";
+import { ChartSyncProvider } from "@/components/hud/ChartSyncContext";
+import WorkspacePage from "./pages/Workspace.tsx";
 import Index from "./pages/Index.tsx";
 import AssetDetail from "./pages/AssetDetail.tsx";
 import SectorAggregates from "./pages/SectorAggregates.tsx";
@@ -41,6 +43,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <CopilotProvider>
+            <ChartSyncProvider>
             <CommandPalette />
             <CopilotDrawer />
             <CopilotLauncher />
@@ -82,9 +85,12 @@ const App = () => (
             <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
             <Route path="/eurex" element={<EurexPositioning />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/workspace" element={<WorkspacePage />} />
+            <Route path="/workspace/:id" element={<WorkspacePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ChartSyncProvider>
           </CopilotProvider>
         </BrowserRouter>
       </TooltipProvider>

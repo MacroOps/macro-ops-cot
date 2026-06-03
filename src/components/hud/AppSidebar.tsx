@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -19,7 +19,10 @@ import {
   Crosshair,
   ShieldAlert,
   Globe2,
+  LayoutGrid,
+  Plus,
 } from "lucide-react";
+import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
   Sidebar,
   SidebarContent,
@@ -178,6 +181,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <WorkspacesGroup collapsed={collapsed} pathname={pathname} />
+
         <SidebarGroup>
           <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.14em]">
             System
@@ -195,6 +200,72 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+function WorkspacesGroup({ collapsed, pathname }: { collapsed: boolean; pathname: string }) {
+  const [ver, setVer] = useState(0);
+  useEffect(() => {
+    const h = () => setVer((x) => x + 1);
+    window.addEventListener("mhud:workspaces-changed", h);
+    return () => window.removeEventListener("mhud:workspaces-changed", h);
+  }, []);
+  const workspaces = useMemo(() => {
+    void ver;
+    return listWorkspaces();
+  }, [ver]);
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.14em] flex items-center justify-between">
+        <span>My Workspaces</span>
+        {!collapsed && (
+          <NavLink to="/workspace" className="text-muted-foreground hover:text-primary">
+            <LayoutGrid className="h-3 w-3" />
+          </NavLink>
+        )}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {workspaces.length === 0 && !collapsed && (
+            <div className="px-2 py-1 text-[10px] text-muted-foreground italic">No workspaces. Pin a chart to start.</div>
+          )}
+          {workspaces.map((w) => (
+            <SidebarMenuItem key={w.id}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === `/workspace/${w.id}`}
+                tooltip={w.name}
+              >
+                <NavLink to={`/workspace/${w.id}`} className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="text-xs truncate flex-1">{w.name}</span>
+                      <span className="text-[9px] font-mono text-muted-foreground">{w.items.length}</span>
+                    </>
+                  )}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          {!collapsed && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => {
+                  const name = prompt("Workspace name", "New Workspace");
+                  if (name) createWorkspace(name);
+                }}
+                tooltip="New workspace"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="text-xs">New workspace</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 

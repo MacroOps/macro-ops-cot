@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -8,6 +8,7 @@ import {
   Bar,
   Brush,
   ReferenceLine,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -17,7 +18,29 @@ import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { useCopilot } from "@/components/copilot/CopilotContext";
-import { Sparkles } from "lucide-react";
+import { useChartSync } from "@/components/hud/ChartSyncContext";
+import {
+  Sparkles,
+  BarChart3,
+  Pin,
+  MessageSquarePlus,
+  Maximize2,
+  X,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { listAnnotations, addAnnotation, removeAnnotation, type Annotation } from "@/lib/annotations";
+import { listWorkspaces, addItem, createWorkspace } from "@/lib/workspaces";
+import { toast } from "@/hooks/use-toast";
 
 type Variant = "line" | "area" | "bar";
 
@@ -36,13 +59,17 @@ interface IndicatorCardProps {
   unit?: string;
   actions?: ReactNode;
   mockOverride?: MockOptions;
-  /** Show a range brush below the chart for long series. */
   brush?: boolean;
-  /** When provided, the card derives title/scale/thresholds from the spec and adds an info popover. */
   component?: ComponentSpec;
+  /** Stable id used by the sync layer & annotations store. Defaults to `seed`. */
+  indicatorKey?: string;
 }
 
-export function IndicatorCard({
+export function IndicatorCard(props: IndicatorCardProps) {
+  return <IndicatorCardInner {...props} />;
+}
+
+function IndicatorCardInner({
   title,
   subtitle,
   seed,
@@ -59,14 +86,20 @@ export function IndicatorCard({
   mockOverride,
   brush = false,
   component,
+  indicatorKey,
 }: IndicatorCardProps) {
-  // Spec-derived defaults (props still override).
+  const sync = useChartSyncSafe();
+  const [fullscreen, setFullscreen] = useState(false);
+  const [annoVer, setAnnoVer] = useState(0);
+
   const resolvedTitle = title ?? component?.title ?? "";
   const resolvedMin = min ?? component?.scale?.min ?? 0;
   const resolvedMax = max ?? component?.scale?.max ?? 100;
   const resolvedThresholds = thresholds ?? component?.thresholds;
+  const key = indicatorKey ?? `seed:${seed}`;
 
-  const data = useMemo(
+  // Full series, then slice by range preset.
+  const fullData = useMemo(
     () =>
       mockSeries({
         seed,
@@ -79,12 +112,167 @@ export function IndicatorCard({
       }),
     [seed, resolvedMin, resolvedMax, drift, volatility, points, mockOverride],
   );
+
+  const sliced = useMemo(() => {
+    if (!sync) return fullData;
+    const n = sync.pointsFor(fullData.length);
+    return fullData.slice(-n);
+  }, [fullData, sync]);
+
+  const data = fullscreen ? fullData : sliced;
   const v = lastValue(data);
 
+  useEffect(() => {
+    const h = () => setAnnoVer((x) => x + 1);
+    window.addEventListener("mhud:annotations-changed", h);
+    return () => window.removeEventListener("mhud:annotations-changed", h);
+  }, []);
+
+  const annotations = useMemo<Annotation[]>(() => {
+    void annoVer;
+    return listAnnotations(key).filter((a) => data.some((d) => d.t === a.t));
+  }, [key, data, annoVer]);
+
+  const hoverPoint = useMemo(() => {
+    if (!sync?.hoverT) return null;
+    return data.find((d) => d.t === sync.hoverT) ?? null;
+  }, [sync?.hoverT, data]);
+
+  const headerValue = hoverPoint ? hoverPoint.v : v;
+  const headerLabel = hoverPoint ? hoverPoint.t : null;
+
+  return (
+    <>
+      <div className="hud-panel flex flex-col group/card relative">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate">
+              {resolvedTitle}
+            </div>
+            {(subtitle || headerLabel) && (
+              <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5 truncate">
+                {headerLabel ? `@ ${headerLabel}` : subtitle}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
+              {headerValue.toFixed(1)}
+              {unit}
+            </span>
+            <ChartToolbar
+              title={resolvedTitle}
+              subtitle={subtitle}
+              seed={seed}
+              value={v}
+              min={resolvedMin}
+              max={resolvedMax}
+              unit={unit}
+              thresholds={resolvedThresholds}
+              recent={data.slice(-12)}
+              indicatorKey={key}
+              hoverPoint={hoverPoint ?? data[data.length - 1]}
+              variant={variant}
+              drift={drift}
+              onFullscreen={() => setFullscreen(true)}
+            />
+            {actions}
+            {component && <ConstructionPopover spec={component} />}
+          </div>
+        </div>
+        <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }}>
+          <ChartBody
+            data={data}
+            variant={variant}
+            min={resolvedMin}
+            max={resolvedMax}
+            seed={seed}
+            unit={unit}
+            title={resolvedTitle}
+            thresholds={resolvedThresholds}
+            brush={brush}
+            height={height}
+            annotations={annotations}
+            hoverT={sync?.hoverT ?? null}
+            onHover={sync?.setHoverT}
+          />
+        </div>
+      </div>
+
+      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="text-[11px] uppercase tracking-[0.16em] flex items-center gap-2">
+              {resolvedTitle}
+              <span className="text-muted-foreground font-mono normal-case tracking-normal text-[10px]">
+                · {subtitle}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <StatsStrip data={fullData} unit={unit} thresholds={resolvedThresholds} />
+          <div className="h-[420px]">
+            <ChartBody
+              data={fullData}
+              variant={variant}
+              min={resolvedMin}
+              max={resolvedMax}
+              seed={seed * 7}
+              unit={unit}
+              title={resolvedTitle}
+              thresholds={resolvedThresholds}
+              brush
+              height={420}
+              annotations={listAnnotations(key)}
+              hoverT={sync?.hoverT ?? null}
+              onHover={sync?.setHoverT}
+            />
+          </div>
+          <AnnotationList indicatorKey={key} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function useChartSyncSafe() {
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useChartSync();
+  } catch {
+    return null;
+  }
+}
+
+function ChartBody({
+  data,
+  variant,
+  min,
+  max,
+  seed,
+  unit,
+  title,
+  thresholds,
+  brush,
+  height,
+  annotations,
+  hoverT,
+  onHover,
+}: {
+  data: { t: string; v: number }[];
+  variant: Variant;
+  min: number;
+  max: number;
+  seed: number;
+  unit: string;
+  title: string;
+  thresholds?: { hi?: number; lo?: number };
+  brush: boolean;
+  height: number;
+  annotations: Annotation[];
+  hoverT: string | null;
+  onHover?: (t: string | null) => void;
+}) {
   const stroke = "hsl(var(--chart-accent))";
-  const strokeSoft = "hsl(var(--chart-accent-2))";
-  const grid = "hsl(var(--chart-grid))";
-  const axis = "hsl(var(--chart-axis))";
   const tooltipStyle = {
     fontSize: 10,
     padding: "6px 8px",
@@ -96,110 +284,395 @@ export function IndicatorCard({
   };
   const cursorStyle = { stroke: "hsl(var(--chart-axis))", strokeWidth: 1, strokeDasharray: "2 3" };
 
+  const handleMouseMove = (state: { activeLabel?: string | number } | null) => {
+    if (!onHover) return;
+    const t = state?.activeLabel;
+    if (typeof t === "string") onHover(t);
+  };
+  const handleLeave = () => onHover?.(null);
+
+  const sharedRefs = (
+    <>
+      {thresholds?.hi != null && (
+        <ReferenceLine y={thresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
+      )}
+      {thresholds?.lo != null && (
+        <ReferenceLine y={thresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
+      )}
+      {hoverT && data.some((d) => d.t === hoverT) && (
+        <ReferenceLine x={hoverT} stroke="hsl(var(--primary))" strokeOpacity={0.5} strokeDasharray="2 2" />
+      )}
+      {annotations.map((a) => (
+        <ReferenceDot
+          key={a.id}
+          x={a.t}
+          y={a.v}
+          r={4}
+          fill="hsl(var(--primary))"
+          stroke="hsl(var(--background))"
+          strokeWidth={1.5}
+        />
+      ))}
+    </>
+  );
+
   return (
-    <div className="hud-panel flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate">
-            {resolvedTitle}
-          </div>
-          {subtitle && (
-            <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5 truncate">
-              {subtitle}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="font-mono tabular-nums text-xs text-surface-foreground">
-            {v.toFixed(1)}
-            {unit}
-          </span>
-          <AskCopilotButton
-            title={resolvedTitle}
-            subtitle={subtitle}
-            seed={seed}
-            value={v}
-            min={resolvedMin}
-            max={resolvedMax}
-            unit={unit}
-            thresholds={resolvedThresholds}
-            recent={data.slice(-12)}
+    <ResponsiveContainer width="100%" height="100%">
+      {variant === "bar" ? (
+        <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+          <XAxis dataKey="t" hide />
+          <YAxis domain={[min, max]} hide />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }}
+            labelFormatter={(l) => l as string}
+            formatter={(val: number) => [val.toFixed(2) + unit, title]}
           />
-          {actions}
-          {component && <ConstructionPopover spec={component} />}
-        </div>
-      </div>
-      <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {variant === "bar" ? (
-            <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-              <XAxis dataKey="t" hide />
-              <YAxis domain={[resolvedMin, resolvedMax]} hide />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }}
-                labelFormatter={(l) => l as string}
-                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
-              />
-              <Bar dataKey="v" fill={stroke} />
-              {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {brush && (
-                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
-              )}
-            </BarChart>
-          ) : variant === "area" ? (
-            <AreaChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id={`g${seed}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={stroke} stopOpacity={0.45} />
-                  <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="t" hide />
-              <YAxis domain={[resolvedMin, resolvedMax]} hide />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={cursorStyle}
-                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
-              />
-              <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} fill={`url(#g${seed})`} />
-              {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {brush && (
-                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
-              )}
-            </AreaChart>
-          ) : (
-            <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-              <XAxis dataKey="t" hide />
-              <YAxis domain={[resolvedMin, resolvedMax]} hide />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={cursorStyle}
-                formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
-              />
-              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} dot={false} />
-              {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
-              )}
-              {brush && (
-                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
-              )}
-            </LineChart>
+          <Bar dataKey="v" fill={stroke} />
+          {sharedRefs}
+          {brush && (
+            <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
           )}
-        </ResponsiveContainer>
+        </BarChart>
+      ) : variant === "area" ? (
+        <AreaChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+          <defs>
+            <linearGradient id={`g${seed}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={stroke} stopOpacity={0.45} />
+              <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="t" hide />
+          <YAxis domain={[min, max]} hide />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            cursor={cursorStyle}
+            formatter={(val: number) => [val.toFixed(2) + unit, title]}
+          />
+          <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} fill={`url(#g${seed})`} />
+          {sharedRefs}
+          {brush && (
+            <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
+          )}
+        </AreaChart>
+      ) : (
+        <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+          <XAxis dataKey="t" hide />
+          <YAxis domain={[min, max]} hide />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            cursor={cursorStyle}
+            formatter={(val: number) => [val.toFixed(2) + unit, title]}
+          />
+          <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} dot={false} />
+          {sharedRefs}
+          {brush && (
+            <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
+          )}
+        </LineChart>
+      )}
+    </ResponsiveContainer>
+  );
+}
+
+function StatsStrip({
+  data,
+  unit,
+  thresholds,
+}: {
+  data: { t: string; v: number }[];
+  unit?: string;
+  thresholds?: { hi?: number; lo?: number };
+}) {
+  const stats = useMemo(() => {
+    if (!data.length) return null;
+    const values = data.map((d) => d.v);
+    const last = values[values.length - 1];
+    const mean = values.reduce((s, x) => s + x, 0) / values.length;
+    const variance = values.reduce((s, x) => s + (x - mean) ** 2, 0) / values.length;
+    const stdev = Math.sqrt(variance) || 1;
+    const z = (last - mean) / stdev;
+    const sorted = [...values].sort((a, b) => a - b);
+    const rank = sorted.filter((x) => x <= last).length;
+    const pct = (rank / sorted.length) * 100;
+    const at = (days: number) => {
+      const idx = Math.max(0, data.length - 1 - Math.round(days / 7));
+      return values[idx];
+    };
+    const chg = (d: number) => (((last - at(d)) / Math.abs(at(d) || 1)) * 100);
+    const regime = thresholds?.hi != null && last >= thresholds.hi
+      ? "Above upper"
+      : thresholds?.lo != null && last <= thresholds.lo
+        ? "Below lower"
+        : "In range";
+    return { last, mean, z, pct, m1: chg(30), m3: chg(90), y1: chg(365), regime };
+  }, [data, thresholds]);
+
+  if (!stats) return null;
+  const cell = "px-3 py-2 border-r border-border last:border-r-0 flex-1 min-w-[80px]";
+  return (
+    <div className="flex border border-border rounded-sm bg-surface/30 text-[10px] font-mono">
+      <Stat label="Last" value={`${stats.last.toFixed(2)}${unit ?? ""}`} cn={cell} />
+      <Stat label="Z-score" value={stats.z.toFixed(2)} cn={cell} tone={Math.abs(stats.z) > 1.5 ? "warn" : undefined} />
+      <Stat label="Percentile" value={`${stats.pct.toFixed(0)}%`} cn={cell} />
+      <Stat label="1M Δ" value={`${stats.m1 >= 0 ? "+" : ""}${stats.m1.toFixed(1)}%`} cn={cell} tone={stats.m1 >= 0 ? "up" : "down"} />
+      <Stat label="3M Δ" value={`${stats.m3 >= 0 ? "+" : ""}${stats.m3.toFixed(1)}%`} cn={cell} tone={stats.m3 >= 0 ? "up" : "down"} />
+      <Stat label="1Y Δ" value={`${stats.y1 >= 0 ? "+" : ""}${stats.y1.toFixed(1)}%`} cn={cell} tone={stats.y1 >= 0 ? "up" : "down"} />
+      <Stat label="Regime" value={stats.regime} cn={cell} />
+    </div>
+  );
+}
+
+function Stat({ label, value, cn, tone }: { label: string; value: string; cn: string; tone?: "up" | "down" | "warn" }) {
+  const toneCls = tone === "up" ? "text-success" : tone === "down" ? "text-destructive" : tone === "warn" ? "text-warning" : "text-surface-foreground";
+  return (
+    <div className={cn}>
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`tabular-nums font-semibold ${toneCls}`}>{value}</div>
+    </div>
+  );
+}
+
+function ChartToolbar(props: {
+  title: string;
+  subtitle?: string;
+  seed: number;
+  value: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+  thresholds?: { hi?: number; lo?: number };
+  recent: { t: string; v: number }[];
+  indicatorKey: string;
+  hoverPoint?: { t: string; v: number };
+  variant: Variant;
+  drift: number;
+  onFullscreen: () => void;
+}) {
+  const { openCopilot } = useCopilot();
+  const ctx = {
+    title: props.title,
+    subtitle: props.subtitle,
+    seed: props.seed,
+    value: props.value,
+    min: props.min,
+    max: props.max,
+    unit: props.unit,
+    thresholdHi: props.thresholds?.hi,
+    thresholdLo: props.thresholds?.lo,
+    recent: props.recent,
+  };
+
+  return (
+    <div className="flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 focus-within:opacity-100 transition-opacity">
+      <IconBtn
+        title="Ask Copilot"
+        onClick={() => openCopilot({ context: ctx, prompt: `What is ${props.title} telling me right now?` })}
+      >
+        <Sparkles className="h-3 w-3" />
+      </IconBtn>
+      <IconBtn
+        title="Backtest this threshold"
+        onClick={() => openCopilot({ context: ctx, prompt: `Run a historical backtest of ${props.title} crossing its thresholds and summarize.` })}
+      >
+        <BarChart3 className="h-3 w-3" />
+      </IconBtn>
+      <AnnotatePopover
+        indicatorKey={props.indicatorKey}
+        point={props.hoverPoint ?? props.recent[props.recent.length - 1]}
+      />
+      <PinPopover
+        item={{
+          title: props.title,
+          subtitle: props.subtitle,
+          seed: props.seed,
+          variant: props.variant,
+          min: props.min,
+          max: props.max,
+          drift: props.drift,
+          thresholdHi: props.thresholds?.hi,
+          thresholdLo: props.thresholds?.lo,
+          unit: props.unit,
+          indicatorKey: props.indicatorKey,
+        }}
+      />
+      <IconBtn title="Fullscreen" onClick={props.onFullscreen}>
+        <Maximize2 className="h-3 w-3" />
+      </IconBtn>
+    </div>
+  );
+}
+
+function IconBtn({ children, onClick, title }: { children: ReactNode; onClick: () => void; title: string }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+      }}
+      title={title}
+      className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
+function AnnotatePopover({ indicatorKey, point }: { indicatorKey: string; point?: { t: string; v: number } }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  if (!point) return null;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          title={`Annotate @ ${point.t}`}
+          className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+        >
+          <MessageSquarePlus className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-3 space-y-2" align="end">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          New annotation @ <span className="font-mono">{point.t}</span> · <span className="font-mono">{point.v.toFixed(2)}</span>
+        </div>
+        <textarea
+          autoFocus
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="e.g. CTA reset after Fed pause…"
+          className="w-full bg-surface border border-border rounded-sm px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+        />
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => setOpen(false)}
+            className="text-[10px] uppercase tracking-wider px-2 py-1 text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (!note.trim()) return;
+              addAnnotation({ indicatorKey, t: point.t, v: point.v, note: note.trim() });
+              setNote("");
+              setOpen(false);
+              toast({ title: "Annotation saved", description: point.t });
+            }}
+            className="text-[10px] uppercase tracking-wider px-2 py-1 bg-primary text-primary-foreground rounded-sm"
+          >
+            Save
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PinPopover({ item }: { item: Omit<Parameters<typeof addItem>[1], "id"> }) {
+  const [open, setOpen] = useState(false);
+  const [ver, setVer] = useState(0);
+  const [newName, setNewName] = useState("");
+  const workspaces = useMemo(() => listWorkspaces(), [open, ver]);
+
+  useEffect(() => {
+    const h = () => setVer((x) => x + 1);
+    window.addEventListener("mhud:workspaces-changed", h);
+    return () => window.removeEventListener("mhud:workspaces-changed", h);
+  }, []);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          title="Pin to workspace"
+          className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Pin className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2" align="end">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground px-1.5 py-1">
+          Pin to workspace
+        </div>
+        <div className="max-h-40 overflow-auto">
+          {workspaces.length === 0 && (
+            <div className="text-[10px] text-muted-foreground px-1.5 py-1 italic">No workspaces yet.</div>
+          )}
+          {workspaces.map((w) => (
+            <button
+              key={w.id}
+              onClick={() => {
+                addItem(w.id, item);
+                setOpen(false);
+                toast({ title: "Added to workspace", description: w.name });
+              }}
+              className="w-full text-left text-xs px-2 py-1 rounded-sm hover:bg-surface-2 flex items-center justify-between"
+            >
+              <span className="truncate">{w.name}</span>
+              <span className="text-[9px] font-mono text-muted-foreground">{w.items.length}</span>
+            </button>
+          ))}
+        </div>
+        <div className="border-t border-border mt-2 pt-2 flex gap-1">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="New workspace…"
+            className="flex-1 bg-surface border border-border rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-primary"
+          />
+          <button
+            onClick={() => {
+              const name = newName.trim() || "Untitled Workspace";
+              const w = createWorkspace(name);
+              addItem(w.id, item);
+              setNewName("");
+              setOpen(false);
+              toast({ title: "Workspace created", description: name });
+            }}
+            className="text-[10px] uppercase tracking-wider px-2 bg-primary text-primary-foreground rounded-sm"
+          >
+            Create
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function AnnotationList({ indicatorKey }: { indicatorKey: string }) {
+  const [ver, setVer] = useState(0);
+  useEffect(() => {
+    const h = () => setVer((x) => x + 1);
+    window.addEventListener("mhud:annotations-changed", h);
+    return () => window.removeEventListener("mhud:annotations-changed", h);
+  }, []);
+  const items = useMemo(() => {
+    void ver;
+    return listAnnotations(indicatorKey);
+  }, [indicatorKey, ver]);
+  if (!items.length) return null;
+  return (
+    <div className="border-t border-border pt-2 mt-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Annotations</div>
+      <div className="space-y-1 max-h-32 overflow-auto">
+        {items.map((a) => (
+          <div key={a.id} className="flex items-start gap-2 text-[11px] px-2 py-1 bg-surface-2/40 rounded-sm">
+            <span className="font-mono tabular-nums text-muted-foreground shrink-0">{a.t}</span>
+            <span className="font-mono tabular-nums text-primary shrink-0">{a.v.toFixed(1)}</span>
+            <span className="flex-1 text-surface-foreground">{a.note}</span>
+            <button
+              onClick={() => removeAnnotation(a.id)}
+              className="text-muted-foreground hover:text-destructive shrink-0"
+              aria-label="Delete"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -212,40 +685,4 @@ export function CardGrid({ children, cols = 3 }: { children: ReactNode; cols?: 2
     4: "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
   } as const;
   return <div className={`grid ${map[cols]} gap-3 p-3`}>{children}</div>;
-}
-
-function AskCopilotButton(props: {
-  title: string; subtitle?: string; seed: number; value: number;
-  min?: number; max?: number; unit?: string;
-  thresholds?: { hi?: number; lo?: number };
-  recent?: Array<{ t: string; v: number }>;
-}) {
-  const { openCopilot } = useCopilot();
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        openCopilot({
-          context: {
-            title: props.title,
-            subtitle: props.subtitle,
-            seed: props.seed,
-            value: props.value,
-            min: props.min,
-            max: props.max,
-            unit: props.unit,
-            thresholdHi: props.thresholds?.hi,
-            thresholdLo: props.thresholds?.lo,
-            recent: props.recent,
-          },
-          prompt: `What is ${props.title} telling me right now and what's the historical setup?`,
-        });
-      }}
-      title="Ask Copilot about this chart"
-      className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-    >
-      <Sparkles className="h-3 w-3" />
-    </button>
-  );
 }

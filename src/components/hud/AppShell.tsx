@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { Moon, Sun, Circle, LogOut, User as UserIcon } from "lucide-react";
+import { RegimeRibbon } from "./RegimeRibbon";
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const { theme, toggle } = useTheme();
@@ -59,6 +60,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             </div>
           </header>
 
+          <RegimeRibbon />
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
