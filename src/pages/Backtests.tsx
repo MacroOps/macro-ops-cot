@@ -34,7 +34,7 @@ const Backtests = () => {
   // ── shared controls ────────────────────────────────────────────────
   const initialMode: Mode = params.get("indicator") && REGISTRY_BY_KEY[params.get("indicator")!] ? "indicator" : "cot";
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [tab, setTab] = useState<Tab>("run");
+  const [tab, setTab] = useState<Tab>(((params.get("tab") as Tab) === "history" || params.get("tab") === "compare") ? params.get("tab") as Tab : "run");
 
   // CoT mode state
   const [symbol, setSymbol] = useState<string>(params.get("symbol") ?? "");
