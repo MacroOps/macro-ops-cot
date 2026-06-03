@@ -6,6 +6,7 @@ import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
 import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
 import { SignalsTape } from "@/components/copilot/SignalsTape";
 import { RangeBar } from "@/components/hud/RangeBar";
+import { BriefingTile } from "@/components/hud/BriefingTile";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   TCTM_STATUS,
@@ -146,6 +147,11 @@ export default function Overview() {
       />
 
       <RangeBar />
+
+      <div className="px-3 pt-3">
+        <BriefingTile />
+      </div>
+
 
       <div className="hud-section-head">
         <div>
