@@ -7,6 +7,7 @@ import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
 import { SignalsTape } from "@/components/copilot/SignalsTape";
 import { RangeBar } from "@/components/hud/RangeBar";
 import { BriefingTile } from "@/components/hud/BriefingTile";
+import { RegimeTimeline } from "@/components/charts/RegimeTimeline";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   TCTM_STATUS,
@@ -155,6 +156,22 @@ export default function Overview() {
 
       <div className="hud-section-head">
         <div>
+          <div className="hud-section-eyebrow">Regime</div>
+          <div className="hud-section-title">Composite vs. Risk Regime · 3y</div>
+        </div>
+      </div>
+      <div className="px-3">
+        <RegimeTimeline
+          title="MO Composite"
+          subtitle="0–100 · regime washes from classifier"
+          seed={2101}
+          regimeSeed={2202}
+          height={260}
+        />
+      </div>
+
+      <div className="hud-section-head">
+        <div>
           <div className="hud-section-eyebrow">Live</div>
           <div className="hud-section-title">Model Signals Tape</div>
         </div>
@@ -162,6 +179,7 @@ export default function Overview() {
       <div className="px-3 pt-0">
         <SignalsTape />
       </div>
+
 
       <div className="hud-section-head">
         <div>
