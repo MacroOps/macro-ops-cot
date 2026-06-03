@@ -68,6 +68,10 @@ export default {
         "chart-ink-muted": "hsl(var(--chart-ink-muted))",
         "chart-accent": "hsl(var(--chart-accent))",
         "chart-accent-2": "hsl(var(--chart-accent-2))",
+        "chart-band-low": "hsl(var(--chart-band-low))",
+        "chart-band-mid": "hsl(var(--chart-band-mid))",
+        "chart-band-high": "hsl(var(--chart-band-high))",
+        "chart-halo": "hsl(var(--chart-halo))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

@@ -76,6 +76,10 @@
     --chart-ink-muted: 215 19% 35%;        /* #475569 reference series */
     --chart-accent: 211 100% 52%;          /* #0a84ff primary series */
     --chart-accent-2: 216 100% 74%;        /* #7aa8ff secondary series */
+    --chart-band-low: 155 87% 30%;         /* cool / depressed band */
+    --chart-band-mid: 216 16% 43%;         /* neutral band */
+    --chart-band-high: 355 67% 54%;        /* hot / stretched band */
+    --chart-halo: 220 100% 56%;            /* hover crosshair + end-dot */
   }
 
   .dark {
@@ -142,6 +146,10 @@
     --chart-ink-muted: 215 19% 35%;
     --chart-accent: 211 100% 52%;
     --chart-accent-2: 216 100% 74%;
+    --chart-band-low: 155 87% 30%;
+    --chart-band-mid: 216 16% 43%;
+    --chart-band-high: 355 67% 54%;
+    --chart-halo: 219 100% 62%;
   }
 }
 
@@ -269,5 +277,20 @@
   }
   .animate-extremity-pulse {
     animation: extremity-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes hud-draw {
+    from { stroke-dashoffset: var(--hud-draw-length, 2000); }
+    to   { stroke-dashoffset: 0; }
+  }
+  .animate-hud-draw {
+    stroke-dasharray: var(--hud-draw-length, 2000);
+    stroke-dashoffset: var(--hud-draw-length, 2000);
+    animation: hud-draw 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes hud-halo {
+    0%, 100% { r: 3; opacity: 1; }
+    50%      { r: 5; opacity: 0.55; }
   }
 }
