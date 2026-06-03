@@ -213,3 +213,39 @@ export function CardGrid({ children, cols = 3 }: { children: ReactNode; cols?: 2
   } as const;
   return <div className={`grid ${map[cols]} gap-3 p-3`}>{children}</div>;
 }
+
+function AskCopilotButton(props: {
+  title: string; subtitle?: string; seed: number; value: number;
+  min?: number; max?: number; unit?: string;
+  thresholds?: { hi?: number; lo?: number };
+  recent?: Array<{ t: string; v: number }>;
+}) {
+  const { openCopilot } = useCopilot();
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        openCopilot({
+          context: {
+            title: props.title,
+            subtitle: props.subtitle,
+            seed: props.seed,
+            value: props.value,
+            min: props.min,
+            max: props.max,
+            unit: props.unit,
+            thresholdHi: props.thresholds?.hi,
+            thresholdLo: props.thresholds?.lo,
+            recent: props.recent,
+          },
+          prompt: `What is ${props.title} telling me right now and what's the historical setup?`,
+        });
+      }}
+      title="Ask Copilot about this chart"
+      className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+    >
+      <Sparkles className="h-3 w-3" />
+    </button>
+  );
+}
