@@ -6,6 +6,7 @@ import {
   Line,
   BarChart,
   Bar,
+  Brush,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
