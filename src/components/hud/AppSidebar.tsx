@@ -22,6 +22,9 @@ import {
   LayoutGrid,
   Plus,
   Sparkles,
+  Bell,
+  Telescope,
+  Flame,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
@@ -47,6 +50,9 @@ type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
 const NAV: Group[] = [
   { title: "Overview", icon: LayoutDashboard, url: "/overview" },
   { title: "Daily Briefing", icon: Sparkles, url: "/briefing" },
+  { title: "Heatmap", icon: Flame, url: "/heatmap" },
+  { title: "Analogs", icon: Telescope, url: "/analogs" },
+  { title: "Alerts", icon: Bell, url: "/alerts" },
   { title: "Backtests Lab", icon: FlaskConical, url: "/backtests" },
   { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility" },
   { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle" },

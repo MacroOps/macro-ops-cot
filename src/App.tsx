@@ -8,6 +8,10 @@ import { CopilotProvider } from "@/components/copilot/CopilotContext";
 import { CopilotDrawer, CopilotLauncher } from "@/components/copilot/CopilotDrawer";
 import { CommandPalette } from "@/components/copilot/CommandPalette";
 import { ChartSyncProvider } from "@/components/hud/ChartSyncContext";
+import { GlobalDateProvider } from "@/components/hud/GlobalDateProvider";
+import Alerts from "./pages/Alerts.tsx";
+import Analogs from "./pages/Analogs.tsx";
+import Heatmap from "./pages/Heatmap.tsx";
 import WorkspacePage from "./pages/Workspace.tsx";
 import Index from "./pages/Index.tsx";
 import AssetDetail from "./pages/AssetDetail.tsx";
@@ -45,6 +49,7 @@ const App = () => (
         <BrowserRouter>
           <CopilotProvider>
             <ChartSyncProvider>
+            <GlobalDateProvider>
             <CommandPalette />
             <CopilotDrawer />
             <CopilotLauncher />
@@ -52,6 +57,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/overview" element={<Overview />} />
             <Route path="/briefing" element={<Briefing />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/analogs" element={<Analogs />} />
+            <Route path="/heatmap" element={<Heatmap />} />
             <Route path="/trend-fragility" element={<TrendFragility />} />
             <Route path="/risk-cycle" element={<RiskCycle />} />
             <Route path="/market-internals" element={<MarketInternals />} />
@@ -92,6 +100,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </GlobalDateProvider>
           </ChartSyncProvider>
           </CopilotProvider>
         </BrowserRouter>

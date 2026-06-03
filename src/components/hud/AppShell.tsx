@@ -6,6 +6,8 @@ import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { Moon, Sun, Circle, LogOut, User as UserIcon } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
+import { AlertsInbox } from "./AlertsInbox";
+import { GlobalScrubber } from "./GlobalScrubber";
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const { theme, toggle } = useTheme();
@@ -32,6 +34,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
                 <span>Live</span>
               </div>
               <div className="hidden md:block h-4 w-px bg-border" />
+              <AlertsInbox />
               {user ? (
                 <button
                   onClick={() => signOut()}
@@ -62,6 +65,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
 
           <RegimeRibbon />
           <main className="flex-1 overflow-auto">{children}</main>
+          <GlobalScrubber />
         </div>
       </div>
     </SidebarProvider>
