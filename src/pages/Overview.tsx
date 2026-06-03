@@ -4,6 +4,7 @@ import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
 import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
+import { SignalsTape } from "@/components/copilot/SignalsTape";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   TCTM_STATUS,
