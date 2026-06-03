@@ -1,24 +1,29 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-type Theme = "solar" | "charcoal";
+type Theme = "light" | "dark";
 interface Ctx { theme: Theme; toggle: () => void; }
 
 const ThemeCtx = createContext<Ctx | undefined>(undefined);
 
+function normalize(v: string | null): Theme {
+  if (v === "dark" || v === "charcoal") return "dark";
+  return "light";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("hud-theme") : null;
-    return (stored as Theme) || "solar";
+    if (typeof window === "undefined") return "light";
+    return normalize(localStorage.getItem("hud-theme"));
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("dark", theme === "charcoal");
+    root.classList.toggle("dark", theme === "dark");
     localStorage.setItem("hud-theme", theme);
   }, [theme]);
 
   return (
-    <ThemeCtx.Provider value={{ theme, toggle: () => setTheme(t => t === "solar" ? "charcoal" : "solar") }}>
+    <ThemeCtx.Provider value={{ theme, toggle: () => setTheme(t => t === "light" ? "dark" : "light") }}>
       {children}
     </ThemeCtx.Provider>
   );

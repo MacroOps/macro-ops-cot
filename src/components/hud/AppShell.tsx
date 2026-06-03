@@ -53,8 +53,8 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
                 className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
                 aria-label="Toggle theme"
               >
-                {theme === "solar" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-                <span className="hidden sm:inline">{theme === "solar" ? "Light" : "Dark"}</span>
+                {theme === "light" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+                <span className="hidden sm:inline">{theme === "light" ? "Light" : "Dark"}</span>
               </button>
             </div>
           </header>
