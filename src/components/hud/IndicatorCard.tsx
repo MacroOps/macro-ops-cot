@@ -75,9 +75,20 @@ export function IndicatorCard({
   );
   const v = lastValue(data);
 
-  const stroke = "hsl(var(--primary))";
+  const stroke = "hsl(var(--chart-accent))";
+  const strokeSoft = "hsl(var(--chart-accent-2))";
   const grid = "hsl(var(--chart-grid))";
   const axis = "hsl(var(--chart-axis))";
+  const tooltipStyle = {
+    fontSize: 10,
+    padding: "6px 8px",
+    background: "hsl(var(--chart-surface))",
+    border: "1px solid hsl(var(--chart-grid))",
+    borderRadius: 2,
+    color: "hsl(var(--chart-surface-foreground))",
+    boxShadow: "0 1px 2px hsl(217 33% 15% / 0.06)",
+  };
+  const cursorStyle = { stroke: "hsl(var(--chart-axis))", strokeWidth: 1, strokeDasharray: "2 3" };
 
   return (
     <div className="hud-panel flex flex-col">
