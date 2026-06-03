@@ -116,7 +116,7 @@ export function IndicatorCard({
           {component && <ConstructionPopover spec={component} />}
         </div>
       </div>
-      <div className="p-1 hud-chart rounded-none" style={{ height }}>
+      <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }}>
         <ResponsiveContainer width="100%" height="100%">
           {variant === "bar" ? (
             <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
@@ -134,6 +134,9 @@ export function IndicatorCard({
               )}
               {resolvedThresholds?.lo != null && (
                 <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
+              )}
+              {brush && (
+                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
               )}
             </BarChart>
           ) : variant === "area" ? (
@@ -158,6 +161,9 @@ export function IndicatorCard({
               {resolvedThresholds?.lo != null && (
                 <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
+              {brush && (
+                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
+              )}
             </AreaChart>
           ) : (
             <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
@@ -174,6 +180,9 @@ export function IndicatorCard({
               )}
               {resolvedThresholds?.lo != null && (
                 <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
+              )}
+              {brush && (
+                <Brush dataKey="t" height={20} stroke="hsl(var(--chart-accent))" fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
               )}
             </LineChart>
           )}
