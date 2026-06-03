@@ -7,6 +7,7 @@ import {
   BarChart,
   Bar,
   Brush,
+  Customized,
   ReferenceLine,
   ReferenceDot,
   ResponsiveContainer,
@@ -14,6 +15,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  HudTooltip,
+  PercentileBandsLayer,
+  EndLabelLayer,
+  HoverAxisChipLayer,
+  computePercentiles,
+} from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
