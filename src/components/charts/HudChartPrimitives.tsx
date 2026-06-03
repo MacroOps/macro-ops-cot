@@ -123,8 +123,8 @@ interface EndLabelLayerProps {
   offset?: { top: number; left: number; width: number; height: number };
   data: { t: string; v: number }[];
   unit?: string;
-  /** Highlight the dot when value is outside [p25, p75] band. */
-  bands?: { p25: number; p75: number };
+  /** Highlight the dot when value is outside [p10, p90] extremities. */
+  bands?: { p10: number; p90: number };
   format?: (v: number) => string;
 }
 
@@ -138,12 +138,12 @@ export function EndLabelLayer({ yAxisMap, xAxisMap, offset, data, unit = "", ban
   const y = yAxis.scale(last.v);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-  const isExtreme = bands ? last.v > bands.p75 || last.v < bands.p25 : false;
+  const isExtreme = bands ? last.v > bands.p90 || last.v < bands.p10 : false;
   const tone = !bands
     ? "hsl(var(--chart-halo))"
-    : last.v > bands.p75
+    : last.v > bands.p90
       ? "hsl(var(--chart-band-high))"
-      : last.v < bands.p25
+      : last.v < bands.p10
         ? "hsl(var(--chart-band-low))"
         : "hsl(var(--chart-halo))";
 
