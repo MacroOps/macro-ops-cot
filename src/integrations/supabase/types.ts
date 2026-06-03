@@ -338,12 +338,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_payload_mv: {
+        Row: {
+          id: number | null
+          payload: Json | null
+          refreshed_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
       get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
       get_dashboard_payload: { Args: never; Returns: Json }
+      refresh_dashboard_payload: { Args: never; Returns: undefined }
     }
     Enums: {
       market_sector:
