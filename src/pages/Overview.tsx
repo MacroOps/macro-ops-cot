@@ -146,6 +146,16 @@ export default function Overview() {
 
       <div className="hud-section-head">
         <div>
+          <div className="hud-section-eyebrow">Live</div>
+          <div className="hud-section-title">Model Signals Tape</div>
+        </div>
+      </div>
+      <div className="px-3 pt-0">
+        <SignalsTape />
+      </div>
+
+      <div className="hud-section-head">
+        <div>
           <div className="hud-section-eyebrow">Composite Signals</div>
           <div className="hud-section-title">Cycle, Trend & Breadth</div>
         </div>
