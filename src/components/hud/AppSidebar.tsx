@@ -67,6 +67,7 @@ const NAV: Group[] = [
       { title: "Sector Aggregates", url: "/sectors" },
       { title: "News & Divergence", url: "/news" },
       { title: "Backtests Lab", url: "/backtests" },
+      { title: "Eurex Positioning", url: "/eurex" },
     ],
   },
   {
@@ -113,7 +114,7 @@ const NAV: Group[] = [
       { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
     ],
   },
-  { title: "Eurex Positioning", icon: Globe2, url: "/eurex" },
+  
 ];
 
 function isLeafActive(pathname: string, url: string) {
