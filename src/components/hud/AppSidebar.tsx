@@ -45,6 +45,7 @@ type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
 
 const NAV: Group[] = [
   { title: "Overview", icon: LayoutDashboard, url: "/overview" },
+  { title: "Backtests Lab", icon: FlaskConical, url: "/backtests" },
   { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility" },
   { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle" },
   { title: "Market Internals", icon: Network, url: "/market-internals" },
@@ -66,7 +67,6 @@ const NAV: Group[] = [
       { title: "Asset Detail", url: "/asset/ES" },
       { title: "Sector Aggregates", url: "/sectors" },
       { title: "News & Divergence", url: "/news" },
-      { title: "Backtests Lab", url: "/backtests" },
       { title: "Eurex Positioning", url: "/eurex" },
     ],
   },
