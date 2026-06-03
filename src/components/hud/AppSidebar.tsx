@@ -21,6 +21,7 @@ import {
   Globe2,
   LayoutGrid,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
@@ -45,6 +46,7 @@ type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
 
 const NAV: Group[] = [
   { title: "Overview", icon: LayoutDashboard, url: "/overview" },
+  { title: "Daily Briefing", icon: Sparkles, url: "/briefing" },
   { title: "Backtests Lab", icon: FlaskConical, url: "/backtests" },
   { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility" },
   { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle" },

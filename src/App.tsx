@@ -32,6 +32,7 @@ import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
+import Briefing from "./pages/Briefing.tsx";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/overview" element={<Overview />} />
+            <Route path="/briefing" element={<Briefing />} />
             <Route path="/trend-fragility" element={<TrendFragility />} />
             <Route path="/risk-cycle" element={<RiskCycle />} />
             <Route path="/market-internals" element={<MarketInternals />} />
