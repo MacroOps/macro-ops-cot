@@ -107,6 +107,22 @@ export function CopilotDrawer() {
       const result = data as BacktestResult;
       setBacktest(result);
 
+      // Best-effort persist (no-op for anonymous users)
+      persistRun({
+        source: "copilot",
+        indicatorKey: `copilot:${context.title}`,
+        symbol: null,
+        params: { threshold, direction, seed: context.seed, horizons: result.horizonStats.map((h) => h.horizonDays) },
+        stats: {
+          count: result.occurrences,
+          horizonStats: result.horizonStats,
+          regimeNote: result.regimeNote,
+        },
+        label: `${context.title} ${direction} ${threshold}${context.unit ?? ""}`,
+      }).then((row) => {
+        if (row) window.dispatchEvent(new CustomEvent("mhud:bt-runs-changed"));
+      });
+
       // Push as a tool message + auto-summarize
       const summary = `Backtest tool ran on ${result.title} (${result.direction} ${result.threshold}${context.unit ?? ""}): ${result.occurrences} historical fires across ${result.windowYears}y. ` +
         result.horizonStats.map((h) => `${h.horizonDays}d mean ${h.meanRet >= 0 ? "+" : ""}${h.meanRet}% hit ${h.hitRate}% sharpe ${h.sharpe}`).join(" · ");
