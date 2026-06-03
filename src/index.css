@@ -214,6 +214,54 @@
   }
 }
 
+@layer components {
+  /* Sidebar — institutional accent-bar active state. Override default
+   * shadcn fill with a 2px left bar + ink text + porcelain bg. */
+  [data-sidebar="menu-button"] {
+    position: relative;
+    border-radius: 2px !important;
+    color: hsl(var(--sidebar-foreground));
+    font-weight: 500;
+  }
+  [data-sidebar="menu-button"][data-active="true"] {
+    background: hsl(var(--surface-2)) !important;
+    color: hsl(var(--sidebar-accent-foreground)) !important;
+  }
+  [data-sidebar="menu-button"][data-active="true"]::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: hsl(var(--primary));
+    border-radius: 1px;
+  }
+  [data-sidebar="menu-sub-button"][data-active="true"] {
+    color: hsl(var(--primary)) !important;
+    font-weight: 500;
+  }
+  [data-sidebar="group-label"] {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 9px !important;
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Section eyebrow + title block used across pages */
+  .hud-section-head {
+    @apply px-4 pt-4 pb-2 flex items-end justify-between gap-4;
+    box-shadow: inset 0 -1px 0 hsl(var(--ledger));
+    margin-bottom: 0.75rem;
+  }
+  .hud-section-eyebrow {
+    @apply text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-medium;
+  }
+  .hud-section-title {
+    @apply text-[13px] font-semibold uppercase tracking-[0.08em] text-surface-foreground;
+  }
+}
+
 @layer utilities {
   @keyframes extremity-pulse {
     0%, 100% { opacity: 1; }
