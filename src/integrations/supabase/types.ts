@@ -91,6 +91,39 @@ export type Database = {
           },
         ]
       }
+      daily_briefings: {
+        Row: {
+          briefing_date: string
+          created_at: string
+          highlights: Json
+          id: string
+          markdown: string
+          model: string | null
+          snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          briefing_date: string
+          created_at?: string
+          highlights?: Json
+          id?: string
+          markdown: string
+          model?: string | null
+          snapshot?: Json
+          updated_at?: string
+        }
+        Update: {
+          briefing_date?: string
+          created_at?: string
+          highlights?: Json
+          id?: string
+          markdown?: string
+          model?: string | null
+          snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       eurex_oi_history: {
         Row: {
           block_volume: number | null
