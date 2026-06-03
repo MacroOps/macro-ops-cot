@@ -1,88 +1,98 @@
-# Eurex Futures Ingestion
 
-## Important caveat (read first)
+# Institutional Redesign — Porcelain & Electric
 
-Unlike the CFTC, **Eurex does not publish a weekly CoT-style breakdown of trader positioning by category** (no "non-commercial vs commercial vs managed money" split). What Eurex *does* publish publicly:
+A full redesign moving the platform off the current Solarized cream/orange aesthetic toward a cool, light-forward institutional look anchored in greys, light blues, and a single vivid electric blue accent (used at restrained intensity ~3/5). Matching dark mode included.
 
-- **Daily open interest** per contract / expiry
-- **Daily traded volume** per contract / expiry
-- **Block trade and EFP volumes**
-- Aggregated stats via the Eurex T7 public files / `eurex.com/ex-en/data/statistics`
+## Design language
 
-So we cannot replicate the existing CoT category structure for Eurex. Two realistic paths:
+**Light mode (default)**
+- Background: `#f6f8fb` porcelain
+- Surface / cards: `#ffffff` with `#e6ecf3` hairline borders
+- Muted surface: `#eef2f7`
+- Mid greys: `#dbe3ed` → `#5b6b80` (a 6-step slate scale)
+- Ink / foreground: `#1a2433` near-navy black
+- Accent (primary): `#1e63ff` electric blue — used sparingly: primary CTA, active nav, focus rings, key chart series, signal highlights
+- Accent soft: `#7aa8ff` for secondary chart series & hovers
+- Semantic: long `#0a8f5f`, short `#d83a4a`, neutral `#5b6b80`, warning `#c8861a`, info reuses accent
 
-- **A. Ingest what Eurex actually publishes** — OI, volume, term structure, OI delta — and add a new "Eurex positioning" surface (different shape from CoT).
-- **B. Approximate trader positioning** using related instruments (e.g. FESX → SPY/FEZ ETF flows, options put/call & skew). Less precise, but slots into the existing CoT-style UI.
+**Dark mode**
+- Background: `#0b1220` deep slate-navy (not pure black — institutional, not terminal)
+- Surface: `#121a2b` with `#1f2a40` borders
+- Foreground: `#e6ecf3`
+- Accent stays `#3b7bff` (slightly lifted for contrast)
+- Charts keep a *near-white panel* (`#f4f7fb` at ~6% inset shadow) inside dark cards — the "data canvas always reads as paper" pattern used by Bridgewater/Two Sigma research decks. Toggle option: full-dark charts for night use.
 
-This plan implements **A** as the foundation and leaves a clear hook for B later.
+**Typography**
+- Headers: tight grotesk (Inter Display or Space Grotesk) at 600 weight, slight negative tracking
+- Body / UI: Inter at 400/500
+- Numerics: JetBrains Mono (already in project) with tabular + zero-style features — keep
+- Type scale tightened: 11/12/13/15/18/22/28 (currently jumps too aggressively)
 
-## Liquid Eurex futures to add
+**Density & geometry**
+- Border radius drops from 0.25rem to 0.1875rem (3px) — sharper, more institutional
+- 1px hairline borders everywhere (no shadows except a single `0 1px 0` ledger line under sticky headers)
+- 4/8/12/16 spacing scale enforced
+- Sidebar: narrower (224px), denser nav, accent left-bar on active item instead of background fill
 
-| Symbol | Name | Sector |
-|---|---|---|
-| FESX | Euro Stoxx 50 | Equity Index |
-| FDAX | DAX | Equity Index |
-| FDXM | Mini-DAX | Equity Index |
-| FSMI | SMI (Swiss) | Equity Index |
-| FSTX | Stoxx Europe 600 | Equity Index |
-| FESB | Euro Stoxx Banks | Equity Index |
-| FXXP | Stoxx Europe 600 sector futures (group) | Equity Index |
-| FGBL | Euro-Bund (10y Bund) | Rates |
-| FGBM | Euro-Bobl (5y) | Rates |
-| FGBS | Euro-Schatz (2y) | Rates |
-| FGBX | Euro-Buxl (30y) | Rates |
-| FOAT | French OAT (10y) | Rates |
-| FBTP | Italian BTP (10y) | Rates |
-| FBTS | Short-term BTP | Rates |
-| CONF | Swiss Conf bond | Rates |
+## Chart upgrades (layered blues direction)
 
-(Final list can be trimmed during implementation.)
+Apply across `IndicatorCard`, `AssetDetail` price/CoT charts, sector charts, breadth, backtests:
 
-## Changes
+- Canvas: pure `#ffffff` with `#eef2f7` hairline grid (horizontal only by default, vertical on hover-crosshair)
+- Primary series: `#0a84ff` at 1.5px
+- Secondary series: `#7aa8ff` at 1.25px
+- Reference / comparison: `#475569` dotted 1px
+- Long/short fills: accent blue tints (`#0a84ff` @ 12%) for net-long zones, slate (`#475569` @ 12%) for net-short — less alarming than red/green, more research-paper
+- Threshold lines: 1px dashed slate with small inline labels right-aligned
+- Axis labels: 10px Inter, slate `#5b6b80`, tabular numerics
+- Crosshair: full-height hairline + value bubble (rounded 2px, white, 1px border)
+- Tooltips: white card, 1px border, mono numerics, ISO date, delta vs prior
+- New: subtle **range brush** under multi-year charts (the 2y/5y/10y/all picker becomes a draggable brush, not just buttons) — wired to the synced timescale system already in place
+- New: **annotation rail** above x-axis for FOMC / CPI / OPEX markers (small vertical ticks, hover for label)
+- Sparkline cards get a single trailing value chip + delta in accent blue/slate instead of orange
 
-### 1. Schema (single migration)
+## Shell & component refresh
 
-- Add `eurex` to the existing `markets.sector` enum where needed (Equity Index already exists; confirm).
-- New table `eurex_oi_history` with daily OI/volume per market:
-  - `market_id`, `observed_on`, `open_interest`, `volume`, `oi_change`, `block_volume`
-  - PK `(market_id, observed_on)`
-  - RLS: public read; service_role full.
-- New enum value `eurex` added to the existing `cot_reports.format` enum so we can reuse `cot_reports` + `positioning_snapshots` for any future Eurex client-type data without re-architecting. (Cells will simply be empty for now.)
-- Add ~15 rows to `markets` for the contracts above (with `exchange='Eurex'`, `cftc_code=NULL`, `yahoo_symbol` where Yahoo carries it, e.g. `FESX=F`, `^GDAXI`, `^STOXX50E` as fallbacks for price).
+- **Sidebar (`AppSidebar`)**: switch to porcelain surface, active item = 2px left accent bar + ink text + `#eef2f7` background; section labels in 10px uppercase slate
+- **Top header (`PageHeader`)**: thinner, ledger underline, breadcrumb in slate, page title in 22px grotesk
+- **Cards (`IndicatorCard`, `MarketCard`, `CompositePanel`)**: white surface, hairline border, header row gains a tiny colored dot (accent/slate/long/short) for at-a-glance status
+- **Tables (`hud-table`)**: zebra removed, replaced with 1px row dividers in `#eef2f7`; sticky header with ledger underline; numerics right-aligned, tabular; sort carets in slate
+- **Badges (`SignalBadge`)**: pill → squared 2px-radius chip, 10px mono, accent-blue for BULLISH, slate for NEUTRAL, muted red for BEARISH (desaturated from current)
+- **Buttons**: primary = accent blue solid, secondary = white + 1px slate border, ghost = slate text only
+- **Inputs / selects**: 1px slate border, accent focus ring at 2px, no inner shadow
 
-### 2. Edge function `ingest-eurex`
+## Dashboard composition (Overview / Index)
 
-- Pulls daily OI + volume from a public Eurex source. Two candidates, picked in this order at runtime:
-  1. `https://www.eurex.com/api/v1/instruments/{productId}/openInterest` style JSON (T7 public web feed).
-  2. CSV download fallback from `eurex.com/ex-en/data/statistics`.
-- Aggregates across expiries to produce a single contract-level row per day; also stores front-month separately.
-- Upserts into `eurex_oi_history`.
-- Writes an `ingestion_log` row (`source: 'eurex'`).
-- Same shape as `ingest-cftc`: accepts `{ symbol?, since?, until? }`.
+- Top strip: 4 KPI tiles (Risk Cycle, Trend Fragility, Breadth, Composite Signal) — large numeric, small sparkline, accent dot
+- Two-column grid below: left = signal stack (composite panels), right = watchlist + news
+- Section headers gain a thin ledger line + uppercase eyebrow
+- Removes current orange accent everywhere; nothing pulses in orange anymore (extremity badges shift to accent-blue pulse at low opacity)
 
-### 3. Price ingestion
+## Implementation outline (technical)
 
-- Reuse existing `ingest-prices` — it already takes Yahoo symbols. Where Yahoo lacks a clean futures continuous (e.g. FGBL), fall back to an index proxy or Stooq.
+1. **`src/index.css`** — replace `:root` and `.dark` token blocks with the new palette (all HSL). Update `--chart-surface` to pure white in light mode and porcelain-inset in dark. Tighten `--radius` to `0.1875rem`. Add new tokens: `--accent-soft`, `--ledger`, `--surface-2`.
+2. **`tailwind.config.ts`** — add `accent-soft`, `ledger`; keep existing token mapping. No new color literals in components.
+3. **`src/components/hud/ThemeProvider.tsx`** — rename internal theme keys from `solar`/`charcoal` to `light`/`dark`; persist; default `light`.
+4. **`src/components/hud/IndicatorCard.tsx`** — swap stroke/grid/axis to new tokens; add crosshair + tooltip styling; add optional `secondarySeries` prop; status dot in header.
+5. **`src/pages/AssetDetail.tsx`** — apply layered-blue series to price + CoT charts; add range brush under the synced timescale; preserve existing x-axis sync logic and dropdown.
+6. **`src/components/hud/AppSidebar.tsx` + `PageHeader.tsx`** — restyle per shell spec; narrower sidebar; ledger underline.
+7. **`SignalBadge.tsx`, `MarketCard.tsx`, `CompositePanel.tsx`, `PercentileGauge.tsx`** — token swap + geometry tightening.
+8. **`src/pages/Index.tsx` / `Overview.tsx`** — recompose top KPI strip + two-column grid.
+9. **`src/pages/Backtests.tsx`, `Breadth.tsx`, `SectorAggregates.tsx`, `EurexPositioning.tsx`, `MarketInternals.tsx`, `RiskCycle.tsx`, `TrendFragility.tsx`, `News.tsx`** — chart + table token sweep; no logic changes.
+10. **Dark mode pass** — verify contrast (WCAG AA) on every page; chart-in-dark-card pattern verified visually.
 
-### 4. Frontend surface (minimal in this plan)
+### What does NOT change
+- All data hooks, Supabase calls, edge functions, backtest logic, timescale sync logic, asset dropdown ordering — untouched
+- Routing, page structure beyond composition tweaks listed above
+- Mock data generators
 
-- One new HUD page `src/pages/EurexPositioning.tsx` listing the Eurex contracts with: price, daily OI, weekly OI %ile (52w), OI delta, volume, term-structure note.
-- Sidebar group "Eurex" with the contract list.
-- Reuses `IndicatorCard`, `PercentileGauge`, `SignalBadge`.
-- Asset detail page already keys off `markets.symbol` — Eurex contracts that lack CoT will simply hide the CoT panels; we add a small "Eurex OI / Volume" panel driven by `eurex_oi_history`.
+### Risks
+- Token sweep is wide (~25 files); a few component-level color literals may remain and need a second pass after first render review
+- Chart tooltip restyling in Recharts requires per-chart prop updates; will batch by page
 
-### 5. Scheduling
+### Verification
+- Visual QA each major page in light + dark after the token swap
+- Confirm chart x-axes still align (recent fix preserved)
+- Confirm no `text-white` / `bg-black` / hex literals reintroduced
 
-- No cron added in this plan. Function is callable on-demand the same way `ingest-cftc` is today. Cron can be wired in a follow-up.
-
-## What this plan does NOT include
-
-- A true trader-type breakdown for Eurex (it doesn't exist publicly).
-- Options skew / ETF-flow proxies (option B). Easy to add later — the new sidebar group is the right home.
-- Historical OI backfill beyond what the Eurex public endpoint exposes (typically rolling ~2 years).
-
-## Open questions
-
-1. Trim the contract list, or ingest all 15?
-2. For symbols where Yahoo has no continuous future (most Eurex rates), is it OK to use an **index proxy** for price (e.g. DE 10y yield series for FGBL) so the UI still has a chart?
-3. Do you want a cron schedule wired now (daily 18:30 CET after Eurex close), or leave manual until the feed is proven?
+Approve to proceed, or tell me what to adjust (e.g. swap accent shade, keep current sidebar, skip dashboard recomposition).
