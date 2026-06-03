@@ -187,6 +187,7 @@ Deno.serve(async (req) => {
       source: "cftc", status: "ok", rows_written: written,
       started_at: started, finished_at: new Date().toISOString(),
     });
+    try { await sb.rpc("refresh_dashboard_payload"); } catch (e) { console.error("dashboard refresh failed", e); }
     return new Response(JSON.stringify({ ok: true, rows_written: written }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
