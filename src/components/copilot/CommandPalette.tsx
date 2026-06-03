@@ -8,6 +8,7 @@ import { Sparkles, LayoutDashboard, Activity, TrendingDown, Layers, Newspaper, L
 
 const ROUTES = [
   { label: "Overview", to: "/overview", icon: LayoutDashboard },
+  { label: "Daily Briefing", to: "/briefing", icon: Sparkles },
   { label: "Backtests Lab", to: "/backtests", icon: FlaskConical },
   { label: "Backtests · History", to: "/backtests?tab=history", icon: FlaskConical },
   { label: "Global Positioning", to: "/", icon: Boxes },
@@ -20,10 +21,10 @@ const ROUTES = [
 ];
 
 const ASKS = [
-  "Which markets are at extreme crowded long right now?",
-  "Summarize today's most material model fires.",
-  "Where is trend fragility most stretched?",
-  "What's the highest-conviction TCTM setup currently?",
+  "Scan for extreme readings right now.",
+  "Run a backtest on Trend Fragility above 75.",
+  "Find historical analogs to today's Risk-On Composite.",
+  "Which breadth indicator is most stretched, and what typically happens next?",
 ];
 
 export function CommandPalette() {
