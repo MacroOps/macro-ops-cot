@@ -114,7 +114,7 @@ const NAV: Group[] = [
       { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
     ],
   },
-  { title: "Eurex Positioning", icon: Globe2, url: "/eurex" },
+  
 ];
 
 function isLeafActive(pathname: string, url: string) {
