@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/hud/ThemeProvider";
+import { CopilotProvider } from "@/components/copilot/CopilotContext";
+import { CopilotDrawer, CopilotLauncher } from "@/components/copilot/CopilotDrawer";
+import { CommandPalette } from "@/components/copilot/CommandPalette";
 import Index from "./pages/Index.tsx";
 import AssetDetail from "./pages/AssetDetail.tsx";
 import SectorAggregates from "./pages/SectorAggregates.tsx";
@@ -37,6 +40,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <CopilotProvider>
+            <CommandPalette />
+            <CopilotDrawer />
+            <CopilotLauncher />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/overview" element={<Overview />} />
@@ -78,6 +85,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </CopilotProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

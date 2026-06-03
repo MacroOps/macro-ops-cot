@@ -4,6 +4,7 @@ import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { IndicatorCard, CardGrid } from "@/components/hud/IndicatorCard";
 import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
+import { SignalsTape } from "@/components/copilot/SignalsTape";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import {
   TCTM_STATUS,
@@ -142,6 +143,16 @@ export default function Overview() {
         title="Market Overview"
         description="Top-of-funnel snapshot across positioning, internals, breadth, macro and TurningPoint composites."
       />
+
+      <div className="hud-section-head">
+        <div>
+          <div className="hud-section-eyebrow">Live</div>
+          <div className="hud-section-title">Model Signals Tape</div>
+        </div>
+      </div>
+      <div className="px-3 pt-0">
+        <SignalsTape />
+      </div>
 
       <div className="hud-section-head">
         <div>
