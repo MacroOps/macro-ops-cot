@@ -1,94 +1,64 @@
-# Next-Level Roadmap — Macro HUD
+# Design Upgrade Plan — Charts & Visual Identity
 
-You've already got the bones of a serious terminal: CoT ingestion, Trend Fragility, Risk Cycle, Breadth, TPMR composites, Backtests Lab with history/compare, Copilot drawer, workspaces, regime ribbon. Here's what would actually move it from "nice prototype" to "thing prop traders keep open all day."
+The CoT page works because the charts feel *designed*: paper-bright canvas, hairline grid, custom annotations, tabular legends, named series. Everywhere else still uses default Recharts. Goal: lift the entire app to that bar, then push 3–4 hero charts into "screenshot-worthy" territory.
 
-## Tier 1 — Intelligence Layer (biggest leverage)
+## 1. Build a shared HUD chart primitive layer
 
-**1. Agentic Copilot, not just chat**
-Today the Copilot is single-shot chat + one backtest tool. Upgrade to an AI SDK agent loop with real tools:
-- `query_indicator(key, symbol, range)` — pulls live series
-- `run_backtest(params)` — reuses the Lab engine, persists to history
-- `compare_regimes(indicator, regimeA, regimeB)`
-- `find_analogs(currentVector, k)` — nearest-neighbor historical periods
-- `scan_extremes(threshold)` — sweeps all indicators for percentile outliers
-- `cite_source(report_date, market)` — pulls the actual CoT row
-Stream `message.parts` with tool accordions (AI Elements `Tool`), so the user sees the chain-of-reasoning + cited data, not just prose.
+A single `src/components/charts/` module so every chart inherits the CoT look automatically — no more per-page styling drift.
 
-**2. Daily Briefing (auto-generated)**
-A cron'd edge function that, every morning at NY open:
-- Snapshots every indicator's percentile + 1w delta
-- Flags what crossed a threshold overnight
-- Generates a 6-bullet markdown brief via Gemini, cited with chart deep-links
-- Lands on `/briefing/today` and as a "What changed" card on Overview
-This is the single feature that makes people open the app daily.
+- `HudChartFrame` — paper surface, eyebrow + title + right-aligned meta (last value, Δ, as-of date), hairline ledger underline, optional corner stamp ("EXPERIMENTAL", "LIVE", source attribution).
+- `HudAxis` / `HudGrid` — tnum axis labels in `--chart-axis`, dotted minor grid, solid zero line, smart tick reduction.
+- `HudTooltip` — replaces shadcn default. Crosshair + vertical guideline, sticky right-edge readout (think Bloomberg), tabular values, delta vs prior, percentile chip.
+- `HudLegend` — inline tabular legend with colored square + series name + current value + 1w/1m delta, not the floating pill style.
+- `HudSeries` presets — `accent`, `accent-2`, `ink-muted`, `success`, `destructive`, `violet` — so series colors come from semantic tokens, never hex.
+- `useChartCrosshair()` — shared hook that syncs hover x-position across stacked charts on the same page (already partially in `ChartSyncContext`, formalize it).
 
-**3. Alert Engine**
-`alerts` table + condition DSL ("Trend Fragility S&P > 75 AND Risk Cycle in 'Risk-Off'"). Background worker evaluates on each ingest, fires browser push + optional email. Alerts compose from the same indicator registry the Lab uses.
+Outcome: every existing chart can swap to these primitives with ~10 lines of diff and instantly match the CoT look.
 
-**4. Analog Engine**
-Vectorize the current macro state (positioning percentiles + regime flags + breadth) and run cosine similarity vs. every historical week. "Today most resembles: Jul 2007 (87%), Feb 2018 (84%)…" with side-by-side forward path overlays. This is genuinely novel and visually killer.
+## 2. Signature chart treatments (the "wow" layer)
 
-## Tier 2 — UX / Killer UI
+Four custom chart types that don't exist in Recharts out of the box — these become the app's visual signature.
 
-**5. Command-K everything**
-Palette already exists — extend to: jump to any indicator on any symbol, run backtest from natural language ("backtest gold MM net > 80th, 20d"), open Copilot with context, pin to workspace. Fuzzy + recent + AI-suggested actions.
+- **Percentile-banded line.** Background renders 0–25 / 25–75 / 75–100 percentile bands in faint accent/ink, current line draws on top, dot pulses when in extreme band. Use on every indicator on `MacroPage`, `RiskCycle`, `Breadth`.
+- **Regime-shaded timeline.** Vertical color washes behind the price line marking risk-on / risk-off / neutral regimes from `RegimeRibbon`. Replaces the separate ribbon strip on `Overview` and `RiskCycle`.
+- **Analog overlay fan.** On `/analogs`, the top-8 historical paths render as semi-transparent threads radiating from t=0, with the median path in solid accent and a shaded IQR cone. Today's live path overlays in ink.
+- **Heatmap cell with embedded sparkline.** `/heatmap` cells get a 12-week inline sparkline behind the percentile color, plus a tiny arrow glyph for 1w direction. Hover reveals a full popover chart.
 
-**6. Cross-chart hover sync + scrubber**
-You have `ChartSyncContext`. Add a global date scrubber pinned to the AppShell footer that drives every chart simultaneously — drag through history, watch all indicators move together. Add an "as of" mode that recomputes percentile context up to that date only (no lookahead bias).
+## 3. Micro-details that sell the "research terminal" feel
 
-**7. Storyboards**
-A user can save a sequence of (chart + annotation + caption) frames as a "Storyboard" (e.g., "Why I'm short copper") and share via signed URL. Effectively Bloomberg LAUNCH + Notion.
+Small, cumulative — these are what separate "nice chart" from "Bridgewater deck".
 
-**8. Density / focus modes**
-Bloomberg-style 4-pane mosaic with drag-to-resize, save layouts per workspace. Right now `IndicatorCard` is a fixed grid — let users compose.
+- **Hairline crosshair + axis halo.** Vertical guideline on hover, with a small filled chip on each axis showing the value at cursor (date on x, value on y).
+- **End-of-series labels.** Last data point gets an inline label (series name + value) instead of a floating legend. Removes legend clutter on dense charts.
+- **Annotation pins.** Lightweight markers for events (Fed meeting, earnings, regime flip) — small numbered circles on the timeline with hover tooltips. Sourced from `annotations.ts`.
+- **Diff sparklines in tables.** Every numeric column in `Backtests` / `Alerts` / `Heatmap` gets a tiny 20-week sparkline next to the number.
+- **Animated draw-in.** Series stroke draws left→right on mount (300ms, ease-out). One time only, not on every re-render. Subtle, used everywhere.
+- **Smart number formatting.** `1,247` not `1247`; `+2.3%` colored by sign; basis points where appropriate; tabular nums everywhere (already partly done via `font-feature-settings`).
 
-**9. Heatmap Overview**
-Replace/augment the hero tiles with a single dense heatmap: rows = indicators, cols = markets, cell = current percentile (color) + sparkline. One screen = entire state of the world.
+## 4. Layout & shell polish (non-chart)
 
-**10. Polish pass**
-- Real loading skeletons (still some flashes)
-- Empty-states with CTAs ("No backtests yet → Run sample")
-- Keyboard nav on every table
-- A real brand mark (the app still feels lucide-generic in a few places)
-- Tighter mono numerics, consistent percentile color ramp across the app
+- **Density toggle** in the global scrubber footer — `Compact / Comfortable` — that swaps card padding + chart heights app-wide via a CSS data attribute.
+- **Page eyebrow + breadcrumbs** standardized via `PageHeader.tsx` — section, page title, as-of timestamp, source tag, share/export icon row.
+- **Status dot in sidebar** for `/alerts` (unread count badge), `/briefing` (today/stale), `/backtests` (running).
+- **Cmd-K palette** gets section grouping + recent commands + keyboard hint glyphs.
+- **Print stylesheet** so any page can be exported as a clean PDF research note (no sidebar, paper background, page breaks before each section).
 
-## Tier 3 — Data depth
+## 5. Rollout order
 
-**11. Options positioning** — CBOE put/call, dealer gamma, vanna/charm proxies (open-source approximations).
-**12. ETF flows** — daily creations/redemptions for SPY/QQQ/HYG/TLT/GLD.
-**13. Fed & macro calendar** — overlay FOMC, CPI, NFP on every chart.
-**14. Cross-asset correlation matrix** — rolling 60d, with regime-conditional view.
-**15. News → indicator linkage** — your `ingest-news` already runs; tag each headline to affected markets and surface inline on charts.
+1. Build the `charts/` primitive layer + tooltip + axis + legend.
+2. Migrate `MacroPage`, `RiskCycle`, `Breadth`, `IndicatorCard` to the primitives (no new features, just inherit the look).
+3. Ship signature treatments: percentile bands → regime shading → analog fan → heatmap sparklines.
+4. Layer in micro-details (crosshair, end labels, annotations, animated draw).
+5. Shell polish (density toggle, page header, palette, print).
 
-## Tier 4 — Collab & distribution
+## Technical notes
 
-**16. Public share links** — any chart, backtest, or storyboard → signed URL with OG image (generated server-side from the chart SVG).
-**17. Team workspaces** — invite + RLS by team_id.
-**18. Export** — backtest results to CSV, briefings to PDF (you already have /mnt/documents pattern).
+- Keep Recharts as the engine; primitives are thin wrappers — no new chart lib.
+- All colors via `--chart-*` tokens already in `index.css`. If a new semantic is needed (e.g. `--chart-band-low/mid/high`), add to `:root` + `.dark` + `tailwind.config.ts` together.
+- Crosshair sync continues to use `ChartSyncContext`; extend it with `x` value + `seriesValues` map so the right-edge readout can pull from sibling charts.
+- Animated draw uses `strokeDasharray` + `strokeDashoffset` transition, not framer — keeps bundle flat.
+- Annotations layer is a separate `<Customized />` Recharts component reading from `annotations.ts`.
 
 ---
 
-## Suggested build order
-
-```text
-Phase 1 (1-2 sessions): Agentic Copilot + Daily Briefing
-  → immediate "wow", reuses existing infra
-
-Phase 2: Alert Engine + Analog Engine
-  → the two features no competitor has
-
-Phase 3: Heatmap Overview + Global Scrubber + Storyboards
-  → UI moment that makes screenshots go viral
-
-Phase 4: Options/ETF flow data + News linkage
-  → depth that retains users
-
-Phase 5: Sharing, teams, exports
-  → distribution
-```
-
-## My pick if you only do one thing next
-
-**Agentic Copilot + Daily Briefing together.** They share the same tool registry, they make every other feature you've already built discoverable through natural language, and a morning briefing is the single highest-retention surface a research tool can have.
-
-Want me to scope Phase 1 in detail and start building, or pick a different starting point?
+Want me to start with **(1) the primitive layer + migrate one page** as a proof of concept, or go straight for a **signature treatment** (percentile bands or analog fan) where the visual payoff is most dramatic?
