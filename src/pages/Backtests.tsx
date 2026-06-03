@@ -112,9 +112,10 @@ const Backtests = () => {
     sp.set("cond", condition);
     sp.set("th", String(threshold));
     sp.set("h", String(horizon));
+    if (tab !== "run") sp.set("tab", tab);
     nav({ pathname: "/backtests", search: sp.toString() }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, activeSymbol, cotIndicator, indKey, condition, threshold, horizon]);
+  }, [mode, activeSymbol, cotIndicator, indKey, condition, threshold, horizon, tab]);
 
   // ── unified result accessor ────────────────────────────────────────
   const unified = useMemo(() => {
