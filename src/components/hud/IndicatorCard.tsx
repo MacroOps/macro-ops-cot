@@ -297,7 +297,16 @@ function ChartBody({
   const stroke = "hsl(var(--chart-accent))";
   const cursorStyle = { stroke: "hsl(var(--chart-halo))", strokeWidth: 1, strokeDasharray: "2 3", strokeOpacity: 0.6 };
 
-  const bands = useMemo(() => computePercentiles(data.map((d) => d.v)), [data]);
+  // Extremity bands are tied to the chart's y-axis domain (top/bottom 10%),
+  // NOT the data distribution — so they always mark true extremes of the scale.
+  const bands = useMemo(() => {
+    const span = max - min;
+    return {
+      ...computePercentiles(data.map((d) => d.v)),
+      p10: min + span * 0.1,
+      p90: min + span * 0.9,
+    };
+  }, [data, min, max]);
 
   const handleMouseMove = (state: { activeLabel?: string | number } | null) => {
     if (!onHover) return;
