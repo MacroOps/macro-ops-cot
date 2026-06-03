@@ -67,7 +67,6 @@ const NAV: Group[] = [
       { title: "Asset Detail", url: "/asset/ES" },
       { title: "Sector Aggregates", url: "/sectors" },
       { title: "News & Divergence", url: "/news" },
-      { title: "Backtests Lab", url: "/backtests" },
       { title: "Eurex Positioning", url: "/eurex" },
     ],
   },
