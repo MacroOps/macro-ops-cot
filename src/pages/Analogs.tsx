@@ -121,31 +121,115 @@ export default function Analogs() {
         </div>
 
         <div className="hud-panel lg:col-span-3">
-          <div className="px-3 py-2 border-b border-border text-[11px] uppercase tracking-wider font-semibold">
-            Forward price paths · top {result.top.length} analogs · {horizon}w
+          <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
+            <div className="text-[11px] uppercase tracking-wider font-semibold">
+              Forward path fan · {result.top.length} analogs · {horizon}w
+            </div>
+            <div className="flex items-center gap-3 text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-2 rounded-sm" style={{ background: "hsl(var(--chart-accent) / 0.18)", border: "1px solid hsl(var(--chart-accent) / 0.4)" }} />
+                IQR
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-0.5" style={{ background: "hsl(var(--chart-axis))" }} />
+                Threads
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-[2px]" style={{ background: "hsl(var(--chart-accent))" }} />
+                Median
+              </div>
+            </div>
           </div>
-          <div className="p-3 h-[360px]">
+          <div className="hud-chart rounded-none p-1" style={{ height: 380 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={result.points}>
-                <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--surface))",
-                    border: "1px solid hsl(var(--border))",
-                    fontSize: "11px",
-                  }}
+              <ComposedChart data={result.points} margin={{ top: 8, right: 48, left: 0, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="analog-cone" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--chart-accent))" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="hsl(var(--chart-accent))" stopOpacity={0.22} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 9, fill: "hsl(var(--chart-axis))" }}
+                  axisLine={{ stroke: "hsl(var(--chart-grid))" }}
+                  tickLine={false}
+                  label={{ value: "Weeks forward", position: "insideBottom", offset: -2, fontSize: 9, fill: "hsl(var(--chart-axis))" }}
                 />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <YAxis
+                  tick={{ fontSize: 9, fill: "hsl(var(--chart-axis))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                  width={40}
+                />
+                <ReferenceLine y={0} stroke="hsl(var(--chart-ink-muted))" strokeOpacity={0.4} />
+                <ReferenceLine x={0} stroke="hsl(var(--chart-halo))" strokeOpacity={0.5} strokeDasharray="2 3" label={{ value: "t = 0", position: "insideTopLeft", fontSize: 9, fill: "hsl(var(--chart-halo))" }} />
+
+                {/* IQR cone — stacked invisible base + visible span */}
+                <Area
+                  type="monotone"
+                  dataKey="iqrLow"
+                  stackId="cone"
+                  stroke="none"
+                  fill="transparent"
+                  isAnimationActive={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="iqrSpan"
+                  stackId="cone"
+                  stroke="hsl(var(--chart-accent) / 0.4)"
+                  strokeWidth={0.5}
+                  fill="url(#analog-cone)"
+                  isAnimationActive
+                  animationDuration={650}
+                />
+
+                {/* Individual analog threads */}
                 {result.top.map((_, k) => (
-                  <Line key={k} type="monotone" dataKey={`m${k}`} stroke={COLORS[k % COLORS.length]} strokeWidth={1} dot={false} strokeOpacity={0.6} />
+                  <Line
+                    key={k}
+                    type="monotone"
+                    dataKey={`m${k}`}
+                    stroke="hsl(var(--chart-ink-muted))"
+                    strokeWidth={1}
+                    strokeOpacity={0.32}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
                 ))}
-                <Line type="monotone" dataKey="mean" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
-              </LineChart>
+
+                {/* Median — the hero line */}
+                <Line
+                  type="monotone"
+                  dataKey="median"
+                  stroke="hsl(var(--chart-accent))"
+                  strokeWidth={2.25}
+                  dot={false}
+                  isAnimationActive
+                  animationDuration={750}
+                  animationEasing="ease-out"
+                />
+
+                <Tooltip
+                  content={<HudTooltip />}
+                  cursor={{ stroke: "hsl(var(--chart-halo))", strokeDasharray: "2 3" }}
+                  formatter={(v: number, name: string) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`, name]}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
+          </div>
+          <div className="px-3 py-2 border-t border-border flex items-center justify-between text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+            <span>Empirical distribution of forward returns from {result.top.length} closest analog weeks.</span>
+            <span>
+              Mean <span className={`tabular-nums ${result.meanFinal >= 0 ? "text-success" : "text-destructive"}`}>{result.meanFinal >= 0 ? "+" : ""}{result.meanFinal.toFixed(2)}%</span>
+              {" · "}Hit <span className="tabular-nums text-surface-foreground">{result.hit.toFixed(0)}%</span>
+            </span>
           </div>
         </div>
       </div>
+
 
       <div className="hud-section-head">
         <div>
