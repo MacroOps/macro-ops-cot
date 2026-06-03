@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      backtest_runs: {
+        Row: {
+          created_at: string
+          id: string
+          indicator_key: string
+          label: string | null
+          params: Json
+          source: string
+          stats: Json
+          symbol: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicator_key: string
+          label?: string | null
+          params?: Json
+          source?: string
+          stats?: Json
+          symbol?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicator_key?: string
+          label?: string | null
+          params?: Json
+          source?: string
+          stats?: Json
+          symbol?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cot_reports: {
         Row: {
           created_at: string
