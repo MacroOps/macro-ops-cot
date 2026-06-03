@@ -7,6 +7,7 @@ import {
   BarChart,
   Bar,
   Brush,
+  Customized,
   ReferenceLine,
   ReferenceDot,
   ResponsiveContainer,
@@ -14,6 +15,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  HudTooltip,
+  PercentileBandsLayer,
+  EndLabelLayer,
+  HoverAxisChipLayer,
+  computePercentiles,
+} from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
@@ -140,6 +148,13 @@ function IndicatorCardInner({
 
   const headerValue = hoverPoint ? hoverPoint.v : v;
   const headerLabel = hoverPoint ? hoverPoint.t : null;
+  const wow = useMemo(() => {
+    if (data.length < 2) return 0;
+    const prev = data[data.length - 2].v;
+    const last = data[data.length - 1].v;
+    return last - prev;
+  }, [data]);
+  const wowTone = wow > 0 ? "text-success" : wow < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
     <>
@@ -156,10 +171,17 @@ function IndicatorCardInner({
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
-              {headerValue.toFixed(1)}
-              {unit}
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
+                {headerValue.toFixed(1)}
+                {unit}
+              </span>
+              {!hoverPoint && (
+                <span className={`font-mono tabular-nums text-[9px] ${wowTone}`}>
+                  {wow > 0 ? "▲" : wow < 0 ? "▼" : "·"}{Math.abs(wow).toFixed(2)}
+                </span>
+              )}
+            </div>
             <ChartToolbar
               title={resolvedTitle}
               subtitle={subtitle}
@@ -273,16 +295,9 @@ function ChartBody({
   onHover?: (t: string | null) => void;
 }) {
   const stroke = "hsl(var(--chart-accent))";
-  const tooltipStyle = {
-    fontSize: 10,
-    padding: "6px 8px",
-    background: "hsl(var(--chart-surface))",
-    border: "1px solid hsl(var(--chart-grid))",
-    borderRadius: 2,
-    color: "hsl(var(--chart-surface-foreground))",
-    boxShadow: "0 1px 2px hsl(217 33% 15% / 0.06)",
-  };
-  const cursorStyle = { stroke: "hsl(var(--chart-axis))", strokeWidth: 1, strokeDasharray: "2 3" };
+  const cursorStyle = { stroke: "hsl(var(--chart-halo))", strokeWidth: 1, strokeDasharray: "2 3", strokeOpacity: 0.6 };
+
+  const bands = useMemo(() => computePercentiles(data.map((d) => d.v)), [data]);
 
   const handleMouseMove = (state: { activeLabel?: string | number } | null) => {
     if (!onHover) return;
@@ -300,7 +315,7 @@ function ChartBody({
         <ReferenceLine y={thresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
       )}
       {hoverT && data.some((d) => d.t === hoverT) && (
-        <ReferenceLine x={hoverT} stroke="hsl(var(--primary))" strokeOpacity={0.5} strokeDasharray="2 2" />
+        <ReferenceLine x={hoverT} stroke="hsl(var(--chart-halo))" strokeOpacity={0.5} strokeDasharray="2 2" />
       )}
       {annotations.map((a) => (
         <ReferenceDot
@@ -316,56 +331,85 @@ function ChartBody({
     </>
   );
 
+  // Recharts <Customized /> wants a component (not an inline render fn) to
+  // avoid remount-per-render warnings.
+  const BandsLayer = (p: object) => <PercentileBandsLayer {...(p as Record<string, unknown>)} p25={bands.p25} p75={bands.p75} />;
+  const EndLayer = (p: object) => (
+    <EndLabelLayer {...(p as Record<string, unknown>)} data={data} unit={unit} bands={bands} />
+  );
+  const HoverChip = (p: object) => (
+    <HoverAxisChipLayer {...(p as Record<string, unknown>)} hoverT={hoverT} data={data} unit={unit} />
+  );
+  const tooltipNode = <HudTooltip data={data} unit={unit} />;
+
+  const rightPad = 44; // room for end-label chip
+  const bottomPad = hoverT ? 14 : 0;
+  const margin = { top: 6, right: rightPad, left: 0, bottom: bottomPad };
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       {variant === "bar" ? (
-        <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+        <BarChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
           <YAxis domain={[min, max]} hide />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }}
-            labelFormatter={(l) => l as string}
-            formatter={(val: number) => [val.toFixed(2) + unit, title]}
-          />
-          <Bar dataKey="v" fill={stroke} />
+          <Tooltip content={tooltipNode} cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }} />
+          <Customized component={BandsLayer} />
+          <Bar dataKey="v" fill={stroke} isAnimationActive={false} />
           {sharedRefs}
+          <Customized component={EndLayer} />
+          <Customized component={HoverChip} />
           {brush && (
             <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
           )}
         </BarChart>
       ) : variant === "area" ? (
-        <AreaChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+        <AreaChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <defs>
             <linearGradient id={`g${seed}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={stroke} stopOpacity={0.45} />
-              <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
+              <stop offset="0%" stopColor={stroke} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={stroke} stopOpacity={0.01} />
             </linearGradient>
           </defs>
           <XAxis dataKey="t" hide />
           <YAxis domain={[min, max]} hide />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            cursor={cursorStyle}
-            formatter={(val: number) => [val.toFixed(2) + unit, title]}
+          <Tooltip content={tooltipNode} cursor={cursorStyle} />
+          <Customized component={BandsLayer} />
+          <Area
+            type="monotone"
+            dataKey="v"
+            stroke={stroke}
+            strokeWidth={1.5}
+            fill={`url(#g${seed})`}
+            isAnimationActive
+            animationDuration={650}
+            animationEasing="ease-out"
           />
-          <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} fill={`url(#g${seed})`} />
           {sharedRefs}
+          <Customized component={EndLayer} />
+          <Customized component={HoverChip} />
           {brush && (
             <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
           )}
         </AreaChart>
       ) : (
-        <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
+        <LineChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
           <YAxis domain={[min, max]} hide />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            cursor={cursorStyle}
-            formatter={(val: number) => [val.toFixed(2) + unit, title]}
+          <Tooltip content={tooltipNode} cursor={cursorStyle} />
+          <Customized component={BandsLayer} />
+          <Line
+            type="monotone"
+            dataKey="v"
+            stroke={stroke}
+            strokeWidth={1.5}
+            dot={false}
+            isAnimationActive
+            animationDuration={650}
+            animationEasing="ease-out"
           />
-          <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} dot={false} />
           {sharedRefs}
+          <Customized component={EndLayer} />
+          <Customized component={HoverChip} />
           {brush && (
             <Brush dataKey="t" height={20} stroke={stroke} fill="hsl(var(--chart-grid) / 0.4)" travellerWidth={6} y={height - 6} />
           )}
@@ -374,6 +418,8 @@ function ChartBody({
     </ResponsiveContainer>
   );
 }
+
+
 
 function StatsStrip({
   data,
