@@ -34,6 +34,8 @@ interface IndicatorCardProps {
   unit?: string;
   actions?: ReactNode;
   mockOverride?: MockOptions;
+  /** Show a range brush below the chart for long series. */
+  brush?: boolean;
   /** When provided, the card derives title/scale/thresholds from the spec and adds an info popover. */
   component?: ComponentSpec;
 }
