@@ -6,9 +6,17 @@ import { PageHeader } from "@/components/hud/PageHeader";
 import { REGISTRY, buildIndicatorSeries } from "@/lib/backtest/registry";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
+import {
+  Area,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { HudTooltip } from "@/components/charts/HudChartPrimitives";
 
 export default function Analogs() {
   const [indKey, setIndKey] = useState(REGISTRY[0].key);
