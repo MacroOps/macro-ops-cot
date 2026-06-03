@@ -67,11 +67,11 @@ export default function Briefing() {
   useEffect(() => { load(); }, []);
 
   return (
-    <AppShell>
+    <AppShell title="Daily Briefing">
       <PageHeader
         eyebrow="Research"
         title="Daily Briefing"
-        subtitle={briefing ? `${briefing.briefing_date} · model ${briefing.model ?? "—"}` : "AI-generated morning brief from the indicator snapshot"}
+        description={briefing ? `${briefing.briefing_date} · model ${briefing.model ?? "—"}` : "AI-generated morning brief from the indicator snapshot"}
         actions={
           <div className="flex items-center gap-2">
             {briefing && (
@@ -89,6 +89,7 @@ export default function Briefing() {
           </div>
         }
       />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 px-4 pb-8">
         <div className="space-y-4">
