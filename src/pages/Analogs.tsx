@@ -46,10 +46,19 @@ export default function Analogs() {
     matches.sort((a, b) => a.distance - b.distance);
     const top = matches.slice(0, 8);
     const points = Array.from({ length: horizon + 1 }, (_, i) => {
-      const row: Record<string, number | string> = { day: i };
+      const row: Record<string, number | string | null> = { day: i };
       top.forEach((m, k) => (row[`m${k}`] = +m.path[i].toFixed(2)));
-      const vals = top.map((m) => m.path[i]).filter((x) => x !== undefined);
-      row.mean = vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2) : 0;
+      const vals = top.map((m) => m.path[i]).filter((x) => x !== undefined).sort((a, b) => a - b);
+      const at = (q: number) => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(q * (vals.length - 1)))] : 0);
+      const mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      row.mean = +mean.toFixed(2);
+      row.median = +at(0.5).toFixed(2);
+      row.p25 = +at(0.25).toFixed(2);
+      row.p75 = +at(0.75).toFixed(2);
+      row.iqrLow = row.p25;
+      row.iqrSpan = +((row.p75 as number) - (row.p25 as number)).toFixed(2);
+      row.min = +at(0).toFixed(2);
+      row.max = +at(1).toFixed(2);
       return row;
     });
     const finals = top.map((m) => m.path[m.path.length - 1]);
@@ -57,6 +66,7 @@ export default function Analogs() {
     const hit = finals.length ? (finals.filter((x) => x > 0).length / finals.length) * 100 : 0;
     return { ind, now, top, points, meanFinal, hit };
   }, [indKey, tolPct, horizon]);
+
 
   return (
     <AppShell title="Analogs">
