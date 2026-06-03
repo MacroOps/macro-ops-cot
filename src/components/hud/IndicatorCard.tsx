@@ -333,7 +333,7 @@ function ChartBody({
 
   // Recharts <Customized /> wants a component (not an inline render fn) to
   // avoid remount-per-render warnings.
-  const BandsLayer = (p: object) => <PercentileBandsLayer {...(p as Record<string, unknown>)} p25={bands.p25} p75={bands.p75} />;
+  const BandsLayer = (p: object) => <PercentileBandsLayer {...(p as Record<string, unknown>)} p10={bands.p10} p90={bands.p90} />;
   const EndLayer = (p: object) => (
     <EndLabelLayer {...(p as Record<string, unknown>)} data={data} unit={unit} bands={bands} />
   );

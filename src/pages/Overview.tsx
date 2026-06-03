@@ -142,7 +142,7 @@ export default function Overview() {
   return (
     <AppShell title="Overview">
       <PageHeader
-        eyebrow="Macro HUD"
+        eyebrow="Foundation Research"
         title="Market Overview"
         description="Top-of-funnel snapshot across positioning, internals, breadth, macro and TurningPoint composites."
       />
