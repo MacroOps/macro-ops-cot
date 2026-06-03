@@ -73,10 +73,10 @@ export function HudTooltip({ active, payload, label, unit = "", data, format }: 
  * or render the SVG directly through ReferenceArea-style props.
  * ------------------------------------------------------------------ */
 export function computePercentiles(values: number[]) {
-  if (!values.length) return { p25: 0, p50: 0, p75: 0, min: 0, max: 1 };
+  if (!values.length) return { p10: 0, p25: 0, p50: 0, p75: 0, p90: 0, min: 0, max: 1 };
   const s = [...values].sort((a, b) => a - b);
   const at = (q: number) => s[Math.max(0, Math.min(s.length - 1, Math.floor(q * (s.length - 1))))];
-  return { p25: at(0.25), p50: at(0.5), p75: at(0.75), min: s[0], max: s[s.length - 1] };
+  return { p10: at(0.1), p25: at(0.25), p50: at(0.5), p75: at(0.75), p90: at(0.9), min: s[0], max: s[s.length - 1] };
 }
 
 interface PercentileBandsLayerProps {
@@ -84,31 +84,29 @@ interface PercentileBandsLayerProps {
   yAxisMap?: Record<string, { scale: (v: number) => number }>;
   xAxisMap?: Record<string, { scale: (v: unknown) => number; x: number; width: number }>;
   offset?: { top: number; left: number; width: number; height: number };
-  // ours
-  p25: number;
-  p75: number;
+  // ours — extremity thresholds (10th/90th percentile)
+  p10: number;
+  p90: number;
 }
 
-export function PercentileBandsLayer({ yAxisMap, offset, p25, p75 }: PercentileBandsLayerProps) {
+export function PercentileBandsLayer({ yAxisMap, offset, p10, p90 }: PercentileBandsLayerProps) {
   if (!yAxisMap || !offset) return null;
   const yAxis = Object.values(yAxisMap)[0];
   if (!yAxis?.scale) return null;
-  const yHi = yAxis.scale(p75);
-  const yLo = yAxis.scale(p25);
+  const yHi = yAxis.scale(p90);
+  const yLo = yAxis.scale(p10);
   const top = Math.min(yHi, yLo);
   const bot = Math.max(yHi, yLo);
   const { left, width, top: ot, height: oh } = offset;
   return (
     <g pointerEvents="none">
-      {/* Hot band — above p75 */}
-      <rect x={left} y={ot} width={width} height={Math.max(0, top - ot)} fill="hsl(var(--chart-band-high) / 0.06)" />
-      {/* Mid band — between p25 and p75 */}
-      <rect x={left} y={top} width={width} height={Math.max(0, bot - top)} fill="hsl(var(--chart-band-mid) / 0.05)" />
-      {/* Cool band — below p25 */}
-      <rect x={left} y={bot} width={width} height={Math.max(0, ot + oh - bot)} fill="hsl(var(--chart-band-low) / 0.06)" />
-      {/* Hairline guides at p25 / p75 */}
-      <line x1={left} x2={left + width} y1={top} y2={top} stroke="hsl(var(--chart-band-high) / 0.35)" strokeDasharray="2 3" strokeWidth={0.75} />
-      <line x1={left} x2={left + width} y1={bot} y2={bot} stroke="hsl(var(--chart-band-low) / 0.35)" strokeDasharray="2 3" strokeWidth={0.75} />
+      {/* Hot extremity — above p90 only */}
+      <rect x={left} y={ot} width={width} height={Math.max(0, top - ot)} fill="hsl(var(--chart-band-high) / 0.10)" />
+      {/* Cool extremity — below p10 only */}
+      <rect x={left} y={bot} width={width} height={Math.max(0, ot + oh - bot)} fill="hsl(var(--chart-band-low) / 0.10)" />
+      {/* Hairline guides at p10 / p90 */}
+      <line x1={left} x2={left + width} y1={top} y2={top} stroke="hsl(var(--chart-band-high) / 0.4)" strokeDasharray="2 3" strokeWidth={0.75} />
+      <line x1={left} x2={left + width} y1={bot} y2={bot} stroke="hsl(var(--chart-band-low) / 0.4)" strokeDasharray="2 3" strokeWidth={0.75} />
     </g>
   );
 }
