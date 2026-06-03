@@ -6,6 +6,7 @@ import { Sparkles, Send, BarChart3, Loader2, X, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCopilot } from "./CopilotContext";
 import { cn } from "@/lib/utils";
+import { persistRun } from "@/lib/backtest/persistence";
 
 type Role = "user" | "assistant" | "tool";
 interface Msg { role: Role; content: string; toolName?: string; }
