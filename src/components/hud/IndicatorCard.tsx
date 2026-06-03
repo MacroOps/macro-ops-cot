@@ -55,6 +55,7 @@ export function IndicatorCard({
   unit = "",
   actions,
   mockOverride,
+  brush = false,
   component,
 }: IndicatorCardProps) {
   // Spec-derived defaults (props still override).
