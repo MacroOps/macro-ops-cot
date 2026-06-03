@@ -55,6 +55,8 @@ export default {
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
         violet: "hsl(var(--violet))",
+        "accent-soft": "hsl(var(--accent-soft))",
+        ledger: "hsl(var(--ledger))",
         "pos-long": "hsl(var(--pos-long))",
         "pos-short": "hsl(var(--pos-short))",
         "pos-neutral": "hsl(var(--pos-neutral))",
