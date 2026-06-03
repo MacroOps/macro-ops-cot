@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_events: {
+        Row: {
+          acknowledged: boolean
+          alert_id: string
+          fired_at: string
+          id: string
+          indicator_value: number
+          message: string | null
+          percentile: number | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          alert_id: string
+          fired_at?: string
+          id?: string
+          indicator_value: number
+          message?: string | null
+          percentile?: number | null
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          alert_id?: string
+          fired_at?: string
+          id?: string
+          indicator_value?: number
+          message?: string | null
+          percentile?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_events_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alerts: {
+        Row: {
+          active: boolean
+          cooldown_minutes: number
+          created_at: string
+          id: string
+          indicator_key: string
+          last_fired_at: string | null
+          last_value: number | null
+          name: string
+          operator: string
+          regime_filter: string | null
+          threshold: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          indicator_key: string
+          last_fired_at?: string | null
+          last_value?: number | null
+          name: string
+          operator: string
+          regime_filter?: string | null
+          threshold: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          cooldown_minutes?: number
+          created_at?: string
+          id?: string
+          indicator_key?: string
+          last_fired_at?: string | null
+          last_value?: number | null
+          name?: string
+          operator?: string
+          regime_filter?: string | null
+          threshold?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       backtest_runs: {
         Row: {
           created_at: string
