@@ -255,7 +255,7 @@ export default function Analogs() {
                 return (
                   <tr key={m.idx} className="border-b border-border/50">
                     <td className="py-1.5 pl-3 font-mono">
-                      <span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: COLORS[k % COLORS.length] }} />
+                      <span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: "hsl(var(--chart-accent))" }} />
                       {k + 1}
                     </td>
                     <td className="py-1.5 font-mono">{m.date}</td>
