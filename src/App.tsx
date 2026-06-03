@@ -40,6 +40,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <CopilotProvider>
+            <CommandPalette />
+            <CopilotDrawer />
+            <CopilotLauncher />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/overview" element={<Overview />} />
