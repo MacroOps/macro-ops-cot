@@ -28,6 +28,8 @@ export function CompositePanel({ spec, seed, height = 240, drift = 0 }: Props) {
         max={c.scale?.max}
         drift={drift}
         thresholds={c.thresholds}
+        brush
+        points={180}
         actions={
           <ConstructionPopover
             title={c.title}

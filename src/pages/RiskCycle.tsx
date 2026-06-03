@@ -14,6 +14,12 @@ export default function RiskCycle() {
         description={RISK_CYCLE.description}
       />
       <CompositePanel spec={RISK_CYCLE} seed={200} drift={0.1} />
+      <div className="hud-section-head">
+        <div>
+          <div className="hud-section-eyebrow">Components</div>
+          <div className="hud-section-title">Sub-indicator Percentiles</div>
+        </div>
+      </div>
       <CardGrid cols={2}>
         {RISK_CYCLE.components.map((c, i) => (
           <IndicatorCard

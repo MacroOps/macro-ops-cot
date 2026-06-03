@@ -33,6 +33,12 @@ export function BreadthComponents() {
         description={BREADTH_AGGREGATOR.description}
       />
       <CompositePanel spec={BREADTH_AGGREGATOR} seed={400} height={200} />
+      <div className="hud-section-head">
+        <div>
+          <div className="hud-section-eyebrow">Components</div>
+          <div className="hud-section-title">Participation Rules</div>
+        </div>
+      </div>
       <CardGrid cols={2}>
         {BREADTH_AGGREGATOR.components.map((c, i) => (
           <IndicatorCard

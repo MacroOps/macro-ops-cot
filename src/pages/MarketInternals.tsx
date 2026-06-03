@@ -43,6 +43,12 @@ export default function MarketInternals() {
         description={MARKET_INTERNALS.description}
       />
       <CompositePanel spec={MARKET_INTERNALS} seed={300} drift={0.4} />
+      <div className="hud-section-head">
+        <div>
+          <div className="hud-section-eyebrow">Components</div>
+          <div className="hud-section-title">Ratio Pairs · Internals / Divergence</div>
+        </div>
+      </div>
       <CardGrid cols={3}>
         {MARKET_INTERNALS.components.map((c, i) => (
           <RatioCard key={c.id} component={c} seed={301 + i} />
