@@ -119,16 +119,17 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }}
                 labelFormatter={(l) => l as string}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
               <Bar dataKey="v" fill={stroke} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </BarChart>
           ) : variant === "area" ? (
@@ -142,15 +143,16 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={cursorStyle}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
-              <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} fill={`url(#g${seed})`} />
+              <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} fill={`url(#g${seed})`} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </AreaChart>
           ) : (
@@ -158,15 +160,16 @@ export function IndicatorCard({
               <XAxis dataKey="t" hide />
               <YAxis domain={[resolvedMin, resolvedMax]} hide />
               <Tooltip
-                contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+                contentStyle={tooltipStyle}
+                cursor={cursorStyle}
                 formatter={(val: number) => [val.toFixed(2) + unit, resolvedTitle]}
               />
-              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.4} dot={false} />
+              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.5} dot={false} />
               {resolvedThresholds?.hi != null && (
-                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--pos-short))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.hi} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
               {resolvedThresholds?.lo != null && (
-                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--pos-long))" strokeDasharray="3 3" />
+                <ReferenceLine y={resolvedThresholds.lo} stroke="hsl(var(--chart-ink-muted))" strokeDasharray="3 3" />
               )}
             </LineChart>
           )}
