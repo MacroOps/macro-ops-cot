@@ -463,6 +463,17 @@ function ChartToolbar(props: {
     recent: props.recent,
   };
 
+  // Deep link to the Backtests Lab pre-armed for this chart.
+  const backtestHref = (() => {
+    const sp = new URLSearchParams();
+    sp.set("indicator", props.indicatorKey);
+    sp.set("cond", props.thresholds?.hi != null && props.value >= props.thresholds.hi ? "gte" : "lte");
+    const th = props.thresholds?.hi ?? props.thresholds?.lo ?? Math.round(((props.min ?? 0) + (props.max ?? 100)) * 0.75);
+    sp.set("th", String(th));
+    sp.set("h", "12");
+    return `/backtests?${sp.toString()}`;
+  })();
+
   return (
     <div className="flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 focus-within:opacity-100 transition-opacity">
       <IconBtn
@@ -471,12 +482,20 @@ function ChartToolbar(props: {
       >
         <Sparkles className="h-3 w-3" />
       </IconBtn>
-      <IconBtn
-        title="Backtest this threshold"
-        onClick={() => openCopilot({ context: ctx, prompt: `Run a historical backtest of ${props.title} crossing its thresholds and summarize.` })}
+      <a
+        href={backtestHref}
+        onClick={(e) => {
+          if (e.shiftKey) {
+            e.preventDefault();
+            openCopilot({ context: ctx, prompt: `Run a historical backtest of ${props.title} crossing its thresholds and summarize.` });
+          }
+          e.stopPropagation();
+        }}
+        title="Backtest this chart in the Lab (shift-click for inline)"
+        className="h-5 w-5 grid place-items-center rounded-sm text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
       >
         <BarChart3 className="h-3 w-3" />
-      </IconBtn>
+      </a>
       <AnnotatePopover
         indicatorKey={props.indicatorKey}
         point={props.hoverPoint ?? props.recent[props.recent.length - 1]}
