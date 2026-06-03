@@ -319,12 +319,12 @@ function ChartBody({
 
   // Recharts <Customized /> wants a component (not an inline render fn) to
   // avoid remount-per-render warnings.
-  const BandsLayer = (p: object) => <PercentileBandsLayer {...(p as never)} p25={bands.p25} p75={bands.p75} />;
+  const BandsLayer = (p: object) => <PercentileBandsLayer {...(p as Record<string, unknown>)} p25={bands.p25} p75={bands.p75} />;
   const EndLayer = (p: object) => (
-    <EndLabelLayer {...(p as never)} data={data} unit={unit} bands={bands} />
+    <EndLabelLayer {...(p as Record<string, unknown>)} data={data} unit={unit} bands={bands} />
   );
   const HoverChip = (p: object) => (
-    <HoverAxisChipLayer {...(p as never)} hoverT={hoverT} data={data} unit={unit} />
+    <HoverAxisChipLayer {...(p as Record<string, unknown>)} hoverT={hoverT} data={data} unit={unit} />
   );
   const tooltipNode = <HudTooltip data={data} unit={unit} />;
 
