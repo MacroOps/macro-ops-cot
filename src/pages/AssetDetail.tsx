@@ -559,16 +559,34 @@ export default function AssetDetail() {
             </button>
             {(() => {
               const d = data?.lastReportDate;
-              const ageDays = d ? Math.floor((Date.now() - new Date(d).getTime()) / 86400_000) : null;
-              const tone = ageDays == null ? "text-muted-foreground"
-                : ageDays <= 10 ? "text-pos-long"
-                : ageDays <= 21 ? "text-amber-500"
-                : "text-pos-short";
+              if (!d) {
+                return (
+                  <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">
+                    <span className="text-muted-foreground">CFTC report · </span>—
+                  </div>
+                );
+              }
+              // CFTC COT: positions as of Tue, released Fri 3:30pm ET.
+              // Next report covers Tue = reportDate+7, released Fri = reportDate+10.
+              const reportDate = new Date(d + "T00:00:00Z");
+              const nextRelease = new Date(reportDate.getTime() + 10 * 86400_000);
+              const daysToNext = Math.ceil((nextRelease.getTime() - Date.now()) / 86400_000);
+              const isStale = daysToNext < -1; // grace day after Friday release
+              const tone = isStale ? "text-pos-short" : "text-muted-foreground";
+              const nextLabel = nextRelease.toISOString().slice(0, 10);
+              const nextHint =
+                daysToNext > 1 ? `next release Fri ${nextLabel} (in ${daysToNext}d)`
+                : daysToNext >= 0 ? `next release Fri ${nextLabel}`
+                : isStale ? `expected Fri ${nextLabel} — overdue`
+                : `next release Fri ${nextLabel}`;
               return (
-                <div className={`text-[10px] uppercase tracking-wider font-mono ${tone}`} title={d ? `CoT data last updated ${d} (${ageDays}d ago)` : "No CoT data yet"}>
-                  <span className="text-muted-foreground">CoT updated · </span>
-                  {d ?? "—"}
-                  {ageDays != null && <span className="ml-1 opacity-70">({ageDays}d)</span>}
+                <div
+                  className={`text-[10px] uppercase tracking-wider font-mono ${tone}`}
+                  title={`CFTC publishes weekly on Fridays at 3:30pm ET, reflecting positions held the prior Tuesday. Latest report: ${d} (Tue). ${nextHint}.`}
+                >
+                  <span className="text-muted-foreground">CFTC report (Tue) · </span>
+                  <span className="text-surface-foreground">{d}</span>
+                  <span className="ml-2 opacity-70">· {nextHint}</span>
                 </div>
               );
             })()}
