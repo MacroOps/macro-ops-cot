@@ -156,12 +156,16 @@ export function RegimeTimeline({
               minTickGap={48}
             />
             <YAxis
-              domain={[min ?? "auto", max ?? "auto"]}
+              domain={[
+                (dataMin: number) => (min ?? dataMin) - Math.abs(((max ?? dataMin + 1) - (min ?? dataMin)) * 0.08),
+                (dataMax: number) => (max ?? dataMax) + Math.abs(((max ?? dataMax) - (min ?? dataMax - 1)) * 0.08),
+              ]}
               tick={{ fontSize: 9, fill: "hsl(var(--chart-axis))" }}
               axisLine={false}
               tickLine={false}
               width={32}
             />
+
             {/* Regime washes — painted first, behind everything */}
             {segments.map((s, i) => (
               <ReferenceArea

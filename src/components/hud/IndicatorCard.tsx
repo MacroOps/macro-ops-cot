@@ -354,13 +354,16 @@ function ChartBody({
   const rightPad = 44; // room for end-label chip
   const bottomPad = hoverT ? 14 : 0;
   const margin = { top: 6, right: rightPad, left: 0, bottom: bottomPad };
+  // Breathing room so the latest print never sits flush against the chart edge.
+  const yPad = (max - min) * 0.08;
+  const yDomain: [number, number] = [min - yPad, max + yPad];
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       {variant === "bar" ? (
         <BarChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }} />
           <Customized component={BandsLayer} />
           <Bar dataKey="v" fill={stroke} isAnimationActive={false} />
@@ -380,7 +383,7 @@ function ChartBody({
             </linearGradient>
           </defs>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={cursorStyle} />
           <Customized component={BandsLayer} />
           <Area
@@ -403,7 +406,7 @@ function ChartBody({
       ) : (
         <LineChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={cursorStyle} />
           <Customized component={BandsLayer} />
           <Line
