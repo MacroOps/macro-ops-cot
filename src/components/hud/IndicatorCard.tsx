@@ -363,7 +363,7 @@ function ChartBody({
       {variant === "bar" ? (
         <BarChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={{ fill: "hsl(var(--chart-grid) / 0.5)" }} />
           <Customized component={BandsLayer} />
           <Bar dataKey="v" fill={stroke} isAnimationActive={false} />
@@ -383,7 +383,7 @@ function ChartBody({
             </linearGradient>
           </defs>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={cursorStyle} />
           <Customized component={BandsLayer} />
           <Area
@@ -406,7 +406,7 @@ function ChartBody({
       ) : (
         <LineChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
-          <YAxis domain={[min, max]} hide />
+          <YAxis domain={yDomain} hide />
           <Tooltip content={tooltipNode} cursor={cursorStyle} />
           <Customized component={BandsLayer} />
           <Line
