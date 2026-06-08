@@ -316,7 +316,7 @@ export default function AssetDetail() {
   function rightPaddedDomain(dom: [number, number] | null): [number, number] | ["dataMin", "dataMax"] {
     if (!dom) return ["dataMin", "dataMax"];
     const span = Math.max(2 * 86_400_000, dom[1] - dom[0]);
-    return [dom[0], dom[1] + span * 0.011];
+    return [dom[0], dom[1] + span * 0.00275];
   }
 
   function sliceByTf(tf: TimeframeKey): (AssetSeriesPoint & { ts: number })[] {
