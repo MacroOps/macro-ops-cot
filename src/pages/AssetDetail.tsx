@@ -267,6 +267,7 @@ export default function AssetDetail() {
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
   const inkColor = "hsl(var(--chart-ink))";
+  const xAxisRightPadding = { right: 36 };
 
   const currentPct = last ? (pctWindow === "netSpecPct3y" ? last.netSpecPct3y : last.netSpecPct6m) : 0;
   const windowLabel = pctWindow === "netSpecPct3y" ? "3Y" : "6M";
@@ -372,7 +373,7 @@ export default function AssetDetail() {
     return (
       <ComposedChart data={pd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
+        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={[(dMin: number) => dMin * 0.94, (dMax: number) => dMax * 1.06]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
         <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
         <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
@@ -390,7 +391,7 @@ export default function AssetDetail() {
     const cd = sliceByTf(tf);
     const dom = sharedDomain(tf);
     const xAxis = (
-      <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
+      <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
     );
     const tooltip = (
       <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
@@ -477,7 +478,7 @@ export default function AssetDetail() {
     return (
       <ComposedChart data={cd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
-        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
+        <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={[(dMin: number) => dMin - Math.abs(dMin) * 0.08 - 1, (dMax: number) => dMax + Math.abs(dMax) * 0.08 + 1]} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
