@@ -478,7 +478,7 @@ export default function AssetDetail() {
       <ComposedChart data={cd} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value" barCategoryGap={1} barGap={0}>
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="ts" type="number" scale="time" domain={dom ?? ["dataMin", "dataMax"]} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
-        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+        <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={[(dMin: number) => dMin - Math.abs(dMin) * 0.08 - 1, (dMax: number) => dMax + Math.abs(dMax) * 0.08 + 1]} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
