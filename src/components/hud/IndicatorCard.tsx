@@ -351,7 +351,7 @@ function ChartBody({
   );
   const tooltipNode = <HudTooltip data={data} unit={unit} />;
 
-  const rightPad = 44; // room for end-label chip
+  const rightPad = 68; // room for end-label chip + breathing space before y-axis
   const bottomPad = hoverT ? 14 : 0;
   const margin = { top: 6, right: rightPad, left: 0, bottom: bottomPad };
   // Breathing room so the latest print never sits flush against the chart edge.
