@@ -267,7 +267,7 @@ export default function AssetDetail() {
   const tickColor = "hsl(var(--chart-axis))";
   const gridColor = "hsl(var(--chart-grid))";
   const inkColor = "hsl(var(--chart-ink))";
-  const xAxisRightPadding = { right: 36 };
+  const xAxisRightPadding = { right: 8 };
 
   const currentPct = last ? (pctWindow === "netSpecPct3y" ? last.netSpecPct3y : last.netSpecPct6m) : 0;
   const windowLabel = pctWindow === "netSpecPct3y" ? "3Y" : "6M";
