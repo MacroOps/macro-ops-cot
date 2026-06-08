@@ -141,7 +141,7 @@ export function RegimeTimeline({
       </div>
       <div className="hud-chart rounded-none p-1" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 48, left: 0, bottom: 18 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 72, left: 0, bottom: 18 }}>
             <defs>
               <linearGradient id={`rt-grad-${seed}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(var(--chart-accent))" stopOpacity={0.28} />
