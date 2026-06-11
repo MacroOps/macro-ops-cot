@@ -499,6 +499,12 @@ export type Database = {
       }
     }
     Views: {
+      dashboard_payload_api: {
+        Row: {
+          payload: Json | null
+        }
+        Relationships: []
+      }
       dashboard_payload_mv: {
         Row: {
           id: number | null
