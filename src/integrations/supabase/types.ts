@@ -213,6 +213,24 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_payload_cache: {
+        Row: {
+          id: number
+          payload: Json
+          refreshed_at: string
+        }
+        Insert: {
+          id?: number
+          payload: Json
+          refreshed_at?: string
+        }
+        Update: {
+          id?: number
+          payload?: Json
+          refreshed_at?: string
+        }
+        Relationships: []
+      }
       eurex_oi_history: {
         Row: {
           block_volume: number | null
