@@ -37,6 +37,7 @@ import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
+import Offsides from "./pages/Offsides.tsx";
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/tpmr/tctm/thrust" element={<TctmGuide slug="thrust" />} />
             <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
             <Route path="/eurex" element={<EurexPositioning />} />
+            <Route path="/offsides" element={<Offsides />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />
