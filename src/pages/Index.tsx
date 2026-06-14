@@ -47,7 +47,7 @@ const Index = () => {
 
   const filtered = useMemo(() => {
     let rows = markets;
-    if (filter === "Extremes") rows = rows.filter(m => Math.abs(m.extremityScore) >= 50);
+    if (filter === "Extremes") rows = rows.filter(m => Math.abs(m.extremityScore) >= 70);
     else if (filter === "Watchlist") rows = rows.filter(m => m.id && ids.has(m.id));
     else if (filter !== "All") rows = rows.filter(m => m.sector === filter);
 
