@@ -541,7 +541,13 @@ export type Database = {
         | "Metals"
         | "Agriculture"
         | "Crypto"
-      report_format: "legacy" | "disaggregated" | "tff" | "eurex"
+      report_format:
+        | "legacy"
+        | "disaggregated"
+        | "tff"
+        | "eurex"
+        | "tff_combined"
+        | "disaggregated_combined"
       trader_category:
         | "commercial"
         | "non_commercial"
@@ -689,7 +695,14 @@ export const Constants = {
         "Agriculture",
         "Crypto",
       ],
-      report_format: ["legacy", "disaggregated", "tff", "eurex"],
+      report_format: [
+        "legacy",
+        "disaggregated",
+        "tff",
+        "eurex",
+        "tff_combined",
+        "disaggregated_combined",
+      ],
       trader_category: [
         "commercial",
         "non_commercial",
