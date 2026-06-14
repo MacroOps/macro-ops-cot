@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const yearsBack = Number(body.years ?? 10);
     const symbolFilter: string | undefined = body.symbol;
-    const formatFilter: "legacy" | "disaggregated" | "tff" | undefined = body.format;
+    const formatFilter: "legacy" | "disaggregated" | "tff" | "disaggregated_combined" | "tff_combined" | undefined = body.format;
     const sinceOverride: string | undefined = body.since;
     const untilOverride: string | undefined = body.until;
     const since = new Date();
