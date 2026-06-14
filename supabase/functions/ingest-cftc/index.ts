@@ -62,9 +62,13 @@ Deno.serve(async (req) => {
         const wantLegacy = !formatFilter || formatFilter === "legacy";
         const wantDisagg = !formatFilter || formatFilter === "disaggregated";
         const wantTff    = !formatFilter || formatFilter === "tff";
+        const wantDisaggC = !formatFilter || formatFilter === "disaggregated_combined";
+        const wantTffC    = !formatFilter || formatFilter === "tff_combined";
         const legacy = wantLegacy ? await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride) : [];
         const disagg = wantDisagg ? await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride) : [];
         const tff    = wantTff    ? await fetchSocrata(SOCRATA_TFF,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
+        const disaggC = wantDisaggC ? await fetchSocrata(SOCRATA_DISAGG_COMBINED, m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
+        const tffC    = wantTffC    ? await fetchSocrata(SOCRATA_TFF_COMBINED,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
 
         // Bulk-upsert helper: upsert all reports for a format, get IDs back,
         // then bulk-upsert snapshots in chunks.
