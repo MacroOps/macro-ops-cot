@@ -53,7 +53,7 @@ const Index = () => {
 
     const sorted = [...rows].sort((a, b) => {
       switch (sortKey) {
-        case "extremity": return Math.abs(b.extremityScore) - Math.abs(a.extremityScore);
+        case "extremity": return b.extremityScore - a.extremityScore;
         case "wow":       return Math.abs(b.wowChange) - Math.abs(a.wowChange);
         case "net3y":     return Math.abs(b.netSpecPct3y - 50) - Math.abs(a.netSpecPct3y - 50);
         case "wkpct":     return Math.abs(b.weekChangePct) - Math.abs(a.weekChangePct);
