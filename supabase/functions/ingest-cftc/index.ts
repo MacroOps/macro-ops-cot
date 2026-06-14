@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
           ];
         });
 
-        await flush(disagg, "disaggregated", (row, oi) => {
+        const disaggBuild = (row: Record<string, string>, oi: number) => {
           const pmL = num(row.prod_merc_positions_long);
           const pmS = num(row.prod_merc_positions_short);
           const swL = num(row.swap_positions_long_all);
@@ -165,9 +165,11 @@ Deno.serve(async (req) => {
             { category: "other_reportable",  long_contracts: orL, short_contracts: orS, spread_contracts: orSp, pct_of_oi: oi ? (orL - orS) / oi * 100 : null },
             { category: "leveraged_fund",    long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
           ];
-        });
+        };
+        await flush(disagg, "disaggregated", disaggBuild);
+        await flush(disaggC, "disaggregated_combined", disaggBuild);
 
-        await flush(tff, "tff", (row, oi) => {
+        const tffBuild = (row: Record<string, string>, oi: number) => {
           const dL = num(row.dealer_positions_long_all);
           const dS = num(row.dealer_positions_short_all);
           const dSp = num(row.dealer_positions_spread_all);
@@ -182,8 +184,10 @@ Deno.serve(async (req) => {
             { category: "asset_manager",       long_contracts: amL, short_contracts: amS, spread_contracts: amSp, pct_of_oi: oi ? (amL - amS) / oi * 100 : null },
             { category: "leveraged_fund",      long_contracts: lmL, short_contracts: lmS, spread_contracts: lmSp, pct_of_oi: oi ? (lmL - lmS) / oi * 100 : null },
           ];
-        });
-        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length}`);
+        };
+        await flush(tff, "tff", tffBuild);
+        await flush(tffC, "tff_combined", tffBuild);
+        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length} disaggC=${disaggC.length} tffC=${tffC.length}`);
       } catch (e) {
         console.error(`cftc ${m.symbol} failed`, e);
       }
