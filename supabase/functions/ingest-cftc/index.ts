@@ -9,6 +9,8 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SOCRATA_LEGACY = "https://publicreporting.cftc.gov/resource/6dca-aqww.json";
 const SOCRATA_DISAGG = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json";
 const SOCRATA_TFF    = "https://publicreporting.cftc.gov/resource/gpe5-46if.json";
+const SOCRATA_TFF_COMBINED    = "https://publicreporting.cftc.gov/resource/yw9f-hn96.json";
+const SOCRATA_DISAGG_COMBINED = "https://publicreporting.cftc.gov/resource/kh3c-gbw2.json";
 
 interface Market { id: string; symbol: string; cftc_code: string | null }
 
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const yearsBack = Number(body.years ?? 10);
     const symbolFilter: string | undefined = body.symbol;
-    const formatFilter: "legacy" | "disaggregated" | "tff" | undefined = body.format;
+    const formatFilter: "legacy" | "disaggregated" | "tff" | "disaggregated_combined" | "tff_combined" | undefined = body.format;
     const sinceOverride: string | undefined = body.since;
     const untilOverride: string | undefined = body.until;
     const since = new Date();
@@ -60,15 +62,19 @@ Deno.serve(async (req) => {
         const wantLegacy = !formatFilter || formatFilter === "legacy";
         const wantDisagg = !formatFilter || formatFilter === "disaggregated";
         const wantTff    = !formatFilter || formatFilter === "tff";
+        const wantDisaggC = !formatFilter || formatFilter === "disaggregated_combined";
+        const wantTffC    = !formatFilter || formatFilter === "tff_combined";
         const legacy = wantLegacy ? await fetchSocrata(SOCRATA_LEGACY, m.cftc_code, sinceISO, untilOverride) : [];
         const disagg = wantDisagg ? await fetchSocrata(SOCRATA_DISAGG, m.cftc_code, sinceISO, untilOverride) : [];
         const tff    = wantTff    ? await fetchSocrata(SOCRATA_TFF,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
+        const disaggC = wantDisaggC ? await fetchSocrata(SOCRATA_DISAGG_COMBINED, m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
+        const tffC    = wantTffC    ? await fetchSocrata(SOCRATA_TFF_COMBINED,    m.cftc_code, sinceISO, untilOverride).catch(() => []) : [];
 
         // Bulk-upsert helper: upsert all reports for a format, get IDs back,
         // then bulk-upsert snapshots in chunks.
         async function flush(
           rows: Record<string, string>[],
-          format: "legacy" | "disaggregated" | "tff",
+          format: "legacy" | "disaggregated" | "tff" | "disaggregated_combined" | "tff_combined",
           buildSnaps: (row: Record<string, string>, oi: number) => Array<{
             category: string; long_contracts: number; short_contracts: number;
             spread_contracts: number; pct_of_oi: number | null;
@@ -140,7 +146,7 @@ Deno.serve(async (req) => {
           ];
         });
 
-        await flush(disagg, "disaggregated", (row, oi) => {
+        const disaggBuild = (row: Record<string, string>, oi: number) => {
           const pmL = num(row.prod_merc_positions_long);
           const pmS = num(row.prod_merc_positions_short);
           const swL = num(row.swap_positions_long_all);
@@ -159,9 +165,11 @@ Deno.serve(async (req) => {
             { category: "other_reportable",  long_contracts: orL, short_contracts: orS, spread_contracts: orSp, pct_of_oi: oi ? (orL - orS) / oi * 100 : null },
             { category: "leveraged_fund",    long_contracts: mmL, short_contracts: mmS, spread_contracts: mmSp, pct_of_oi: oi ? (mmL - mmS) / oi * 100 : null },
           ];
-        });
+        };
+        await flush(disagg, "disaggregated", disaggBuild);
+        await flush(disaggC, "disaggregated_combined", disaggBuild);
 
-        await flush(tff, "tff", (row, oi) => {
+        const tffBuild = (row: Record<string, string>, oi: number) => {
           const dL = num(row.dealer_positions_long_all);
           const dS = num(row.dealer_positions_short_all);
           const dSp = num(row.dealer_positions_spread_all);
@@ -176,8 +184,10 @@ Deno.serve(async (req) => {
             { category: "asset_manager",       long_contracts: amL, short_contracts: amS, spread_contracts: amSp, pct_of_oi: oi ? (amL - amS) / oi * 100 : null },
             { category: "leveraged_fund",      long_contracts: lmL, short_contracts: lmS, spread_contracts: lmSp, pct_of_oi: oi ? (lmL - lmS) / oi * 100 : null },
           ];
-        });
-        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length}`);
+        };
+        await flush(tff, "tff", tffBuild);
+        await flush(tffC, "tff_combined", tffBuild);
+        console.log(`cftc ${m.symbol}: legacy=${legacy.length} disagg=${disagg.length} tff=${tff.length} disaggC=${disaggC.length} tffC=${tffC.length}`);
       } catch (e) {
         console.error(`cftc ${m.symbol} failed`, e);
       }
