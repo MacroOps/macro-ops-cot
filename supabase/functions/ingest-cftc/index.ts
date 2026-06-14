@@ -193,11 +193,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    let refreshMsg: string | null = null;
+    try {
+      const { error: rErr } = await sb.rpc("refresh_dashboard_payload");
+      if (rErr) refreshMsg = `dashboard refresh failed: ${rErr.message}`;
+    } catch (e) {
+      refreshMsg = `dashboard refresh threw: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (refreshMsg) console.error(refreshMsg);
     await sb.from("ingestion_log").insert({
-      source: "cftc", status: "ok", rows_written: written,
-      started_at: started, finished_at: new Date().toISOString(),
+      source: "cftc",
+      status: refreshMsg ? "warn" : "ok",
+      rows_written: written,
+      message: refreshMsg,
+      started_at: started,
+      finished_at: new Date().toISOString(),
     });
-    try { await sb.rpc("refresh_dashboard_payload"); } catch (e) { console.error("dashboard refresh failed", e); }
     return new Response(JSON.stringify({ ok: true, rows_written: written }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
