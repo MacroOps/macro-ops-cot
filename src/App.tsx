@@ -37,6 +37,7 @@ import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
+import Offsides from "./pages/Offsides.tsx";
 
 const queryClient = new QueryClient();
 
