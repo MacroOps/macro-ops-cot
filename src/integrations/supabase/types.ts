@@ -529,6 +529,10 @@ export type Database = {
     Functions: {
       get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
       get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
+      get_cot_normalized: {
+        Args: { p_lookback?: number; p_market_id: string }
+        Returns: Json
+      }
       get_dashboard_payload: { Args: never; Returns: Json }
       refresh_dashboard_payload: { Args: never; Returns: undefined }
     }
@@ -541,7 +545,13 @@ export type Database = {
         | "Metals"
         | "Agriculture"
         | "Crypto"
-      report_format: "legacy" | "disaggregated" | "tff" | "eurex"
+      report_format:
+        | "legacy"
+        | "disaggregated"
+        | "tff"
+        | "eurex"
+        | "tff_combined"
+        | "disaggregated_combined"
       trader_category:
         | "commercial"
         | "non_commercial"
@@ -689,7 +699,14 @@ export const Constants = {
         "Agriculture",
         "Crypto",
       ],
-      report_format: ["legacy", "disaggregated", "tff", "eurex"],
+      report_format: [
+        "legacy",
+        "disaggregated",
+        "tff",
+        "eurex",
+        "tff_combined",
+        "disaggregated_combined",
+      ],
       trader_category: [
         "commercial",
         "non_commercial",
