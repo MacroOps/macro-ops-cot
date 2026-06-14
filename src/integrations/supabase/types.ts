@@ -529,6 +529,10 @@ export type Database = {
     Functions: {
       get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
       get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
+      get_cot_normalized: {
+        Args: { p_lookback?: number; p_market_id: string }
+        Returns: Json
+      }
       get_dashboard_payload: { Args: never; Returns: Json }
       refresh_dashboard_payload: { Args: never; Returns: undefined }
     }
