@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         // then bulk-upsert snapshots in chunks.
         async function flush(
           rows: Record<string, string>[],
-          format: "legacy" | "disaggregated" | "tff",
+          format: "legacy" | "disaggregated" | "tff" | "disaggregated_combined" | "tff_combined",
           buildSnaps: (row: Record<string, string>, oi: number) => Array<{
             category: string; long_contracts: number; short_contracts: number;
             spread_contracts: number; pct_of_oi: number | null;
