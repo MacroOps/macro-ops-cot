@@ -123,7 +123,16 @@ const NAV: Group[] = [
       { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
     ],
   },
-  
+  {
+    title: "TP Research",
+    icon: Globe2,
+    children: [
+      { title: "Breadth", url: "/tp/breadth" },
+      { title: "Trend Signals", url: "/tp/trend-signals" },
+      { title: "Risk Composite", url: "/tp/risk-composite" },
+      { title: "Sector Trends", url: "/tp/sector-trends" },
+    ],
+  },
 ];
 
 function isLeafActive(pathname: string, url: string) {
