@@ -1,64 +1,52 @@
-# Design Upgrade Plan — Charts & Visual Identity
+# Hook the dashboard up to TP Market Research
 
-The CoT page works because the charts feel *designed*: paper-bright canvas, hairline grid, custom annotations, tabular legends, named series. Everywhere else still uses default Recharts. Goal: lift the entire app to that bar, then push 3–4 hero charts into "screenshot-worthy" territory.
+Add a new data source alongside the existing CoT stack. Nothing CoT-related changes.
 
-## 1. Build a shared HUD chart primitive layer
+## 1. Secret + edge-function proxy
 
-A single `src/components/charts/` module so every chart inherits the CoT look automatically — no more per-page styling drift.
+- Store the API key as a runtime secret `TPMR_API_KEY` (request via `add_secret`, no value in code).
+- New edge function `tp-proxy` (`supabase/functions/tp-proxy/index.ts`):
+  - Accepts `?table=<name>` plus a safe allow-list of query params from the OpenAPI spec (`start_date`, `end_date`, `sector`, `sector_code`, `symbol`, `index_symbol`, `index_code`, `timeframe`, `signal_state`, `composite_type`, `industry`, `sub_industry`, `category`, `exchange`, `limit`, `offset`).
+  - Rejects any other table/param.
+  - Calls `https://api.tpmarketresearch.com/{table}` with header `X-API-Key: <secret>`, forwards JSON response, returns proper CORS headers.
+  - Light in-memory caching headers (`Cache-Control: private, max-age=300`) so React Query can dedupe.
+  - JWT verification stays default (verify in code via the supabase client we already use; no `config.toml` change needed).
 
-- `HudChartFrame` — paper surface, eyebrow + title + right-aligned meta (last value, Δ, as-of date), hairline ledger underline, optional corner stamp ("EXPERIMENTAL", "LIVE", source attribution).
-- `HudAxis` / `HudGrid` — tnum axis labels in `--chart-axis`, dotted minor grid, solid zero line, smart tick reduction.
-- `HudTooltip` — replaces shadcn default. Crosshair + vertical guideline, sticky right-edge readout (think Bloomberg), tabular values, delta vs prior, percentile chip.
-- `HudLegend` — inline tabular legend with colored square + series name + current value + 1w/1m delta, not the floating pill style.
-- `HudSeries` presets — `accent`, `accent-2`, `ink-muted`, `success`, `destructive`, `violet` — so series colors come from semantic tokens, never hex.
-- `useChartCrosshair()` — shared hook that syncs hover x-position across stacked charts on the same page (already partially in `ChartSyncContext`, formalize it).
+## 2. Frontend client
 
-Outcome: every existing chart can swap to these primitives with ~10 lines of diff and instantly match the CoT look.
+- `src/lib/tp/client.ts`: thin wrapper `tpFetch(table, params)` that calls `supabase.functions.invoke('tp-proxy', { body: { table, params } })` and returns typed rows.
+- `src/lib/tp/types.ts`: TS types derived from `/schema` for the tables we use (breadth, risk composite, trend signals, sector trend timeseries, symbol metadata, custom indexes).
+- `src/hooks/tp/`: one React Query hook per table we render (`useBreadth`, `useRiskComposite`, `useTrendSignals`, `useSectorTrend`, `useCustomIndexes`). Stale time 5 min.
 
-## 2. Signature chart treatments (the "wow" layer)
+## 3. New pages (added to sidebar under a new "TP Research" group)
 
-Four custom chart types that don't exist in Recharts out of the box — these become the app's visual signature.
+Each page matches the existing HUD look (AppShell, hud-label, tabular nums, recharts, same color tokens). All include sector/date filters where the table supports them.
 
-- **Percentile-banded line.** Background renders 0–25 / 25–75 / 75–100 percentile bands in faint accent/ink, current line draws on top, dot pulses when in extreme band. Use on every indicator on `MacroPage`, `RiskCycle`, `Breadth`.
-- **Regime-shaded timeline.** Vertical color washes behind the price line marking risk-on / risk-off / neutral regimes from `RegimeRibbon`. Replaces the separate ribbon strip on `Overview` and `RiskCycle`.
-- **Analog overlay fan.** On `/analogs`, the top-8 historical paths render as semi-transparent threads radiating from t=0, with the median path in solid accent and a shaded IQR cone. Today's live path overlays in ink.
-- **Heatmap cell with embedded sparkline.** `/heatmap` cells get a 12-week inline sparkline behind the percentile color, plus a tiny arrow glyph for 1w direction. Hover reveals a full popover chart.
+1. **TP Breadth** (`/tp/breadth`) — `calculated_breadth_full`
+   - Sector picker, date range, line chart of advances/declines + new-highs/new-lows, current-day stat strip (overbought/oversold, %>MA50/200, slope_200d).
+2. **TP Trend Signals** (`/tp/trend-signals`) — `trend_signals` (table-level signal state across symbols/timeframes), with filters for `timeframe` and `signal_state`. Institutional table view + small distribution sparkline.
+3. **TP Risk Composite** (`/tp/risk-composite`) — `risk_composite_history`
+   - Sector + composite_type (LT/ST) selector, line chart of `composite_score`, signal-state ribbon, current snapshot card per sector.
+4. **TP Sector Trends** (`/tp/sector-trends`) — `sector_trend_timeseries`
+   - Heatmap/table of all sectors' latest signal + WoW change, drill-down line per sector.
 
-## 3. Micro-details that sell the "research terminal" feel
+Reference tables (`custom_indexes`, `index_constituents`, `symbol_metadata`, `trend_relative_signals`, `symbol_trend_relative_signals`) are wired into the client/types now but not given a dedicated page yet — easy to add later once you see what you want.
 
-Small, cumulative — these are what separate "nice chart" from "Bridgewater deck".
+## 4. Routing + sidebar
 
-- **Hairline crosshair + axis halo.** Vertical guideline on hover, with a small filled chip on each axis showing the value at cursor (date on x, value on y).
-- **End-of-series labels.** Last data point gets an inline label (series name + value) instead of a floating legend. Removes legend clutter on dense charts.
-- **Annotation pins.** Lightweight markers for events (Fed meeting, earnings, regime flip) — small numbered circles on the timeline with hover tooltips. Sourced from `annotations.ts`.
-- **Diff sparklines in tables.** Every numeric column in `Backtests` / `Alerts` / `Heatmap` gets a tiny 20-week sparkline next to the number.
-- **Animated draw-in.** Series stroke draws left→right on mount (300ms, ease-out). One time only, not on every re-render. Subtle, used everywhere.
-- **Smart number formatting.** `1,247` not `1247`; `+2.3%` colored by sign; basis points where appropriate; tabular nums everywhere (already partly done via `font-feature-settings`).
-
-## 4. Layout & shell polish (non-chart)
-
-- **Density toggle** in the global scrubber footer — `Compact / Comfortable` — that swaps card padding + chart heights app-wide via a CSS data attribute.
-- **Page eyebrow + breadcrumbs** standardized via `PageHeader.tsx` — section, page title, as-of timestamp, source tag, share/export icon row.
-- **Status dot in sidebar** for `/alerts` (unread count badge), `/briefing` (today/stale), `/backtests` (running).
-- **Cmd-K palette** gets section grouping + recent commands + keyboard hint glyphs.
-- **Print stylesheet** so any page can be exported as a clean PDF research note (no sidebar, paper background, page breaks before each section).
-
-## 5. Rollout order
-
-1. Build the `charts/` primitive layer + tooltip + axis + legend.
-2. Migrate `MacroPage`, `RiskCycle`, `Breadth`, `IndicatorCard` to the primitives (no new features, just inherit the look).
-3. Ship signature treatments: percentile bands → regime shading → analog fan → heatmap sparklines.
-4. Layer in micro-details (crosshair, end labels, annotations, animated draw).
-5. Shell polish (density toggle, page header, palette, print).
+- Register the four routes in `src/App.tsx`.
+- Add a "TP Research" section to `AppSidebar.tsx` with the four links.
 
 ## Technical notes
 
-- Keep Recharts as the engine; primitives are thin wrappers — no new chart lib.
-- All colors via `--chart-*` tokens already in `index.css`. If a new semantic is needed (e.g. `--chart-band-low/mid/high`), add to `:root` + `.dark` + `tailwind.config.ts` together.
-- Crosshair sync continues to use `ChartSyncContext`; extend it with `x` value + `seriesValues` map so the right-edge readout can pull from sibling charts.
-- Animated draw uses `strokeDasharray` + `strokeDashoffset` transition, not framer — keeps bundle flat.
-- Annotations layer is a separate `<Customized />` Recharts component reading from `annotations.ts`.
+- All TP data is read-only and fetched on demand; nothing is mirrored into Supabase in this phase. We can add a scheduled ingest later if performance demands it.
+- The proxy is the only place the API key lives. Frontend never sees it.
+- React Query keys: `['tp', table, params]` — stable JSON-stringified params for cache hits.
+- Errors from TP are bubbled up with status + body so the UI can show a real message.
 
----
+## Out of scope (call out if you want any of these now)
 
-Want me to start with **(1) the primitive layer + migrate one page** as a proof of concept, or go straight for a **signature treatment** (percentile bands or analog fan) where the visual payoff is most dramatic?
+- Touching existing CoT-driven pages (Index, Offsides, Heatmap, AssetDetail, etc.).
+- Mirroring TP tables into Supabase / scheduled ingest.
+- Cross-joining TP symbols with our `markets` table.
+- A dedicated Symbol Detail page for TP symbols.
