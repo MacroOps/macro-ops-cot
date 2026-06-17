@@ -41,6 +41,7 @@ export default function MarketInternals() {
         eyebrow="MO Indicator"
         title={MARKET_INTERNALS.name}
         description={MARKET_INTERNALS.description}
+        actions={<MockBadge reason="Market Internals needs ETF price feeds (SOXX, SPY, VIX curve, LQD/IEF, RSPD/RSPS, SPHB/USMV) not yet wired up. All series here are mock." />}
       />
       <CompositePanel spec={MARKET_INTERNALS} seed={300} drift={0.4} />
       <div className="hud-section-head">
