@@ -6,6 +6,7 @@ import { CompositePanel } from "@/components/hud/CompositePanel";
 import { InputsRequired } from "@/components/hud/InputsRequired";
 import { MARKET_INTERNALS } from "@/lib/indicatorSpecs";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
+import { MockBadge } from "@/components/hud/MockBadge";
 
 type View = "internals" | "divergence";
 
