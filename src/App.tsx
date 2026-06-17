@@ -38,6 +38,10 @@ import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
 import Offsides from "./pages/Offsides.tsx";
+import TpBreadth from "./pages/tp/TpBreadth.tsx";
+import TpTrendSignals from "./pages/tp/TpTrendSignals.tsx";
+import TpRiskComposite from "./pages/tp/TpRiskComposite.tsx";
+import TpSectorTrends from "./pages/tp/TpSectorTrends.tsx";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +100,10 @@ const App = () => (
             <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
             <Route path="/eurex" element={<EurexPositioning />} />
             <Route path="/offsides" element={<Offsides />} />
+            <Route path="/tp/breadth" element={<TpBreadth />} />
+            <Route path="/tp/trend-signals" element={<TpTrendSignals />} />
+            <Route path="/tp/risk-composite" element={<TpRiskComposite />} />
+            <Route path="/tp/sector-trends" element={<TpSectorTrends />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />
