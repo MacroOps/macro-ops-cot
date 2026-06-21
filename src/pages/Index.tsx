@@ -63,6 +63,7 @@ const Index = () => {
     }
   }
 
+  const stats = useMemo(() => {
     const exLong = markets.filter(m => m.extremityScore >= 75).length;
     const exShort = markets.filter(m => m.extremityScore <= -75).length;
     const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75).length;
