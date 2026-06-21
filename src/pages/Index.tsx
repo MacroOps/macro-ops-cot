@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ArrowDownRight, Star } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Star, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
 import { SECTORS, type Sector, type MarketSnapshot } from "@/lib/mockData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Filter = Sector | "All" | "Extremes" | "Watchlist";
 type SortKey = "extremity" | "wow" | "net3y" | "wkpct" | "symbol";
@@ -36,6 +38,30 @@ const Index = () => {
   const [filter, setFilter] = useState<Filter>("All");
   const [sortKey, setSortKey] = useState<SortKey>("extremity");
   const { ids } = useWatchlist();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    const t = toast.loading("Refreshing CFTC data…");
+    try {
+      const { data: res, error: err } = await supabase.functions.invoke("ingest-cftc", {
+        body: { years: 1 },
+      });
+      if (err) throw err;
+      await qc.invalidateQueries({ queryKey: ["dashboard-data"] });
+      await qc.invalidateQueries({ queryKey: ["sector-data"] });
+      const wrote = (res as { rows_written?: number })?.rows_written ?? 0;
+      toast.success(
+        wrote > 0 ? `Refreshed — ${wrote} new rows` : "Up to date — no new CFTC reports upstream",
+        { id: t },
+      );
+    } catch (e) {
+      toast.error(`Refresh failed: ${(e as Error).message}`, { id: t });
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const stats = useMemo(() => {
     const exLong = markets.filter(m => m.extremityScore >= 75).length;
@@ -70,8 +96,19 @@ const Index = () => {
         <Stat label="Euphoric ≥75" value={stats.exLong.toString()} accent="long" />
         <Stat label="Capitulation ≤−75" value={stats.exShort.toString()} accent="short" />
         <Stat label="Crowded 50–74" value={`${stats.crowdedLong}↑ / ${stats.crowdedShort}↓`} />
-        <Stat label="Report" value={data?.reportDate ?? "—"} mono />
+        <div className="relative">
+          <Stat label="Report" value={data?.reportDate ?? "—"} mono />
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Refresh CFTC data"
+            className="absolute top-1.5 right-1.5 p-1 rounded-sm border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
+
 
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto">
         <span className="hud-label mr-2 shrink-0">Filter</span>
