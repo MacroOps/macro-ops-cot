@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, ArrowDownRight, Star } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Star, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
 import { SECTORS, type Sector, type MarketSnapshot } from "@/lib/mockData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Filter = Sector | "All" | "Extremes" | "Watchlist";
 type SortKey = "extremity" | "wow" | "net3y" | "wkpct" | "symbol";
