@@ -38,8 +38,31 @@ const Index = () => {
   const [filter, setFilter] = useState<Filter>("All");
   const [sortKey, setSortKey] = useState<SortKey>("extremity");
   const { ids } = useWatchlist();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const stats = useMemo(() => {
+  async function handleRefresh() {
+    setRefreshing(true);
+    const t = toast.loading("Refreshing CFTC data…");
+    try {
+      const { data: res, error: err } = await supabase.functions.invoke("ingest-cftc", {
+        body: { years: 1 },
+      });
+      if (err) throw err;
+      await qc.invalidateQueries({ queryKey: ["dashboard-data"] });
+      await qc.invalidateQueries({ queryKey: ["sector-data"] });
+      const wrote = (res as { rows_written?: number })?.rows_written ?? 0;
+      toast.success(
+        wrote > 0 ? `Refreshed — ${wrote} new rows` : "Up to date — no new CFTC reports upstream",
+        { id: t },
+      );
+    } catch (e) {
+      toast.error(`Refresh failed: ${(e as Error).message}`, { id: t });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
     const exLong = markets.filter(m => m.extremityScore >= 75).length;
     const exShort = markets.filter(m => m.extremityScore <= -75).length;
     const crowdedLong = markets.filter(m => m.extremityScore >= 50 && m.extremityScore < 75).length;
