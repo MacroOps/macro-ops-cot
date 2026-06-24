@@ -1,52 +1,67 @@
-# Hook the dashboard up to TP Market Research
+## Problem
 
-Add a new data source alongside the existing CoT stack. Nothing CoT-related changes.
+`ingest-cftc` is successfully writing new CFTC rows to the database (06-16 data is already there), but the final step — refreshing `dashboard_payload_cache` via `refresh_dashboard_payload()` — has been timing out on every run since 06-20:
 
-## 1. Secret + edge-function proxy
+```
+dashboard refresh failed: canceling statement due to statement timeout
+```
 
-- Store the API key as a runtime secret `TPMR_API_KEY` (request via `add_secret`, no value in code).
-- New edge function `tp-proxy` (`supabase/functions/tp-proxy/index.ts`):
-  - Accepts `?table=<name>` plus a safe allow-list of query params from the OpenAPI spec (`start_date`, `end_date`, `sector`, `sector_code`, `symbol`, `index_symbol`, `index_code`, `timeframe`, `signal_state`, `composite_type`, `industry`, `sub_industry`, `category`, `exchange`, `limit`, `offset`).
-  - Rejects any other table/param.
-  - Calls `https://api.tpmarketresearch.com/{table}` with header `X-API-Key: <secret>`, forwards JSON response, returns proper CORS headers.
-  - Light in-memory caching headers (`Cache-Control: private, max-age=300`) so React Query can dedupe.
-  - JWT verification stays default (verify in code via the supabase client we already use; no `config.toml` change needed).
+The cache row is stuck at `refreshed_at = 2026-06-20` with `reportDate = 2026-06-09`, so the UI never sees newer data even though ingestion "succeeds".
 
-## 2. Frontend client
+The default Postgres `statement_timeout` for the role calling the RPC is too short for `REFRESH MATERIALIZED VIEW dashboard_payload_mv` (which scans the full COT/price history).
 
-- `src/lib/tp/client.ts`: thin wrapper `tpFetch(table, params)` that calls `supabase.functions.invoke('tp-proxy', { body: { table, params } })` and returns typed rows.
-- `src/lib/tp/types.ts`: TS types derived from `/schema` for the tables we use (breadth, risk composite, trend signals, sector trend timeseries, symbol metadata, custom indexes).
-- `src/hooks/tp/`: one React Query hook per table we render (`useBreadth`, `useRiskComposite`, `useTrendSignals`, `useSectorTrend`, `useCustomIndexes`). Stale time 5 min.
+## Fix
 
-## 3. New pages (added to sidebar under a new "TP Research" group)
+### 1. Raise the per-call statement timeout inside `refresh_dashboard_payload()`
 
-Each page matches the existing HUD look (AppShell, hud-label, tabular nums, recharts, same color tokens). All include sector/date filters where the table supports them.
+Add a local `SET LOCAL statement_timeout` so the refresh has enough time regardless of who calls it. Function stays `SECURITY DEFINER`.
 
-1. **TP Breadth** (`/tp/breadth`) — `calculated_breadth_full`
-   - Sector picker, date range, line chart of advances/declines + new-highs/new-lows, current-day stat strip (overbought/oversold, %>MA50/200, slope_200d).
-2. **TP Trend Signals** (`/tp/trend-signals`) — `trend_signals` (table-level signal state across symbols/timeframes), with filters for `timeframe` and `signal_state`. Institutional table view + small distribution sparkline.
-3. **TP Risk Composite** (`/tp/risk-composite`) — `risk_composite_history`
-   - Sector + composite_type (LT/ST) selector, line chart of `composite_score`, signal-state ribbon, current snapshot card per sector.
-4. **TP Sector Trends** (`/tp/sector-trends`) — `sector_trend_timeseries`
-   - Heatmap/table of all sectors' latest signal + WoW change, drill-down line per sector.
+```sql
+CREATE OR REPLACE FUNCTION public.refresh_dashboard_payload()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  SET LOCAL statement_timeout = '300s';
+  SET LOCAL lock_timeout = '10s';
 
-Reference tables (`custom_indexes`, `index_constituents`, `symbol_metadata`, `trend_relative_signals`, `symbol_trend_relative_signals`) are wired into the client/types now but not given a dedicated page yet — easy to add later once you see what you want.
+  BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY public.dashboard_payload_mv;
+  EXCEPTION WHEN OTHERS THEN
+    REFRESH MATERIALIZED VIEW public.dashboard_payload_mv;
+  END;
 
-## 4. Routing + sidebar
+  INSERT INTO public.dashboard_payload_cache (id, payload, refreshed_at)
+  SELECT id, payload, refreshed_at FROM public.dashboard_payload_mv WHERE id = 1
+  ON CONFLICT (id) DO UPDATE SET
+    payload = EXCLUDED.payload,
+    refreshed_at = EXCLUDED.refreshed_at;
+END;
+$$;
+```
 
-- Register the four routes in `src/App.tsx`.
-- Add a "TP Research" section to `AppSidebar.tsx` with the four links.
+### 2. Manually run the refresh now so the UI unsticks immediately
 
-## Technical notes
+After deploying the function change, call `refresh_dashboard_payload()` once (with the new timeout) to populate the cache with 06-16 data right away — no need to wait for the next ingest.
 
-- All TP data is read-only and fetched on demand; nothing is mirrored into Supabase in this phase. We can add a scheduled ingest later if performance demands it.
-- The proxy is the only place the API key lives. Frontend never sees it.
-- React Query keys: `['tp', table, params]` — stable JSON-stringified params for cache hits.
-- Errors from TP are bubbled up with status + body so the UI can show a real message.
+### 3. Make the manual refresh button invalidate the React Query cache
 
-## Out of scope (call out if you want any of these now)
+In `src/pages/Index.tsx`, after `ingest-cftc` returns, invalidate `["dashboard-data"]` via `queryClient.invalidateQueries(...)` so the UI re-fetches the freshly-updated cache instead of serving the 5-minute stale copy. (Small but necessary — otherwise users still wait up to 5 min after a successful refresh.)
 
-- Touching existing CoT-driven pages (Index, Offsides, Heatmap, AssetDetail, etc.).
-- Mirroring TP tables into Supabase / scheduled ingest.
-- Cross-joining TP symbols with our `markets` table.
-- A dedicated Symbol Detail page for TP symbols.
+### 4. Surface refresh failures honestly in the toast
+
+If the ingest function's response indicates `status: "warn"` (cache-refresh failure), show a yellow warning toast like "Ingested N rows but dashboard cache refresh failed" instead of the green success toast. Today the user only sees "Refreshed — 1345 new rows" even when the cache step silently failed.
+
+## Why not other approaches
+
+- **Increase the role's global `statement_timeout`** — affects every query, too broad.
+- **Refresh asynchronously via pg_net** — adds moving parts; the local `SET LOCAL` fix is one line and solves the root cause.
+- **Drop `CONCURRENTLY`** — already falls back to non-concurrent in the EXCEPTION block; both paths are timing out, so the issue is duration, not lock contention.
+
+## Files touched
+
+- New migration: `ALTER`/`CREATE OR REPLACE FUNCTION public.refresh_dashboard_payload`
+- One-off SQL: `SELECT public.refresh_dashboard_payload();`
+- `src/pages/Index.tsx`: invalidate query + branch toast on `status`
