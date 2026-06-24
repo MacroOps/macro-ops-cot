@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       started_at: started,
       finished_at: new Date().toISOString(),
     });
-    return new Response(JSON.stringify({ ok: true, rows_written: written }), {
+    return new Response(JSON.stringify({ ok: true, rows_written: written, warn: refreshMsg }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
