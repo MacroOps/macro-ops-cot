@@ -55,11 +55,16 @@ const Index = () => {
       if (err) throw err;
       await qc.invalidateQueries({ queryKey: ["dashboard-data"] });
       await qc.invalidateQueries({ queryKey: ["sector-data"] });
-      const wrote = (res as { rows_written?: number })?.rows_written ?? 0;
-      toast.success(
-        wrote > 0 ? `Refreshed — ${wrote} new rows` : "Up to date — no new CFTC reports upstream",
-        { id: t },
-      );
+      const wrote = (res as { rows_written?: number; warn?: string | null })?.rows_written ?? 0;
+      const warn = (res as { warn?: string | null })?.warn;
+      if (warn) {
+        toast.warning(`Ingested ${wrote} rows, but dashboard cache refresh failed: ${warn}`, { id: t });
+      } else {
+        toast.success(
+          wrote > 0 ? `Refreshed — ${wrote} new rows` : "Up to date — no new CFTC reports upstream",
+          { id: t },
+        );
+      }
     } catch (e) {
       toast.error(`Refresh failed: ${(e as Error).message}`, { id: t });
     } finally {
