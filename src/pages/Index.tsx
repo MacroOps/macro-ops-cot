@@ -45,8 +45,12 @@ const Index = () => {
     setRefreshing(true);
     const t = toast.loading("Refreshing CFTC data…");
     try {
+      // Only pull the last ~3 weeks on manual refresh — anything longer
+      // exceeds the 150s edge-function idle timeout (45 markets × 5 feeds).
+      const since = new Date();
+      since.setDate(since.getDate() - 21);
       const { data: res, error: err } = await supabase.functions.invoke("ingest-cftc", {
-        body: { years: 1 },
+        body: { since: since.toISOString().slice(0, 10) },
       });
       if (err) throw err;
       await qc.invalidateQueries({ queryKey: ["dashboard-data"] });
