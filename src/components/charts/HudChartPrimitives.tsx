@@ -247,14 +247,10 @@ export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
     top, left, width, height,
     points,
     x: rectX, y: rectY,
-    payload,
     stroke = "hsl(var(--chart-halo))",
-    strokeOpacity = 0.55,
+    strokeOpacity = 0.85,
   } = props;
 
-  // Vertical line x:
-  //  - Line/Area/Composed cursor: points[0].x === points[1].x → use that.
-  //  - Bar rect: center of rect.
   let cx: number | undefined;
   if (points && points.length >= 1 && Number.isFinite(points[0].x)) {
     cx = points[0].x;
@@ -262,7 +258,6 @@ export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
     cx = (rectX as number) + (props.width as number) / 2;
   }
 
-  // Plot-area top/height for the vertical line span.
   let vyTop: number | undefined;
   let vyH: number | undefined;
   if (points && points.length >= 2) {
@@ -276,36 +271,7 @@ export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
     vyH = props.height;
   }
 
-  // Horizontal line x-span = plot area (offset.left/width). For BarChart the
-  // x/width are the band, but offset's left/width are still spread on (rect
-  // overrides only x/y/width/height after offset's left/top do too — but
-  // `left`/`top` survive because they aren't overridden by rect props).
-  // Fall back to deriving from points if needed.
-  let hxLeft: number | undefined = left;
-  let hxW: number | undefined;
-  if (left != null && width != null && !Number.isFinite(rectX)) {
-    hxW = width;
-  } else if (left != null && rectX == null) {
-    hxW = width;
-  } else if (left != null) {
-    // BarChart case: width prop was overwritten by rect width. Use a wide
-    // fallback that extends from offset.left across a reasonable span.
-    hxW = (props.width as number) ?? 0;
-  }
-
   if (cx == null || vyTop == null || vyH == null) return null;
-
-  // Horizontal hairline y: prefer the active payload's plotted y if we can
-  // get it via points. For category cursors, points are the vertical line
-  // top/bottom — no horizontal anchor — so use the midpoint as a visual
-  // guide. This matches the prior behavior on line/area charts.
-  const cy =
-    points && points.length >= 2
-      ? // line cursor has no horizontal anchor: use midpoint of vertical span
-        (points[0].y + points[1].y) / 2
-      : rectY != null && props.height != null
-        ? rectY + props.height / 2
-        : vyTop + vyH / 2;
 
   return (
     <g pointerEvents="none">
@@ -313,16 +279,48 @@ export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
         x1={cx} x2={cx}
         y1={vyTop} y2={vyTop + vyH}
         stroke={stroke} strokeOpacity={strokeOpacity}
-        strokeDasharray="2 3" strokeWidth={1}
+        strokeDasharray="3 3" strokeWidth={1.25}
       />
-      {hxLeft != null && hxW != null && hxW > 0 && (
-        <line
-          x1={hxLeft} x2={hxLeft + hxW}
-          y1={cy} y2={cy}
-          stroke={stroke} strokeOpacity={strokeOpacity * 0.7}
-          strokeDasharray="2 3" strokeWidth={1}
-        />
-      )}
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * HudCrosshairOverlay — drop into a chart as:
+ *   <Customized component={HudCrosshairOverlay} />
+ *
+ * Reads `activeCoordinate` (the hovered DATA point x/y) and `offset`
+ * (plot area) injected by Recharts and paints BOTH a vertical and
+ * horizontal dashed hairline through that point. Works for Line/Area/
+ * Composed charts where the standard cursor only supports vertical.
+ * ------------------------------------------------------------------ */
+interface CustomizedInjected {
+  activeCoordinate?: { x: number; y: number } | null;
+  isTooltipActive?: boolean;
+  offset?: { top: number; left: number; width: number; height: number };
+}
+export function HudCrosshairOverlay(props: CustomizedInjected & { stroke?: string }) {
+  const { activeCoordinate, isTooltipActive, offset, stroke = "hsl(var(--chart-halo))" } = props;
+  if (!isTooltipActive || !activeCoordinate || !offset) return null;
+  const { x, y } = activeCoordinate;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const { top, left, width, height } = offset;
+  return (
+    <g pointerEvents="none">
+      {/* vertical */}
+      <line
+        x1={x} x2={x} y1={top} y2={top + height}
+        stroke={stroke} strokeOpacity={0.9}
+        strokeDasharray="3 3" strokeWidth={1.25}
+      />
+      {/* horizontal */}
+      <line
+        x1={left} x2={left + width} y1={y} y2={y}
+        stroke={stroke} strokeOpacity={0.75}
+        strokeDasharray="3 3" strokeWidth={1.25}
+      />
+      {/* center dot */}
+      <circle cx={x} cy={y} r={3} fill={stroke} fillOpacity={0.9} />
     </g>
   );
 }
