@@ -606,7 +606,7 @@ export default function Offsides() {
                             norm === "z" ? [-4, 4] : [0, 100]
                           }
                         />
-                        <Tooltip
+                        <Tooltip cursor={<HudCrosshairCursor />}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
