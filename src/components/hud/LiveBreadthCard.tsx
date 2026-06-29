@@ -10,7 +10,7 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from "recharts";
-import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
+import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import { useBreadthSeries, type BreadthField } from "@/hooks/tp/useBreadthSeries";
@@ -121,7 +121,7 @@ export function LiveBreadthCard({
               <XAxis dataKey="t" hide />
               <YAxis yAxisId="left" domain={yDomain} hide />
               <YAxis yAxisId="right" orientation="right" domain={["dataMin", "dataMax"]} hide />
-              <Tooltip cursor={<HudCrosshairCursor />}
+              <Tooltip cursor={false}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const p = payload[0]?.payload as { v: number; spx: number } | undefined;
