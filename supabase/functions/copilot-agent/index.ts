@@ -153,7 +153,7 @@ async function tool_cot_history(args: { symbol: string; category?: string; weeks
   const m = await resolveMarket(args.symbol);
   if (!m) return { error: `No market found for "${args.symbol}"` };
   const weeks = Math.min(args.weeks ?? 26, 156);
-  const cat = args.category ?? "commercial";
+  const cat = resolveCategory(args.category);
   const { data, error } = await sb
     .from("cot_reports")
     .select("report_date,positioning_snapshots!inner(category,net_contracts)")
