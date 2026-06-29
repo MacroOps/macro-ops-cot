@@ -385,7 +385,7 @@ function ChartBody({
           </defs>
           <XAxis dataKey="t" hide />
           <YAxis domain={yDomain} hide />
-          <Tooltip content={tooltipNode} cursor={cursorStyle} />
+          <Tooltip content={tooltipNode} cursor={<HudCrosshairCursor />} />
           <Customized component={BandsLayer} />
           <Area
             type="monotone"
@@ -408,7 +408,7 @@ function ChartBody({
         <LineChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
           <YAxis domain={yDomain} hide />
-          <Tooltip content={tooltipNode} cursor={cursorStyle} />
+          <Tooltip content={tooltipNode} cursor={<HudCrosshairCursor />} />
           <Customized component={BandsLayer} />
           <Line
             type="monotone"
