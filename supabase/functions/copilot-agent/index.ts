@@ -5,6 +5,177 @@
 // the UI can render in collapsible accordions.
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const sb = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  { auth: { persistSession: false } },
+);
+
+// ---- Real CoT tools (DB-backed) -------------------------------------------
+async function tool_list_markets(args: { query?: string; sector?: string }) {
+  let q = sb.from("markets").select("id,symbol,name,sector").order("symbol").limit(40);
+  if (args.sector) q = q.ilike("sector", `%${args.sector}%`);
+  if (args.query) {
+    const term = args.query.replace(/[%_]/g, "");
+    q = q.or(`symbol.ilike.%${term}%,name.ilike.%${term}%`);
+  }
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  return { count: data?.length ?? 0, markets: data ?? [] };
+}
+
+async function resolveMarket(symbolOrName: string) {
+  const term = symbolOrName.trim();
+  const { data: bySym } = await sb.from("markets").select("id,symbol,name,sector")
+    .ilike("symbol", term).maybeSingle();
+  if (bySym) return bySym;
+  const safe = term.replace(/[%_]/g, "");
+  const { data: matches } = await sb.from("markets").select("id,symbol,name,sector")
+    .or(`symbol.ilike.%${safe}%,name.ilike.%${safe}%`).limit(5);
+  return matches?.[0] ?? null;
+}
+
+const CAT_LABELS: Record<string, string> = {
+  commercial: "Commercials",
+  non_commercial: "Large Specs (Non-Comm)",
+  non_reportable: "Small Specs",
+  managed_money: "Managed Money",
+  leveraged_fund: "Leveraged Funds",
+  asset_manager: "Asset Managers",
+  dealer_intermediary: "Dealers",
+  producer_merchant: "Producer/Merchant",
+  swap_dealer: "Swap Dealers",
+  other_reportable: "Other Reportable",
+};
+
+async function tool_query_cot(args: { symbol: string; lookback_weeks?: number }) {
+  const m = await resolveMarket(args.symbol);
+  if (!m) return { error: `No market found for "${args.symbol}"` };
+  const lookback = args.lookback_weeks ?? 156;
+
+  // Latest two reports per format → compute WoW deltas
+  const { data: reports, error: rerr } = await sb
+    .from("cot_reports")
+    .select("id,report_date,format,open_interest,positioning_snapshots(category,long_contracts,short_contracts,net_contracts)")
+    .eq("market_id", m.id)
+    .order("report_date", { ascending: false })
+    .limit(12);
+  if (rerr) return { error: rerr.message };
+  if (!reports?.length) return { error: `No CoT data found for ${m.symbol}` };
+
+  // Group by format, keep newest two
+  const byFmt = new Map<string, typeof reports>();
+  for (const r of reports) {
+    const arr = byFmt.get(r.format) ?? [];
+    if (arr.length < 2) arr.push(r);
+    byFmt.set(r.format, arr);
+  }
+
+  const latestDate = reports[0].report_date;
+  const formats: Record<string, unknown> = {};
+  for (const [fmt, rows] of byFmt) {
+    const latest = rows[0];
+    const prev = rows[1];
+    const snaps = (latest.positioning_snapshots as Array<{ category: string; long_contracts: number; short_contracts: number; net_contracts: number }>) ?? [];
+    const prevByCat = new Map((prev?.positioning_snapshots as Array<{ category: string; net_contracts: number }> ?? []).map((s) => [s.category, s.net_contracts]));
+    formats[fmt] = {
+      report_date: latest.report_date,
+      open_interest: latest.open_interest,
+      categories: snaps.map((s) => ({
+        category: s.category,
+        label: CAT_LABELS[s.category] ?? s.category,
+        long: s.long_contracts,
+        short: s.short_contracts,
+        net: s.net_contracts,
+        wow_delta: prevByCat.has(s.category) ? s.net_contracts - (prevByCat.get(s.category) ?? 0) : null,
+      })),
+    };
+  }
+
+  // Normalized index (latest only)
+  let normalized: Record<string, unknown> | null = null;
+  try {
+    const { data: nrm } = await sb.rpc("get_cot_normalized", { p_market_id: m.id, p_lookback: lookback });
+    const arr = (nrm as Array<Record<string, unknown>>) ?? [];
+    const last = arr[arr.length - 1];
+    if (last) {
+      normalized = {
+        cot_index: last.idx,
+        zscore: last.z,
+        percentile: last.pct,
+        tier: last.tier,
+        side: last.side,
+        weeks_in_extreme: last.wks,
+        regime_tag: last.regime,
+        signal: last.sig,
+        source_category: last.src,
+      };
+    }
+  } catch (_e) { /* normalized optional */ }
+
+  return {
+    market: { symbol: m.symbol, name: m.name, sector: m.sector },
+    latest_report_date: latestDate,
+    href: `/asset/${m.symbol}`,
+    formats,
+    normalized,
+  };
+}
+
+async function tool_cot_history(args: { symbol: string; category?: string; weeks?: number }) {
+  const m = await resolveMarket(args.symbol);
+  if (!m) return { error: `No market found for "${args.symbol}"` };
+  const weeks = Math.min(args.weeks ?? 26, 156);
+  const cat = args.category ?? "commercial";
+  const { data, error } = await sb
+    .from("cot_reports")
+    .select("report_date,positioning_snapshots!inner(category,net_contracts)")
+    .eq("market_id", m.id)
+    .eq("positioning_snapshots.category", cat)
+    .order("report_date", { ascending: false })
+    .limit(weeks);
+  if (error) return { error: error.message };
+  const rows = (data ?? []).map((r) => ({
+    d: r.report_date,
+    net: (r.positioning_snapshots as Array<{ net_contracts: number }>)[0]?.net_contracts ?? null,
+  })).reverse();
+  return { market: m.symbol, category: cat, label: CAT_LABELS[cat] ?? cat, weeks: rows.length, series: rows };
+}
+
+async function tool_scan_cot_extremes(args: { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number }) {
+  const lim = Math.min(args.limit ?? 15, 30);
+  let q = sb.from("markets").select("id,symbol,name,sector").limit(100);
+  if (args.sector) q = q.ilike("sector", `%${args.sector}%`);
+  const { data: mkts, error } = await q;
+  if (error) return { error: error.message };
+
+  const threshold = args.min_index ?? 90;
+  const out: Array<Record<string, unknown>> = [];
+  await Promise.all((mkts ?? []).map(async (m) => {
+    try {
+      const { data: nrm } = await sb.rpc("get_cot_normalized", { p_market_id: m.id, p_lookback: 156 });
+      const arr = (nrm as Array<Record<string, unknown>>) ?? [];
+      const last = arr[arr.length - 1];
+      if (!last) return;
+      const idx = Number(last.idx);
+      const side = last.side as string | null;
+      if (idx >= threshold || idx <= (100 - threshold)) {
+        if (args.side && side !== args.side) return;
+        out.push({
+          symbol: m.symbol, name: m.name, sector: m.sector,
+          cot_index: idx, side, tier: last.tier, regime: last.regime,
+          weeks_in_extreme: last.wks, signal: last.sig,
+          href: `/asset/${m.symbol}`,
+        });
+      }
+    } catch (_e) { /* skip */ }
+  }));
+  out.sort((a, b) => Math.abs(Number(b.cot_index) - 50) - Math.abs(Number(a.cot_index) - 50));
+  return { count: out.length, threshold, extremes: out.slice(0, lim) };
+}
+
 
 // ---- Mirror of registry (kept in sync with src/lib/backtest/registry.ts) ----
 type Ind = {
