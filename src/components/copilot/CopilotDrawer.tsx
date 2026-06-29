@@ -113,7 +113,10 @@ export function CopilotDrawer() {
             </span>
           </SheetTitle>
           <SheetDescription className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {context ? `Context · ${context.title}` : "Asks live tools for indicator values, extremes, backtests & analogs"}
+            {context ? `Chart · ${context.title}` : `Page · ${pageContext.label}`}
+            {pageContext.symbol && !context && (
+              <span className="ml-2 normal-case text-primary/80">(auto-scoped to {pageContext.symbol})</span>
+            )}
           </SheetDescription>
         </SheetHeader>
 
