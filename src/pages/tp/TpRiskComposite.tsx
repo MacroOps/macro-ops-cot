@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 
 const SECTORS = ["SPX", "NDX", "RUT", "DJI", "XLF", "XLE", "XLK", "XLY", "XLP", "XLI", "XLV", "XLU", "XLB", "XLRE", "XLC"];
 const TYPES = ["LT", "ST"];

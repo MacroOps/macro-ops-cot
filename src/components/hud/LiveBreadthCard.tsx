@@ -10,6 +10,7 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import { useBreadthSeries, type BreadthField } from "@/hooks/tp/useBreadthSeries";

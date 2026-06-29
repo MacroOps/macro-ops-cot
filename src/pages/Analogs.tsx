@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HudTooltip } from "@/components/charts/HudChartPrimitives";
+import { HudTooltip } /*ADD_HUD*/from "@/components/charts/HudChartPrimitives";
 
 export default function Analogs() {
   const [indKey, setIndKey] = useState(REGISTRY[0].key);

@@ -9,6 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
   LineChart, Line, ReferenceArea,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const fmtInt = new Intl.NumberFormat("en-US");

@@ -12,6 +12,7 @@ import {
   YAxis,
   Legend,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 
 const SECTORS = ["SPX", "NDX", "RUT", "DJI", "XLF", "XLE", "XLK", "XLY", "XLP", "XLI", "XLV", "XLU", "XLB", "XLRE", "XLC"];
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });

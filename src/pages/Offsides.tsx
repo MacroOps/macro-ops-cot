@@ -25,6 +25,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 
 // TODO: Optional ATR-scaling layer — would require a separate daily price feed
 // to convert net_contracts into vol-adjusted units. Not in scope: COT data has no prices.
