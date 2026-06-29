@@ -477,7 +477,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "cot_history",
-      description: "Get a weekly time series of net contracts for one trader category in one market (default 26 weeks).",
+      description: "Get a weekly time series of net contracts for one trader category in one market (default 26 weeks). Category accepts common aliases: 'commercial'/'commercials', 'non_commercial'/'large_specs'/'large_speculators'/'specs', 'non_reportable'/'small_specs', 'managed_money'/'mm', 'leveraged_fund'/'lev_funds', 'asset_manager', 'dealer', 'producer_merchant', 'swap_dealer'.",
       parameters: { type: "object", properties: { symbol: { type: "string" }, category: { type: "string" }, weeks: { type: "number" } }, required: ["symbol"] },
     },
   },
