@@ -5,6 +5,177 @@
 // the UI can render in collapsible accordions.
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const sb = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  { auth: { persistSession: false } },
+);
+
+// ---- Real CoT tools (DB-backed) -------------------------------------------
+async function tool_list_markets(args: { query?: string; sector?: string }) {
+  let q = sb.from("markets").select("id,symbol,name,sector").order("symbol").limit(40);
+  if (args.sector) q = q.ilike("sector", `%${args.sector}%`);
+  if (args.query) {
+    const term = args.query.replace(/[%_]/g, "");
+    q = q.or(`symbol.ilike.%${term}%,name.ilike.%${term}%`);
+  }
+  const { data, error } = await q;
+  if (error) return { error: error.message };
+  return { count: data?.length ?? 0, markets: data ?? [] };
+}
+
+async function resolveMarket(symbolOrName: string) {
+  const term = symbolOrName.trim();
+  const { data: bySym } = await sb.from("markets").select("id,symbol,name,sector")
+    .ilike("symbol", term).maybeSingle();
+  if (bySym) return bySym;
+  const safe = term.replace(/[%_]/g, "");
+  const { data: matches } = await sb.from("markets").select("id,symbol,name,sector")
+    .or(`symbol.ilike.%${safe}%,name.ilike.%${safe}%`).limit(5);
+  return matches?.[0] ?? null;
+}
+
+const CAT_LABELS: Record<string, string> = {
+  commercial: "Commercials",
+  non_commercial: "Large Specs (Non-Comm)",
+  non_reportable: "Small Specs",
+  managed_money: "Managed Money",
+  leveraged_fund: "Leveraged Funds",
+  asset_manager: "Asset Managers",
+  dealer_intermediary: "Dealers",
+  producer_merchant: "Producer/Merchant",
+  swap_dealer: "Swap Dealers",
+  other_reportable: "Other Reportable",
+};
+
+async function tool_query_cot(args: { symbol: string; lookback_weeks?: number }) {
+  const m = await resolveMarket(args.symbol);
+  if (!m) return { error: `No market found for "${args.symbol}"` };
+  const lookback = args.lookback_weeks ?? 156;
+
+  // Latest two reports per format → compute WoW deltas
+  const { data: reports, error: rerr } = await sb
+    .from("cot_reports")
+    .select("id,report_date,format,open_interest,positioning_snapshots(category,long_contracts,short_contracts,net_contracts)")
+    .eq("market_id", m.id)
+    .order("report_date", { ascending: false })
+    .limit(12);
+  if (rerr) return { error: rerr.message };
+  if (!reports?.length) return { error: `No CoT data found for ${m.symbol}` };
+
+  // Group by format, keep newest two
+  const byFmt = new Map<string, typeof reports>();
+  for (const r of reports) {
+    const arr = byFmt.get(r.format) ?? [];
+    if (arr.length < 2) arr.push(r);
+    byFmt.set(r.format, arr);
+  }
+
+  const latestDate = reports[0].report_date;
+  const formats: Record<string, unknown> = {};
+  for (const [fmt, rows] of byFmt) {
+    const latest = rows[0];
+    const prev = rows[1];
+    const snaps = (latest.positioning_snapshots as Array<{ category: string; long_contracts: number; short_contracts: number; net_contracts: number }>) ?? [];
+    const prevByCat = new Map((prev?.positioning_snapshots as Array<{ category: string; net_contracts: number }> ?? []).map((s) => [s.category, s.net_contracts]));
+    formats[fmt] = {
+      report_date: latest.report_date,
+      open_interest: latest.open_interest,
+      categories: snaps.map((s) => ({
+        category: s.category,
+        label: CAT_LABELS[s.category] ?? s.category,
+        long: s.long_contracts,
+        short: s.short_contracts,
+        net: s.net_contracts,
+        wow_delta: prevByCat.has(s.category) ? s.net_contracts - (prevByCat.get(s.category) ?? 0) : null,
+      })),
+    };
+  }
+
+  // Normalized index (latest only)
+  let normalized: Record<string, unknown> | null = null;
+  try {
+    const { data: nrm } = await sb.rpc("get_cot_normalized", { p_market_id: m.id, p_lookback: lookback });
+    const arr = (nrm as Array<Record<string, unknown>>) ?? [];
+    const last = arr[arr.length - 1];
+    if (last) {
+      normalized = {
+        cot_index: last.idx,
+        zscore: last.z,
+        percentile: last.pct,
+        tier: last.tier,
+        side: last.side,
+        weeks_in_extreme: last.wks,
+        regime_tag: last.regime,
+        signal: last.sig,
+        source_category: last.src,
+      };
+    }
+  } catch (_e) { /* normalized optional */ }
+
+  return {
+    market: { symbol: m.symbol, name: m.name, sector: m.sector },
+    latest_report_date: latestDate,
+    href: `/asset/${m.symbol}`,
+    formats,
+    normalized,
+  };
+}
+
+async function tool_cot_history(args: { symbol: string; category?: string; weeks?: number }) {
+  const m = await resolveMarket(args.symbol);
+  if (!m) return { error: `No market found for "${args.symbol}"` };
+  const weeks = Math.min(args.weeks ?? 26, 156);
+  const cat = args.category ?? "commercial";
+  const { data, error } = await sb
+    .from("cot_reports")
+    .select("report_date,positioning_snapshots!inner(category,net_contracts)")
+    .eq("market_id", m.id)
+    .eq("positioning_snapshots.category", cat)
+    .order("report_date", { ascending: false })
+    .limit(weeks);
+  if (error) return { error: error.message };
+  const rows = (data ?? []).map((r) => ({
+    d: r.report_date,
+    net: (r.positioning_snapshots as Array<{ net_contracts: number }>)[0]?.net_contracts ?? null,
+  })).reverse();
+  return { market: m.symbol, category: cat, label: CAT_LABELS[cat] ?? cat, weeks: rows.length, series: rows };
+}
+
+async function tool_scan_cot_extremes(args: { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number }) {
+  const lim = Math.min(args.limit ?? 15, 30);
+  let q = sb.from("markets").select("id,symbol,name,sector").limit(100);
+  if (args.sector) q = q.ilike("sector", `%${args.sector}%`);
+  const { data: mkts, error } = await q;
+  if (error) return { error: error.message };
+
+  const threshold = args.min_index ?? 90;
+  const out: Array<Record<string, unknown>> = [];
+  await Promise.all((mkts ?? []).map(async (m) => {
+    try {
+      const { data: nrm } = await sb.rpc("get_cot_normalized", { p_market_id: m.id, p_lookback: 156 });
+      const arr = (nrm as Array<Record<string, unknown>>) ?? [];
+      const last = arr[arr.length - 1];
+      if (!last) return;
+      const idx = Number(last.idx);
+      const side = last.side as string | null;
+      if (idx >= threshold || idx <= (100 - threshold)) {
+        if (args.side && side !== args.side) return;
+        out.push({
+          symbol: m.symbol, name: m.name, sector: m.sector,
+          cot_index: idx, side, tier: last.tier, regime: last.regime,
+          weeks_in_extreme: last.wks, signal: last.sig,
+          href: `/asset/${m.symbol}`,
+        });
+      }
+    } catch (_e) { /* skip */ }
+  }));
+  out.sort((a, b) => Math.abs(Number(b.cot_index) - 50) - Math.abs(Number(a.cot_index) - 50));
+  return { count: out.length, threshold, extremes: out.slice(0, lim) };
+}
+
 
 // ---- Mirror of registry (kept in sync with src/lib/backtest/registry.ts) ----
 type Ind = {
@@ -261,38 +432,82 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_markets",
+      description: "Search the database for futures markets by symbol, name, or sector. Use this to resolve common names like 'british pound', 'gold', 'crude' → CFTC symbol (6B, GC, CL).",
+      parameters: { type: "object", properties: { query: { type: "string" }, sector: { type: "string" } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_cot",
+      description: "Get the LATEST Commitments of Traders positioning for one market: net contracts for every trader category present (commercials, large specs, small specs, managed money, leveraged funds, asset managers, dealers), week-over-week deltas, open interest, AND a normalized COT Index (0–100), z-score, percentile, tier, regime tag (RESOLVING/STALLING/FAILING), and signal (BULLISH/BEARISH/NEUTRAL). Use this for any question about positioning, commercials, specs, MM, lev funds, etc. Symbol can be a ticker (6B) or a common name (british pound).",
+      parameters: { type: "object", properties: { symbol: { type: "string" }, lookback_weeks: { type: "number" } }, required: ["symbol"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cot_history",
+      description: "Get a weekly time series of net contracts for one trader category in one market (default 26 weeks).",
+      parameters: { type: "object", properties: { symbol: { type: "string" }, category: { type: "string" }, weeks: { type: "number" } }, required: ["symbol"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "scan_cot_extremes",
+      description: "Scan ALL markets for CoT positioning extremes (COT Index ≥90 or ≤10), optionally filtered by sector or side. Returns ranked list with regime tag and href.",
+      parameters: { type: "object", properties: { side: { type: "string", enum: ["long", "short"] }, min_index: { type: "number" }, sector: { type: "string" }, limit: { type: "number" } } },
+    },
+  },
 ];
 
-function runTool(name: string, args: Record<string, unknown>) {
+function runTool(name: string, args: Record<string, unknown>): unknown | Promise<unknown> {
   switch (name) {
     case "list_indicators": return tool_list_indicators(args as { category?: string });
     case "query_indicator": return tool_query_indicator(args as { key: string });
     case "scan_extremes":   return tool_scan_extremes(args as { category?: string; min_percentile?: number });
     case "run_backtest":    return tool_run_backtest(args as { key: string; condition?: "gte" | "lte"; threshold?: number; horizon_days?: number });
     case "find_analogs":    return tool_find_analogs(args as { key: string; tolerance?: number; n?: number });
+    case "list_markets":    return tool_list_markets(args as { query?: string; sector?: string });
+    case "query_cot":       return tool_query_cot(args as { symbol: string; lookback_weeks?: number });
+    case "cot_history":     return tool_cot_history(args as { symbol: string; category?: string; weeks?: number });
+    case "scan_cot_extremes": return tool_scan_cot_extremes(args as { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number });
     default:                return { error: `Unknown tool: ${name}` };
   }
 }
 
-const SYSTEM = `You are the Macro HUD Research Copilot — an institutional-grade quant assistant embedded in a market-positioning research terminal.
+const SYSTEM = `You are the Foundation Research · Terminus Copilot — an institutional-grade quant assistant embedded in a market-positioning research terminal.
 
-You have access to live tools that return real values from the system. ALWAYS prefer calling a tool over guessing.
+You have access to LIVE tools that return REAL values from the database (CFTC CoT reports, normalized indices, market metadata). ALWAYS prefer calling a tool over guessing. NEVER refuse a question by claiming you "don't have access" before trying the relevant tool.
 
-Tool playbook:
-- "what's extreme / what's stretched / what moved?" → scan_extremes
-- "what's the read on X / how is Trend Fragility doing?" → query_indicator
-- "how often does this happen / what happens when X > Y?" → run_backtest
-- "when was this last / find similar setups" → find_analogs
-- Unknown indicator name → list_indicators first, then proceed
-- Chain tools: e.g. scan_extremes → query_indicator → run_backtest
+CoT / positioning playbook (use these for ANY question about commercials, specs, managed money, lev funds, net positioning, COT Index, extremes):
+- User mentions a market by common name (gold, british pound, crude, yen, etc.) → call list_markets({query}) first to resolve to a symbol, OR pass the name directly to query_cot — it does fuzzy resolution.
+- "What's commercial positioning in X / what are specs doing in X / what's net positioning" → query_cot({symbol})
+- "What's the COT Index for X / is X stretched" → query_cot({symbol}) (look at normalized.cot_index / tier / regime_tag)
+- "Show me the trend of commercials in X over the last N weeks" → cot_history({symbol, category:"commercial", weeks:N})
+- "What's most stretched / where are the extremes / what's offsides" → scan_cot_extremes({sector?, side?})
 
-Output style after tools return:
-- Terse, analytical, bullet-driven. No filler.
-- Cite numbers inline: **Trend Fragility 82.3 (94th %ile)**.
-- For backtests, quote occurrences, hit rate, mean fwd return, and Sharpe.
-- Flag asymmetric risk/reward, divergences, crowding.
-- If a tool returns href, include a markdown link like "[chart](/path)".
-- Never fabricate numbers. If a tool fails, say so.`;
+Mock-indicator playbook (Trend Fragility, Risk-On, Breadth, TPMR composites — synthetic, for product demo):
+- "what's extreme on the indicators" → scan_extremes
+- "what's the read on Trend Fragility" → query_indicator
+- "backtest X above Y" → run_backtest
+- "find analogs to today's X" → find_analogs
+
+Context handling:
+- ACTIVE CHART context = a specific chart the user clicked. When user says "this", "the chart", "here", refer to it.
+- CURRENT PAGE context = the page they have open. If it includes a symbol, that symbol is the DEFAULT subject for any positioning question the user asks without naming a market.
+- Example: page_context.symbol="6B" + user asks "what are commercials saying?" → call query_cot({symbol:"6B"}).
+
+Output style:
+- Terse, analytical, bullet-driven. Cite numbers inline (e.g. **Commercials net -84,231 contracts (-12,400 WoW), COT Index 6 → BULLISH extreme**).
+- Always render the report_date so the user knows the data freshness.
+- If a tool result returns href, link it: "[chart](/asset/6B)".
+- Never fabricate numbers. If a tool errors, report the error.`;
 
 interface ToolEvent {
   id: string;
@@ -306,7 +521,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, page_context } = await req.json();
     if (!Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages[] required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -319,9 +534,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sys = context
-      ? `${SYSTEM}\n\nACTIVE CHART CONTEXT:\n${JSON.stringify(context)}`
-      : SYSTEM;
+    let sys = SYSTEM;
+    if (page_context) sys += `\n\nCURRENT PAGE:\n${JSON.stringify(page_context)}`;
+    if (context) sys += `\n\nACTIVE CHART:\n${JSON.stringify(context)}`;
 
     type Msg = { role: string; content?: string | null; tool_call_id?: string; name?: string; tool_calls?: unknown };
     const convo: Msg[] = [{ role: "system", content: sys }, ...messages];
@@ -357,7 +572,7 @@ Deno.serve(async (req) => {
           let parsed: Record<string, unknown> = {};
           try { parsed = JSON.parse(tc.function.arguments || "{}"); } catch { /* */ }
           const t0 = Date.now();
-          const result = runTool(tc.function.name, parsed);
+          const result = await runTool(tc.function.name, parsed);
           const ms = Date.now() - t0;
           events.push({ id: tc.id, name: tc.function.name, args: parsed, result, ms });
           convo.push({

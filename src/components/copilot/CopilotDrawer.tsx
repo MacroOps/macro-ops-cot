@@ -27,7 +27,7 @@ const SUGGESTIONS = [
 ];
 
 export function CopilotDrawer() {
-  const { open, close, context, seedPrompt } = useCopilot();
+  const { open, close, context, pageContext, seedPrompt } = useCopilot();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -58,6 +58,7 @@ export function CopilotDrawer() {
         body: {
           messages: next.map((m) => ({ role: m.role, content: m.content })),
           context: context ?? undefined,
+          page_context: pageContext,
         },
       });
       if (error) throw error;
@@ -112,7 +113,10 @@ export function CopilotDrawer() {
             </span>
           </SheetTitle>
           <SheetDescription className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {context ? `Context · ${context.title}` : "Asks live tools for indicator values, extremes, backtests & analogs"}
+            {context ? `Chart · ${context.title}` : `Page · ${pageContext.label}`}
+            {pageContext.symbol && !context && (
+              <span className="ml-2 normal-case text-primary/80">(auto-scoped to {pageContext.symbol})</span>
+            )}
           </SheetDescription>
         </SheetHeader>
 
