@@ -521,7 +521,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, page_context } = await req.json();
     if (!Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages[] required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -534,9 +534,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sys = context
-      ? `${SYSTEM}\n\nACTIVE CHART CONTEXT:\n${JSON.stringify(context)}`
-      : SYSTEM;
+    let sys = SYSTEM;
+    if (page_context) sys += `\n\nCURRENT PAGE:\n${JSON.stringify(page_context)}`;
+    if (context) sys += `\n\nACTIVE CHART:\n${JSON.stringify(context)}`;
 
     type Msg = { role: string; content?: string | null; tool_call_id?: string; name?: string; tool_calls?: unknown };
     const convo: Msg[] = [{ role: "system", content: sys }, ...messages];
