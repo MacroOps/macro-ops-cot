@@ -1,67 +1,53 @@
 ## Problem
 
-`ingest-cftc` is successfully writing new CFTC rows to the database (06-16 data is already there), but the final step — refreshing `dashboard_payload_cache` via `refresh_dashboard_payload()` — has been timing out on every run since 06-20:
+The Research Copilot only knows about a hardcoded list of 16 mock "indicators" (Trend Fragility, Risk-On, etc.). It has no tools that touch the real `cot_reports` / `positioning_snapshots` tables, so questions like "what's commercial positioning in GBP" are genuinely outside its toolset. It also has no awareness of the page/route you opened it from — `context` is only set when you click the spark icon on a specific `IndicatorCard`. Opening it from `/asset/6B` gives it zero context about GBP.
 
-```
-dashboard refresh failed: canceling statement due to statement timeout
-```
+## Fix — two parts
 
-The cache row is stuck at `refreshed_at = 2026-06-20` with `reportDate = 2026-06-09`, so the UI never sees newer data even though ingestion "succeeds".
+### 1. Give the Copilot real CoT tools (edge function)
 
-The default Postgres `statement_timeout` for the role calling the RPC is too short for `REFRESH MATERIALIZED VIEW dashboard_payload_mv` (which scans the full COT/price history).
+Extend `supabase/functions/copilot-agent/index.ts` with new tools that hit the database via the service-role client:
 
-## Fix
+- **`list_markets({ query?, sector? })`** — fuzzy search `markets` by symbol/name/sector. Returns `[{ id, symbol, name, sector }]`. Lets the model resolve "british pound" → `6B`.
+- **`query_cot({ symbol, lookback_weeks? })`** — looks up market by symbol, then:
+  - Pulls latest row from `get_cot_normalized(market_id, lookback)` → COT Index, Z, percentile, tier, regime tag, weeks-in-extreme, signal (BULLISH/BEARISH/NEUTRAL).
+  - Pulls latest `cot_reports` row + `positioning_snapshots` to return raw net contracts for **all categories present** (commercial, non-commercial, non-reportable, managed money, leveraged funds, asset managers, dealers) across legacy / disaggregated / TFF (incl. combined) formats.
+  - Returns `report_date`, `open_interest`, week-over-week deltas, and a `href: /asset/<symbol>`.
+- **`cot_history({ symbol, category, weeks? })`** — small time series (default 26w) of net contracts for one category, for sparkline-style answers.
+- **`scan_cot_extremes({ side?, min_index?, sector? })`** — wraps `get_cot_normalized` across all markets, returns top extremes (index ≥90 or ≤10), grouped by side. This is the "what's stretched in positioning right now" question.
 
-### 1. Raise the per-call statement timeout inside `refresh_dashboard_payload()`
+Implementation notes:
+- Use `createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)` inside the function (read-only queries; service role already used elsewhere).
+- Symbol lookup is case-insensitive and also matches `name ILIKE %query%` so "british pound", "pound", "GBP", or "6B" all resolve.
+- Keep results compact (cap rows, round numbers) so the model's context stays small.
+- Update the `SYSTEM` prompt: add a CoT playbook section ("positioning / commercial / net specs / extremes" → these tools), and explicitly tell it: *"If the user references a market by common name (gold, pound, crude, ES, etc.), call `list_markets` first to resolve the symbol — never refuse."*
 
-Add a local `SET LOCAL statement_timeout` so the refresh has enough time regardless of who calls it. Function stays `SECURITY DEFINER`.
+### 2. Auto-sync Copilot to the current page/asset (frontend)
 
-```sql
-CREATE OR REPLACE FUNCTION public.refresh_dashboard_payload()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  SET LOCAL statement_timeout = '300s';
-  SET LOCAL lock_timeout = '10s';
+- In `CopilotContext.tsx`, read `useLocation()` and `useParams()`-equivalent (parse pathname) to build an automatic **`pageContext`** every render:
+  - `{ route, label, symbol?, marketName? }`
+  - `/asset/6B` → `{ route: "/asset/6B", symbol: "6B", label: "Asset · British Pound (6B)" }` (resolve name from a small client-side market lookup, or just pass symbol and let the agent resolve).
+  - `/offsides`, `/breadth/overview`, `/risk-cycle`, etc. → human label only.
+- The provider sends BOTH `pageContext` (always) and the explicit `chartContext` (only when a chart's spark icon was clicked) to the edge function.
+- Edge function injects them into the system prompt as `CURRENT PAGE` and `ACTIVE CHART` blocks, and instructs the model: *"When the user says 'this', 'here', 'the chart I'm looking at', default to ACTIVE CHART; otherwise default to CURRENT PAGE's symbol if present."*
+- `CopilotDrawer` header: when no chart context, show a small chip like `Page · Asset · British Pound (6B)` so the user can see what the Copilot thinks they're looking at.
 
-  BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY public.dashboard_payload_mv;
-  EXCEPTION WHEN OTHERS THEN
-    REFRESH MATERIALIZED VIEW public.dashboard_payload_mv;
-  END;
+### Files touched
 
-  INSERT INTO public.dashboard_payload_cache (id, payload, refreshed_at)
-  SELECT id, payload, refreshed_at FROM public.dashboard_payload_mv WHERE id = 1
-  ON CONFLICT (id) DO UPDATE SET
-    payload = EXCLUDED.payload,
-    refreshed_at = EXCLUDED.refreshed_at;
-END;
-$$;
-```
+- `supabase/functions/copilot-agent/index.ts` — add 4 tools, Supabase client, updated system prompt.
+- `src/components/copilot/CopilotContext.tsx` — derive + expose `pageContext`.
+- `src/components/copilot/CopilotDrawer.tsx` — send `pageContext`, render page chip, update tool-result summarizer for the new CoT tools.
+- (Small) `src/lib/marketLabels.ts` — symbol → friendly name map for the page chip (e.g. `6B → British Pound`), to avoid a DB roundtrip on every page nav.
 
-### 2. Manually run the refresh now so the UI unsticks immediately
+### Out of scope (can do next)
 
-After deploying the function change, call `refresh_dashboard_payload()` once (with the new timeout) to populate the cache with 06-16 data right away — no need to wait for the next ingest.
+- Price/return tools (the existing `run_backtest` is mock — could be rewritten against `price_history` later).
+- TPMR live tools (currently the agent only has the mock TPMR indicators).
+- Streaming responses.
 
-### 3. Make the manual refresh button invalidate the React Query cache
+### Verification
 
-In `src/pages/Index.tsx`, after `ingest-cftc` returns, invalidate `["dashboard-data"]` via `queryClient.invalidateQueries(...)` so the UI re-fetches the freshly-updated cache instead of serving the 5-minute stale copy. (Small but necessary — otherwise users still wait up to 5 min after a successful refresh.)
-
-### 4. Surface refresh failures honestly in the toast
-
-If the ingest function's response indicates `status: "warn"` (cache-refresh failure), show a yellow warning toast like "Ingested N rows but dashboard cache refresh failed" instead of the green success toast. Today the user only sees "Refreshed — 1345 new rows" even when the cache step silently failed.
-
-## Why not other approaches
-
-- **Increase the role's global `statement_timeout`** — affects every query, too broad.
-- **Refresh asynchronously via pg_net** — adds moving parts; the local `SET LOCAL` fix is one line and solves the root cause.
-- **Drop `CONCURRENTLY`** — already falls back to non-concurrent in the EXCEPTION block; both paths are timing out, so the issue is duration, not lock contention.
-
-## Files touched
-
-- New migration: `ALTER`/`CREATE OR REPLACE FUNCTION public.refresh_dashboard_payload`
-- One-off SQL: `SELECT public.refresh_dashboard_payload();`
-- `src/pages/Index.tsx`: invalidate query + branch toast on `status`
+After build:
+1. Navigate to `/asset/6B`, open Copilot, ask "what's commercial positioning saying?" → should call `query_cot({symbol:"6B"})` and return real commercial/managed-money nets with COT Index.
+2. Ask "what's most stretched in metals?" without opening from a page → `scan_cot_extremes({sector:"Metals"})`.
+3. Open Copilot from `/offsides` — header chip shows `Page · Offsides`.
