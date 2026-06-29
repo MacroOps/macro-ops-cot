@@ -10,9 +10,9 @@ import { persistRun, listRuns, deleteRun, type BtRunRow } from "@/lib/backtest/p
 import { useAuth } from "@/hooks/useAuth";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell,
+  ResponsiveContainer, ReferenceLine, Cell, Customized,
 } from "recharts";
-import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
+import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent, Zap, Save, Trash2, History, GitCompare, FlaskConical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -467,7 +467,7 @@ const Backtests = () => {
                       width={50}
                       tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
                     />
-                    <Tooltip cursor={<HudCrosshairCursor />}
+                    <Tooltip cursor={false}
                       contentStyle={{
                         background: "hsl(var(--chart-surface))",
                         border: "1px solid hsl(var(--chart-grid))",
@@ -478,6 +478,7 @@ const Backtests = () => {
                         return null;
                       }}
                     />
+                    <Customized component={HudCrosshairOverlay} />
                     <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                     {Array.from({ length: unified.tradesCount }).map((_, idx) => (
                       <Line key={`t${idx}`} type="monotone" dataKey={`t${idx}`}

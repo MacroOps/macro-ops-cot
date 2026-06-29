@@ -23,9 +23,9 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis,
+  YAxis, Customized,
 } from "recharts";
-import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
+import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 
 // TODO: Optional ATR-scaling layer — would require a separate daily price feed
 // to convert net_contracts into vol-adjusted units. Not in scope: COT data has no prices.
@@ -555,7 +555,7 @@ export default function Offsides() {
                           stroke="hsl(var(--muted-foreground))"
                           tickFormatter={fmtNet}
                         />
-                        <Tooltip cursor={<HudCrosshairCursor />}
+                        <Tooltip cursor={false}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
@@ -565,6 +565,7 @@ export default function Offsides() {
                             n === "net" ? [fmtNet(v), "Net"] : [v, n]
                           }
                         />
+                        <Customized component={HudCrosshairOverlay} />
                         <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
                         <Area
                           type="monotone"
@@ -606,13 +607,14 @@ export default function Offsides() {
                             norm === "z" ? [-4, 4] : [0, 100]
                           }
                         />
-                        <Tooltip cursor={<HudCrosshairCursor />}
+                        <Tooltip cursor={false}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
                             fontSize: 12,
                           }}
                         />
+                        <Customized component={HudCrosshairOverlay} />
                         {norm !== "z" && (
                           <>
                             <ReferenceArea

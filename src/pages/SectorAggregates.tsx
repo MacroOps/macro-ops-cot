@@ -7,9 +7,9 @@ import { SECTORS } from "@/lib/mockData";
 import type { Sector } from "@/lib/mockData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
-  LineChart, Line, ReferenceArea,
+  LineChart, Line, ReferenceArea, Customized,
 } from "recharts";
-import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
+import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const fmtInt = new Intl.NumberFormat("en-US");
@@ -272,7 +272,7 @@ const SectorAggregates = () => {
                   ticks={histMeta.pct ? [0, 15, 50, 85, 100] : undefined}
                   tickFormatter={(v: number) => histMeta.pct ? `${v}` : Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
                 />
-                <Tooltip cursor={<HudCrosshairCursor />}
+                <Tooltip cursor={false}
                   contentStyle={{
                     background: "hsl(var(--chart-surface))",
                     border: "1px solid hsl(var(--chart-grid))",
@@ -282,6 +282,7 @@ const SectorAggregates = () => {
                   }}
                   formatter={(v: number) => histMeta.pct ? `${v}` : fmtInt.format(v)}
                 />
+                <Customized component={HudCrosshairOverlay} />
                 {histMeta.pct ? (
                   <>
                     <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />

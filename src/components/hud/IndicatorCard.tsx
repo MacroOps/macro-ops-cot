@@ -21,6 +21,7 @@ import {
   EndLabelLayer,
   HoverAxisChipLayer,
   HudCrosshairCursor,
+  HudCrosshairOverlay,
   computePercentiles,
 } from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
@@ -385,7 +386,8 @@ function ChartBody({
           </defs>
           <XAxis dataKey="t" hide />
           <YAxis domain={yDomain} hide />
-          <Tooltip content={tooltipNode} cursor={<HudCrosshairCursor />} />
+          <Tooltip content={tooltipNode} cursor={false} />
+          <Customized component={HudCrosshairOverlay} />
           <Customized component={BandsLayer} />
           <Area
             type="monotone"
@@ -408,7 +410,8 @@ function ChartBody({
         <LineChart data={data} margin={margin} onMouseMove={handleMouseMove} onMouseLeave={handleLeave}>
           <XAxis dataKey="t" hide />
           <YAxis domain={yDomain} hide />
-          <Tooltip content={tooltipNode} cursor={<HudCrosshairCursor />} />
+          <Tooltip content={tooltipNode} cursor={false} />
+          <Customized component={HudCrosshairOverlay} />
           <Customized component={BandsLayer} />
           <Line
             type="monotone"
