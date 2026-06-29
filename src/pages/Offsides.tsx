@@ -555,7 +555,7 @@ export default function Offsides() {
                           stroke="hsl(var(--muted-foreground))"
                           tickFormatter={fmtNet}
                         />
-                        <Tooltip
+                        <Tooltip cursor={<HudCrosshairCursor />}
                           contentStyle={{
                             background: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
