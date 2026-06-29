@@ -185,7 +185,7 @@ export function RegimeTimeline({
               strokeDasharray="2 3"
               strokeOpacity={0.5}
             />
-            <Tooltip content={<HudTooltip data={data} />} cursor={{ stroke: "hsl(var(--chart-halo))", strokeDasharray: "2 3" }} />
+            <Tooltip content={<HudTooltip data={data} />} cursor={<HudCrosshairCursor />} />
             <Area
               type="monotone"
               dataKey="v"

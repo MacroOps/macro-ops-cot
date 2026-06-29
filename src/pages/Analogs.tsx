@@ -214,7 +214,7 @@ export default function Analogs() {
 
                 <Tooltip
                   content={<HudTooltip />}
-                  cursor={{ stroke: "hsl(var(--chart-halo))", strokeDasharray: "2 3" }}
+                  cursor={<HudCrosshairCursor />}
                   formatter={(v: number, name: string) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`, name]}
                 />
               </ComposedChart>

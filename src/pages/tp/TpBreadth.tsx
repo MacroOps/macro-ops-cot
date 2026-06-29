@@ -79,7 +79,7 @@ export default function TpBreadth() {
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                 <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <Tooltip cursor={<HudCrosshairCursor />} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
                 <Line type="monotone" dataKey="advances" stroke="hsl(var(--pos-long))" dot={false} strokeWidth={1.5} />
                 <Line type="monotone" dataKey="declines" stroke="hsl(var(--pos-short))" dot={false} strokeWidth={1.5} />
@@ -95,7 +95,7 @@ export default function TpBreadth() {
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                 <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <Tooltip cursor={<HudCrosshairCursor />} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
                 <ReferenceLine y={0} stroke="hsl(var(--border))" />
                 <Line type="monotone" dataKey="new_highs_21d" stroke="hsl(var(--pos-long))" dot={false} strokeWidth={1.5} />
@@ -112,7 +112,7 @@ export default function TpBreadth() {
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                 <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <Tooltip cursor={<HudCrosshairCursor />} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
                 <Line type="monotone" dataKey="overbought" stroke="hsl(var(--pos-long))" dot={false} strokeWidth={1.5} />
                 <Line type="monotone" dataKey="oversold" stroke="hsl(var(--pos-short))" dot={false} strokeWidth={1.5} />
