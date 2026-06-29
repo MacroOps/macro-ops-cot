@@ -21,6 +21,7 @@ import {
   EndLabelLayer,
   HoverAxisChipLayer,
   HudCrosshairCursor,
+  HudCrosshairOverlay,
   computePercentiles,
 } from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
