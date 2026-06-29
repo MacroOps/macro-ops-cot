@@ -386,7 +386,8 @@ function ChartBody({
           </defs>
           <XAxis dataKey="t" hide />
           <YAxis domain={yDomain} hide />
-          <Tooltip content={tooltipNode} cursor={<HudCrosshairCursor />} />
+          <Tooltip content={tooltipNode} cursor={false} />
+          <Customized component={HudCrosshairOverlay} />
           <Customized component={BandsLayer} />
           <Area
             type="monotone"
