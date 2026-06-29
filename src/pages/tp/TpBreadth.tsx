@@ -10,7 +10,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Legend,
+  Legend, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 

@@ -7,7 +7,7 @@ import { SECTORS } from "@/lib/mockData";
 import type { Sector } from "@/lib/mockData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
-  LineChart, Line, ReferenceArea,
+  LineChart, Line, ReferenceArea, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";

@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   ReferenceLine,
-  CartesianGrid,
+  CartesianGrid, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";

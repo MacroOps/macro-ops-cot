@@ -10,7 +10,7 @@ import { persistRun, listRuns, deleteRun, type BtRunRow } from "@/lib/backtest/p
 import { useAuth } from "@/hooks/useAuth";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell,
+  ResponsiveContainer, ReferenceLine, Cell, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent, Zap, Save, Trash2, History, GitCompare, FlaskConical } from "lucide-react";
