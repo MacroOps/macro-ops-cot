@@ -572,7 +572,7 @@ Deno.serve(async (req) => {
           let parsed: Record<string, unknown> = {};
           try { parsed = JSON.parse(tc.function.arguments || "{}"); } catch { /* */ }
           const t0 = Date.now();
-          const result = runTool(tc.function.name, parsed);
+          const result = await runTool(tc.function.name, parsed);
           const ms = Date.now() - t0;
           events.push({ id: tc.id, name: tc.function.name, args: parsed, result, ms });
           convo.push({
