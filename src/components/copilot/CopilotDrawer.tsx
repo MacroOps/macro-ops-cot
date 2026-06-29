@@ -27,7 +27,7 @@ const SUGGESTIONS = [
 ];
 
 export function CopilotDrawer() {
-  const { open, close, context, seedPrompt } = useCopilot();
+  const { open, close, context, pageContext, seedPrompt } = useCopilot();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
