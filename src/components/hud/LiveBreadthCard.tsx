@@ -134,7 +134,7 @@ export function LiveBreadthCard({
                     </div>
                   );
                 }}
-                cursor={{ stroke: "hsl(var(--chart-halo))", strokeDasharray: "2 3", strokeOpacity: 0.6 }}
+                
               />
 
               {showOverlay && (
