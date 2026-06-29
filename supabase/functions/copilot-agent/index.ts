@@ -50,6 +50,31 @@ const CAT_LABELS: Record<string, string> = {
   other_reportable: "Other Reportable",
 };
 
+const CAT_ALIASES: Record<string, string> = {
+  commercial: "commercial", commercials: "commercial", comms: "commercial", hedger: "commercial", hedgers: "commercial",
+  non_commercial: "non_commercial", "non-commercial": "non_commercial", noncommercial: "non_commercial",
+  large_specs: "non_commercial", "large specs": "non_commercial", large_speculator: "non_commercial",
+  large_speculators: "non_commercial", "large speculators": "non_commercial", specs: "non_commercial",
+  speculators: "non_commercial", spec: "non_commercial",
+  non_reportable: "non_reportable", nonreportable: "non_reportable", small_specs: "non_reportable",
+  "small specs": "non_reportable", small_traders: "non_reportable", retail: "non_reportable",
+  managed_money: "managed_money", mm: "managed_money", "managed money": "managed_money", funds: "managed_money",
+  leveraged_fund: "leveraged_fund", leveraged_funds: "leveraged_fund", "leveraged funds": "leveraged_fund",
+  lev_funds: "leveraged_fund", levfunds: "leveraged_fund", hedge_funds: "leveraged_fund",
+  asset_manager: "asset_manager", asset_managers: "asset_manager", "asset managers": "asset_manager",
+  institutional: "asset_manager", real_money: "asset_manager",
+  dealer: "dealer_intermediary", dealers: "dealer_intermediary", dealer_intermediary: "dealer_intermediary",
+  producer: "producer_merchant", producers: "producer_merchant", producer_merchant: "producer_merchant",
+  swap: "swap_dealer", swaps: "swap_dealer", swap_dealer: "swap_dealer", swap_dealers: "swap_dealer",
+  other: "other_reportable", other_reportable: "other_reportable",
+};
+
+function resolveCategory(input?: string): string {
+  if (!input) return "commercial";
+  const key = input.toLowerCase().trim().replace(/[-\s]+/g, "_");
+  return CAT_ALIASES[key] ?? CAT_ALIASES[input.toLowerCase().trim()] ?? input;
+}
+
 async function tool_query_cot(args: { symbol: string; lookback_weeks?: number }) {
   const m = await resolveMarket(args.symbol);
   if (!m) return { error: `No market found for "${args.symbol}"` };
