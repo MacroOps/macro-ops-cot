@@ -20,6 +20,7 @@ import {
   PercentileBandsLayer,
   EndLabelLayer,
   HoverAxisChipLayer,
+  HudCrosshairCursor,
   computePercentiles,
 } from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
