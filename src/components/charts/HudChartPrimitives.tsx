@@ -225,39 +225,81 @@ export function HoverAxisChipLayer({ yAxisMap, xAxisMap, offset, hoverT, data, u
  * hovered point, instead of the default vertical-only cursor.
  * ------------------------------------------------------------------ */
 interface HudCrosshairCursorProps {
+  // Recharts injects DIFFERENT props depending on chart type:
+  //  - Line/Area: `points` = [{x,y top}, {x,y bottom}] for the vertical span
+  //  - Bar/Composed-with-Bars: rect props `x`, `y`, `width`, `height`
+  //  - Some builds also pass `payload` with the active datum.
   points?: { x: number; y: number }[];
-  // Recharts injects these when cursor is a ReactElement
-  // offset is the plot area; activeCoordinate is the cursor anchor.
-  offset?: { top: number; left: number; width: number; height: number };
-  activeCoordinate?: { x: number; y: number };
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: Array<{ payload?: unknown }>;
+  payloadIndex?: number;
   stroke?: string;
   strokeOpacity?: number;
 }
-export function HudCrosshairCursor({
-  points,
-  offset,
-  activeCoordinate,
-  stroke = "hsl(var(--chart-halo))",
-  strokeOpacity = 0.55,
-}: HudCrosshairCursorProps) {
-  if (!offset) return null;
-  const { top, left, width, height } = offset;
-  const x = activeCoordinate?.x ?? points?.[0]?.x;
-  const y = activeCoordinate?.y ?? points?.[0]?.y;
-  if (!Number.isFinite(x as number)) return null;
+export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
+  const {
+    points,
+    x: rectX,
+    y: rectY,
+    width: rectW,
+    height: rectH,
+    stroke = "hsl(var(--chart-halo))",
+    strokeOpacity = 0.55,
+  } = props;
+
+  // --- Vertical line x position ---
+  let cx: number | undefined;
+  if (points && points.length >= 1 && Number.isFinite(points[0].x)) {
+    cx = points.length >= 2 ? (points[0].x + points[1].x) / 2 : points[0].x;
+  } else if (Number.isFinite(rectX) && Number.isFinite(rectW)) {
+    cx = (rectX as number) + (rectW as number) / 2;
+  }
+
+  // --- Plot-area vertical bounds (top + height) ---
+  let top: number | undefined;
+  let height: number | undefined;
+  if (points && points.length >= 2) {
+    top = Math.min(points[0].y, points[1].y);
+    height = Math.abs(points[1].y - points[0].y);
+  } else if (Number.isFinite(rectY) && Number.isFinite(rectH)) {
+    top = rectY as number;
+    height = rectH as number;
+  }
+
+  // --- Horizontal line: x-span across the plot area ---
+  // Bar cursors give us left/width directly; line cursors don't, so we
+  // approximate with the rect props if present, otherwise skip the
+  // horizontal hairline (line cursor has no horizontal width anchor).
+  let left: number | undefined;
+  let width: number | undefined;
+  if (Number.isFinite(rectX) && Number.isFinite(rectW)) {
+    left = rectX as number;
+    width = rectW as number;
+  }
+
+  if (cx == null || top == null || height == null) return null;
+
+  // y for the horizontal hairline: for line cursors the active point is
+  // implicit via tooltip payload; without it, draw a horizontal line at
+  // the cursor's vertical center as a visual reference.
+  const cy = points && points.length >= 2 ? (points[0].y + points[1].y) / 2 : undefined;
+
   return (
     <g pointerEvents="none">
       <line
-        x1={x as number} x2={x as number}
+        x1={cx} x2={cx}
         y1={top} y2={top + height}
         stroke={stroke} strokeOpacity={strokeOpacity}
         strokeDasharray="2 3" strokeWidth={1}
       />
-      {Number.isFinite(y as number) && (
+      {left != null && width != null && (
         <line
           x1={left} x2={left + width}
-          y1={y as number} y2={y as number}
-          stroke={stroke} strokeOpacity={strokeOpacity}
+          y1={cy ?? top + height / 2} y2={cy ?? top + height / 2}
+          stroke={stroke} strokeOpacity={strokeOpacity * 0.7}
           strokeDasharray="2 3" strokeWidth={1}
         />
       )}
