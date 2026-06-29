@@ -225,80 +225,100 @@ export function HoverAxisChipLayer({ yAxisMap, xAxisMap, offset, hoverT, data, u
  * hovered point, instead of the default vertical-only cursor.
  * ------------------------------------------------------------------ */
 interface HudCrosshairCursorProps {
-  // Recharts injects DIFFERENT props depending on chart type:
-  //  - Line/Area: `points` = [{x,y top}, {x,y bottom}] for the vertical span
-  //  - Bar/Composed-with-Bars: rect props `x`, `y`, `width`, `height`
-  //  - Some builds also pass `payload` with the active datum.
+  // Recharts spreads the plot-area `offset` (top/left/width/height) directly
+  // onto the cursor element, then spreads `restProps`:
+  //   - Line / Area / Composed → `{ points: [{x,y},{x,y}] }` (vertical span)
+  //   - BarChart only          → `{ x, y, width, height }` (the band rect,
+  //     which OVERRIDES the offset width/height)
+  top?: number;
+  left?: number;
+  width?: number;
+  height?: number;
   points?: { x: number; y: number }[];
   x?: number;
   y?: number;
-  width?: number;
-  height?: number;
-  payload?: Array<{ payload?: unknown }>;
+  payload?: Array<{ payload?: Record<string, unknown> }>;
   payloadIndex?: number;
   stroke?: string;
   strokeOpacity?: number;
 }
 export function HudCrosshairCursor(props: HudCrosshairCursorProps) {
   const {
+    top, left, width, height,
     points,
-    x: rectX,
-    y: rectY,
-    width: rectW,
-    height: rectH,
+    x: rectX, y: rectY,
+    payload,
     stroke = "hsl(var(--chart-halo))",
     strokeOpacity = 0.55,
   } = props;
 
-  // --- Vertical line x position ---
+  // Vertical line x:
+  //  - Line/Area/Composed cursor: points[0].x === points[1].x → use that.
+  //  - Bar rect: center of rect.
   let cx: number | undefined;
   if (points && points.length >= 1 && Number.isFinite(points[0].x)) {
-    cx = points.length >= 2 ? (points[0].x + points[1].x) / 2 : points[0].x;
-  } else if (Number.isFinite(rectX) && Number.isFinite(rectW)) {
-    cx = (rectX as number) + (rectW as number) / 2;
+    cx = points[0].x;
+  } else if (Number.isFinite(rectX) && Number.isFinite(props.width)) {
+    cx = (rectX as number) + (props.width as number) / 2;
   }
 
-  // --- Plot-area vertical bounds (top + height) ---
-  let top: number | undefined;
-  let height: number | undefined;
+  // Plot-area top/height for the vertical line span.
+  let vyTop: number | undefined;
+  let vyH: number | undefined;
   if (points && points.length >= 2) {
-    top = Math.min(points[0].y, points[1].y);
-    height = Math.abs(points[1].y - points[0].y);
-  } else if (Number.isFinite(rectY) && Number.isFinite(rectH)) {
-    top = rectY as number;
-    height = rectH as number;
+    vyTop = Math.min(points[0].y, points[1].y);
+    vyH = Math.abs(points[1].y - points[0].y);
+  } else if (top != null && height != null) {
+    vyTop = top;
+    vyH = height;
+  } else if (rectY != null && props.height != null) {
+    vyTop = rectY;
+    vyH = props.height;
   }
 
-  // --- Horizontal line: x-span across the plot area ---
-  // Bar cursors give us left/width directly; line cursors don't, so we
-  // approximate with the rect props if present, otherwise skip the
-  // horizontal hairline (line cursor has no horizontal width anchor).
-  let left: number | undefined;
-  let width: number | undefined;
-  if (Number.isFinite(rectX) && Number.isFinite(rectW)) {
-    left = rectX as number;
-    width = rectW as number;
+  // Horizontal line x-span = plot area (offset.left/width). For BarChart the
+  // x/width are the band, but offset's left/width are still spread on (rect
+  // overrides only x/y/width/height after offset's left/top do too — but
+  // `left`/`top` survive because they aren't overridden by rect props).
+  // Fall back to deriving from points if needed.
+  let hxLeft: number | undefined = left;
+  let hxW: number | undefined;
+  if (left != null && width != null && !Number.isFinite(rectX)) {
+    hxW = width;
+  } else if (left != null && rectX == null) {
+    hxW = width;
+  } else if (left != null) {
+    // BarChart case: width prop was overwritten by rect width. Use a wide
+    // fallback that extends from offset.left across a reasonable span.
+    hxW = (props.width as number) ?? 0;
   }
 
-  if (cx == null || top == null || height == null) return null;
+  if (cx == null || vyTop == null || vyH == null) return null;
 
-  // y for the horizontal hairline: for line cursors the active point is
-  // implicit via tooltip payload; without it, draw a horizontal line at
-  // the cursor's vertical center as a visual reference.
-  const cy = points && points.length >= 2 ? (points[0].y + points[1].y) / 2 : undefined;
+  // Horizontal hairline y: prefer the active payload's plotted y if we can
+  // get it via points. For category cursors, points are the vertical line
+  // top/bottom — no horizontal anchor — so use the midpoint as a visual
+  // guide. This matches the prior behavior on line/area charts.
+  const cy =
+    points && points.length >= 2
+      ? // line cursor has no horizontal anchor: use midpoint of vertical span
+        (points[0].y + points[1].y) / 2
+      : rectY != null && props.height != null
+        ? rectY + props.height / 2
+        : vyTop + vyH / 2;
 
   return (
     <g pointerEvents="none">
       <line
         x1={cx} x2={cx}
-        y1={top} y2={top + height}
+        y1={vyTop} y2={vyTop + vyH}
         stroke={stroke} strokeOpacity={strokeOpacity}
         strokeDasharray="2 3" strokeWidth={1}
       />
-      {left != null && width != null && (
+      {hxLeft != null && hxW != null && hxW > 0 && (
         <line
-          x1={left} x2={left + width}
-          y1={cy ?? top + height / 2} y2={cy ?? top + height / 2}
+          x1={hxLeft} x2={hxLeft + hxW}
+          y1={cy} y2={cy}
           stroke={stroke} strokeOpacity={strokeOpacity * 0.7}
           strokeDasharray="2 3" strokeWidth={1}
         />
