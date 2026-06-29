@@ -467,7 +467,7 @@ const Backtests = () => {
                       width={50}
                       tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
                     />
-                    <Tooltip
+                    <Tooltip cursor={<HudCrosshairCursor />}
                       contentStyle={{
                         background: "hsl(var(--chart-surface))",
                         border: "1px solid hsl(var(--chart-grid))",
