@@ -432,38 +432,82 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_markets",
+      description: "Search the database for futures markets by symbol, name, or sector. Use this to resolve common names like 'british pound', 'gold', 'crude' → CFTC symbol (6B, GC, CL).",
+      parameters: { type: "object", properties: { query: { type: "string" }, sector: { type: "string" } } },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_cot",
+      description: "Get the LATEST Commitments of Traders positioning for one market: net contracts for every trader category present (commercials, large specs, small specs, managed money, leveraged funds, asset managers, dealers), week-over-week deltas, open interest, AND a normalized COT Index (0–100), z-score, percentile, tier, regime tag (RESOLVING/STALLING/FAILING), and signal (BULLISH/BEARISH/NEUTRAL). Use this for any question about positioning, commercials, specs, MM, lev funds, etc. Symbol can be a ticker (6B) or a common name (british pound).",
+      parameters: { type: "object", properties: { symbol: { type: "string" }, lookback_weeks: { type: "number" } }, required: ["symbol"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cot_history",
+      description: "Get a weekly time series of net contracts for one trader category in one market (default 26 weeks).",
+      parameters: { type: "object", properties: { symbol: { type: "string" }, category: { type: "string" }, weeks: { type: "number" } }, required: ["symbol"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "scan_cot_extremes",
+      description: "Scan ALL markets for CoT positioning extremes (COT Index ≥90 or ≤10), optionally filtered by sector or side. Returns ranked list with regime tag and href.",
+      parameters: { type: "object", properties: { side: { type: "string", enum: ["long", "short"] }, min_index: { type: "number" }, sector: { type: "string" }, limit: { type: "number" } } },
+    },
+  },
 ];
 
-function runTool(name: string, args: Record<string, unknown>) {
+function runTool(name: string, args: Record<string, unknown>): unknown | Promise<unknown> {
   switch (name) {
     case "list_indicators": return tool_list_indicators(args as { category?: string });
     case "query_indicator": return tool_query_indicator(args as { key: string });
     case "scan_extremes":   return tool_scan_extremes(args as { category?: string; min_percentile?: number });
     case "run_backtest":    return tool_run_backtest(args as { key: string; condition?: "gte" | "lte"; threshold?: number; horizon_days?: number });
     case "find_analogs":    return tool_find_analogs(args as { key: string; tolerance?: number; n?: number });
+    case "list_markets":    return tool_list_markets(args as { query?: string; sector?: string });
+    case "query_cot":       return tool_query_cot(args as { symbol: string; lookback_weeks?: number });
+    case "cot_history":     return tool_cot_history(args as { symbol: string; category?: string; weeks?: number });
+    case "scan_cot_extremes": return tool_scan_cot_extremes(args as { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number });
     default:                return { error: `Unknown tool: ${name}` };
   }
 }
 
-const SYSTEM = `You are the Macro HUD Research Copilot — an institutional-grade quant assistant embedded in a market-positioning research terminal.
+const SYSTEM = `You are the Foundation Research · Terminus Copilot — an institutional-grade quant assistant embedded in a market-positioning research terminal.
 
-You have access to live tools that return real values from the system. ALWAYS prefer calling a tool over guessing.
+You have access to LIVE tools that return REAL values from the database (CFTC CoT reports, normalized indices, market metadata). ALWAYS prefer calling a tool over guessing. NEVER refuse a question by claiming you "don't have access" before trying the relevant tool.
 
-Tool playbook:
-- "what's extreme / what's stretched / what moved?" → scan_extremes
-- "what's the read on X / how is Trend Fragility doing?" → query_indicator
-- "how often does this happen / what happens when X > Y?" → run_backtest
-- "when was this last / find similar setups" → find_analogs
-- Unknown indicator name → list_indicators first, then proceed
-- Chain tools: e.g. scan_extremes → query_indicator → run_backtest
+CoT / positioning playbook (use these for ANY question about commercials, specs, managed money, lev funds, net positioning, COT Index, extremes):
+- User mentions a market by common name (gold, british pound, crude, yen, etc.) → call list_markets({query}) first to resolve to a symbol, OR pass the name directly to query_cot — it does fuzzy resolution.
+- "What's commercial positioning in X / what are specs doing in X / what's net positioning" → query_cot({symbol})
+- "What's the COT Index for X / is X stretched" → query_cot({symbol}) (look at normalized.cot_index / tier / regime_tag)
+- "Show me the trend of commercials in X over the last N weeks" → cot_history({symbol, category:"commercial", weeks:N})
+- "What's most stretched / where are the extremes / what's offsides" → scan_cot_extremes({sector?, side?})
 
-Output style after tools return:
-- Terse, analytical, bullet-driven. No filler.
-- Cite numbers inline: **Trend Fragility 82.3 (94th %ile)**.
-- For backtests, quote occurrences, hit rate, mean fwd return, and Sharpe.
-- Flag asymmetric risk/reward, divergences, crowding.
-- If a tool returns href, include a markdown link like "[chart](/path)".
-- Never fabricate numbers. If a tool fails, say so.`;
+Mock-indicator playbook (Trend Fragility, Risk-On, Breadth, TPMR composites — synthetic, for product demo):
+- "what's extreme on the indicators" → scan_extremes
+- "what's the read on Trend Fragility" → query_indicator
+- "backtest X above Y" → run_backtest
+- "find analogs to today's X" → find_analogs
+
+Context handling:
+- ACTIVE CHART context = a specific chart the user clicked. When user says "this", "the chart", "here", refer to it.
+- CURRENT PAGE context = the page they have open. If it includes a symbol, that symbol is the DEFAULT subject for any positioning question the user asks without naming a market.
+- Example: page_context.symbol="6B" + user asks "what are commercials saying?" → call query_cot({symbol:"6B"}).
+
+Output style:
+- Terse, analytical, bullet-driven. Cite numbers inline (e.g. **Commercials net -84,231 contracts (-12,400 WoW), COT Index 6 → BULLISH extreme**).
+- Always render the report_date so the user knows the data freshness.
+- If a tool result returns href, link it: "[chart](/asset/6B)".
+- Never fabricate numbers. If a tool errors, report the error.`;
 
 interface ToolEvent {
   id: string;
