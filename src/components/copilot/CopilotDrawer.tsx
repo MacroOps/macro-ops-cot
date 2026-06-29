@@ -58,6 +58,7 @@ export function CopilotDrawer() {
         body: {
           messages: next.map((m) => ({ role: m.role, content: m.content })),
           context: context ?? undefined,
+          page_context: pageContext,
         },
       });
       if (error) throw error;
