@@ -217,6 +217,7 @@ export default function Analogs() {
                   cursor={false}
                   formatter={(v: number, name: string) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`, name]}
                 />
+                <Customized component={HudCrosshairOverlay} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

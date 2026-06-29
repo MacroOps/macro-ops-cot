@@ -383,6 +383,7 @@ export default function AssetDetail() {
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={[(dMin: number) => dMin * 0.94, (dMax: number) => dMax * 1.06]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
         <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
         <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
+        <Customized component={HudCrosshairOverlay} />
         <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" fill="hsl(var(--foreground))" fillOpacity={0.85} isAnimationActive={false} barSize={tf === "all" || tf === "10y" ? 1.5 : 3} />
         <Line yAxisId="px" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
         <Line yAxisId="px" type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
@@ -401,6 +402,7 @@ export default function AssetDetail() {
     );
     const tooltip = (
       <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+      <Customized component={HudCrosshairOverlay} />
     );
     if (isDualMetric(m)) {
       const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
@@ -487,6 +489,7 @@ export default function AssetDetail() {
         <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={[(dMin: number) => dMin - Math.abs(dMin) * 0.08 - 1, (dMax: number) => dMax + Math.abs(dMax) * 0.08 + 1]} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+        <Customized component={HudCrosshairOverlay} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
         {dis.small && <Bar dataKey="netSmallSpec" name="Small Specs" fill="hsl(38 95% 50%)" stroke="hsl(28 95% 38%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}

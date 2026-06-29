@@ -478,6 +478,7 @@ const Backtests = () => {
                         return null;
                       }}
                     />
+                    <Customized component={HudCrosshairOverlay} />
                     <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                     {Array.from({ length: unified.tradesCount }).map((_, idx) => (
                       <Line key={`t${idx}`} type="monotone" dataKey={`t${idx}`}

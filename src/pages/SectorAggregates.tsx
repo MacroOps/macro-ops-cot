@@ -282,6 +282,7 @@ const SectorAggregates = () => {
                   }}
                   formatter={(v: number) => histMeta.pct ? `${v}` : fmtInt.format(v)}
                 />
+                <Customized component={HudCrosshairOverlay} />
                 {histMeta.pct ? (
                   <>
                     <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />

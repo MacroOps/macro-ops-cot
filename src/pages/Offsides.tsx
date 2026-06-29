@@ -565,6 +565,7 @@ export default function Offsides() {
                             n === "net" ? [fmtNet(v), "Net"] : [v, n]
                           }
                         />
+                        <Customized component={HudCrosshairOverlay} />
                         <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
                         <Area
                           type="monotone"
@@ -613,6 +614,7 @@ export default function Offsides() {
                             fontSize: 12,
                           }}
                         />
+                        <Customized component={HudCrosshairOverlay} />
                         {norm !== "z" && (
                           <>
                             <ReferenceArea

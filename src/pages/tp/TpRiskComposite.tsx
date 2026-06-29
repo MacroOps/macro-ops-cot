@@ -111,6 +111,7 @@ export default function TpRiskComposite() {
                   <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                   <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
                   <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                  <Customized component={HudCrosshairOverlay} />
                   <ReferenceLine y={0} stroke="hsl(var(--border))" />
                   <Line type="monotone" dataKey="composite_score" stroke="hsl(var(--primary))" dot={false} strokeWidth={1.5} />
                 </LineChart>

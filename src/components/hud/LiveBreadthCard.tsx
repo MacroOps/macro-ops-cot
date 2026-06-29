@@ -136,6 +136,7 @@ export function LiveBreadthCard({
                 }}
                 
               />
+              <Customized component={HudCrosshairOverlay} />
 
               {showOverlay && (
                 <Area

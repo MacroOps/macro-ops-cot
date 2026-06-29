@@ -16,7 +16,7 @@ import {
   Customized,
 } from "recharts";
 import { mockSeries } from "@/lib/mockSeries";
-import { HudTooltip, EndLabelLayer, HudCrosshairCursor, HudCrosshairOverlay computePercentiles } from "@/components/charts/HudChartPrimitives";
+import { HudTooltip, EndLabelLayer, HudCrosshairCursor, HudCrosshairOverlay, computePercentiles } from "@/components/charts/HudChartPrimitives";
 
 type Regime = "risk-on" | "risk-off" | "neutral";
 
@@ -186,6 +186,7 @@ export function RegimeTimeline({
               strokeOpacity={0.5}
             />
             <Tooltip content={<HudTooltip data={data} />} cursor={false} />
+            <Customized component={HudCrosshairOverlay} />
             <Area
               type="monotone"
               dataKey="v"
