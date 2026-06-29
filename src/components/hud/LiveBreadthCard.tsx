@@ -121,7 +121,7 @@ export function LiveBreadthCard({
               <XAxis dataKey="t" hide />
               <YAxis yAxisId="left" domain={yDomain} hide />
               <YAxis yAxisId="right" orientation="right" domain={["dataMin", "dataMax"]} hide />
-              <Tooltip
+              <Tooltip cursor={<HudCrosshairCursor />}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const p = payload[0]?.payload as { v: number; spx: number } | undefined;
