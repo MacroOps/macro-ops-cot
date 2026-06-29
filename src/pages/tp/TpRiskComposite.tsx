@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 
 const SECTORS = ["SPX", "NDX", "RUT", "DJI", "XLF", "XLE", "XLK", "XLY", "XLP", "XLI", "XLV", "XLU", "XLB", "XLRE", "XLC"];
 const TYPES = ["LT", "ST"];
@@ -109,7 +110,7 @@ export default function TpRiskComposite() {
                   <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
                   <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                  <Tooltip cursor={<HudCrosshairCursor />} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
                   <ReferenceLine y={0} stroke="hsl(var(--border))" />
                   <Line type="monotone" dataKey="composite_score" stroke="hsl(var(--primary))" dot={false} strokeWidth={1.5} />
                 </LineChart>

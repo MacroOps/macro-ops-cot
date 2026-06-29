@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HudTooltip } from "@/components/charts/HudChartPrimitives";
+import { HudTooltip, HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 
 export default function Analogs() {
   const [indKey, setIndKey] = useState(REGISTRY[0].key);
@@ -214,7 +214,7 @@ export default function Analogs() {
 
                 <Tooltip
                   content={<HudTooltip />}
-                  cursor={{ stroke: "hsl(var(--chart-halo))", strokeDasharray: "2 3" }}
+                  cursor={<HudCrosshairCursor />}
                   formatter={(v: number, name: string) => [`${v >= 0 ? "+" : ""}${v.toFixed(2)}%`, name]}
                 />
               </ComposedChart>

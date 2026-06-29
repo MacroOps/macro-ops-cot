@@ -218,3 +218,49 @@ export function HoverAxisChipLayer({ yAxisMap, xAxisMap, offset, hoverT, data, u
     </g>
   );
 }
+
+/* ------------------------------------------------------------------ *
+ * HudCrosshairCursor — Recharts <Tooltip cursor={...} /> element that
+ * paints BOTH a vertical and horizontal dashed hairline through the
+ * hovered point, instead of the default vertical-only cursor.
+ * ------------------------------------------------------------------ */
+interface HudCrosshairCursorProps {
+  points?: { x: number; y: number }[];
+  // Recharts injects these when cursor is a ReactElement
+  // offset is the plot area; activeCoordinate is the cursor anchor.
+  offset?: { top: number; left: number; width: number; height: number };
+  activeCoordinate?: { x: number; y: number };
+  stroke?: string;
+  strokeOpacity?: number;
+}
+export function HudCrosshairCursor({
+  points,
+  offset,
+  activeCoordinate,
+  stroke = "hsl(var(--chart-halo))",
+  strokeOpacity = 0.55,
+}: HudCrosshairCursorProps) {
+  if (!offset) return null;
+  const { top, left, width, height } = offset;
+  const x = activeCoordinate?.x ?? points?.[0]?.x;
+  const y = activeCoordinate?.y ?? points?.[0]?.y;
+  if (!Number.isFinite(x as number)) return null;
+  return (
+    <g pointerEvents="none">
+      <line
+        x1={x as number} x2={x as number}
+        y1={top} y2={top + height}
+        stroke={stroke} strokeOpacity={strokeOpacity}
+        strokeDasharray="2 3" strokeWidth={1}
+      />
+      {Number.isFinite(y as number) && (
+        <line
+          x1={left} x2={left + width}
+          y1={y as number} y2={y as number}
+          stroke={stroke} strokeOpacity={strokeOpacity}
+          strokeDasharray="2 3" strokeWidth={1}
+        />
+      )}
+    </g>
+  );
+}

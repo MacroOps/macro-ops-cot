@@ -12,6 +12,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
+import { HudCrosshairCursor } from "@/components/charts/HudChartPrimitives";
 import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent, Zap, Save, Trash2, History, GitCompare, FlaskConical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -466,7 +467,7 @@ const Backtests = () => {
                       width={50}
                       tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`}
                     />
-                    <Tooltip
+                    <Tooltip cursor={<HudCrosshairCursor />}
                       contentStyle={{
                         background: "hsl(var(--chart-surface))",
                         border: "1px solid hsl(var(--chart-grid))",
