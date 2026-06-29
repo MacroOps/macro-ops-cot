@@ -401,8 +401,10 @@ export default function AssetDetail() {
       <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
     );
     const tooltip = (
-      <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
-      <Customized component={HudCrosshairOverlay} />
+      <>
+        <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+        <Customized component={HudCrosshairOverlay} />
+      </>
     );
     if (isDualMetric(m)) {
       const largeKey = m === "largeSmallPct6m" ? "largeSpecPct6m" : "largeSpecPct";
