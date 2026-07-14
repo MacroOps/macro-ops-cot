@@ -15,7 +15,23 @@ async function fetchYahoo(sym: string, range = "20y") {
   const result = json?.chart?.result?.[0];
   const ts: number[] = result?.timestamp ?? [];
   const closes: (number | null)[] = result?.indicators?.quote?.[0]?.close ?? [];
-  return ts.map((t, i) => ({ ts: t, close: closes[i] })).filter(p => p.close != null);
+  // Raw points, non-null.
+  const raw = ts.map((t, i) => ({ ts: t, close: closes[i] as number }))
+    .filter(p => p.close != null && Number.isFinite(p.close) && p.close > 0);
+  // Sanity filter: Yahoo occasionally returns first-of-month bars off by ~100x
+  // (unit/scaling glitches, esp. Rough Rice). Drop any point whose close differs
+  // from the local median (±5 neighbors) by more than 5x.
+  const out: { ts: number; close: number }[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const lo = Math.max(0, i - 5);
+    const hi = Math.min(raw.length, i + 6);
+    const neighbors = raw.slice(lo, hi).map(p => p.close).sort((a, b) => a - b);
+    const med = neighbors[Math.floor(neighbors.length / 2)];
+    const c = raw[i].close;
+    if (med > 0 && (c / med > 5 || med / c > 5)) continue;
+    out.push(raw[i]);
+  }
+  return out;
 }
 
 Deno.serve(async (req) => {

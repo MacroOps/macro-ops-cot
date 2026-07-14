@@ -1,0 +1,1 @@
+DELETE FROM public.price_history WHERE market_id IN (SELECT id FROM public.markets WHERE symbol = 'ZR') AND close > 100;
