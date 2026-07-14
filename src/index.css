@@ -11,7 +11,7 @@
 @layer base {
   :root {
     /* Porcelain & Electric (light, default) -------------------- */
-    --background: 213 33% 97%;            /* #f6f8fb porcelain */
+    --background: 0 0% 100%;              /* pure white for readability */
     --foreground: 217 33% 15%;            /* #1a2433 near-navy ink */
 
     --surface: 0 0% 100%;                 /* #ffffff paper */
