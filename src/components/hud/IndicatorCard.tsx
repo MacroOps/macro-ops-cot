@@ -224,7 +224,7 @@ function IndicatorCardInner({
       </div>
 
       <Dialog open={fullscreen} onOpenChange={setFullscreen}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-5xl bg-white text-chart-ink">
           <DialogHeader>
             <DialogTitle className="text-[11px] uppercase tracking-[0.16em] flex items-center gap-2">
               {resolvedTitle}
