@@ -381,10 +381,14 @@ export default function AssetDetail() {
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={[(dMin: number) => dMin * 0.94, (dMax: number) => dMax * 1.06]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
-        <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
+        <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 1.8, wowMax * 1.8]} />
         <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
         <Customized component={HudCrosshairOverlay} />
-        <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" fill="hsl(var(--foreground))" fillOpacity={0.85} isAnimationActive={false} barSize={tf === "all" || tf === "10y" ? 1.5 : 3} />
+        <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" isAnimationActive={false} barSize={tf === "all" ? 3 : tf === "10y" ? 4 : tf === "5y" ? 5 : 7} fillOpacity={1}>
+          {pd.map((d, i) => (
+            <Cell key={i} fill={(d.wowSpec ?? 0) >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} />
+          ))}
+        </Bar>
         <Line yAxisId="px" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
         <Line yAxisId="px" type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
       </ComposedChart>
@@ -427,6 +431,17 @@ export default function AssetDetail() {
     if (isExtremityMetric(m)) {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
+          <defs>
+            <linearGradient id="extremityLineGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#7a2818" />
+              <stop offset="15%" stopColor="#a8391f" />
+              <stop offset="35%" stopColor="#c0542e" />
+              <stop offset="50%" stopColor="#c98a3a" />
+              <stop offset="65%" stopColor="#8a8a3e" />
+              <stop offset="85%" stopColor="#5e7536" />
+              <stop offset="100%" stopColor="#3f5a2a" />
+            </linearGradient>
+          </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
@@ -436,7 +451,7 @@ export default function AssetDetail() {
           <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
           <ReferenceLine y={-70} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
           <ReferenceLine y={0} stroke={gridColor} />
-          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="url(#extremityLineGradient)" strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
       );
     }
