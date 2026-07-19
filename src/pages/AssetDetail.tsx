@@ -431,6 +431,17 @@ export default function AssetDetail() {
     if (isExtremityMetric(m)) {
       return (
         <ComposedChart data={cd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
+          <defs>
+            <linearGradient id="extremityLineGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#7a2818" />
+              <stop offset="15%" stopColor="#a8391f" />
+              <stop offset="35%" stopColor="#c0542e" />
+              <stop offset="50%" stopColor="#c98a3a" />
+              <stop offset="65%" stopColor="#8a8a3e" />
+              <stop offset="85%" stopColor="#5e7536" />
+              <stop offset="100%" stopColor="#3f5a2a" />
+            </linearGradient>
+          </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
@@ -440,7 +451,7 @@ export default function AssetDetail() {
           <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
           <ReferenceLine y={-70} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
           <ReferenceLine y={0} stroke={gridColor} />
-          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
+          <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="url(#extremityLineGradient)" strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
       );
     }
