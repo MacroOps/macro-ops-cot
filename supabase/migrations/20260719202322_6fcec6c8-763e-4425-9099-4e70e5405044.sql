@@ -1,0 +1,1 @@
+UPDATE public.markets SET yahoo_symbol = 'SR3=F' WHERE symbol = 'SR3' AND yahoo_symbol IS NULL;
