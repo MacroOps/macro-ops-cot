@@ -381,10 +381,14 @@ export default function AssetDetail() {
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={[(dMin: number) => dMin * 0.94, (dMax: number) => dMax * 1.06]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
-        <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 3, wowMax * 3]} />
+        <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 1.8, wowMax * 1.8]} />
         <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
         <Customized component={HudCrosshairOverlay} />
-        <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" fill="hsl(var(--foreground))" fillOpacity={0.85} isAnimationActive={false} barSize={tf === "all" || tf === "10y" ? 1.5 : 3} />
+        <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" isAnimationActive={false} barSize={tf === "all" ? 3 : tf === "10y" ? 4 : tf === "5y" ? 5 : 7} fillOpacity={1}>
+          {pd.map((d, i) => (
+            <Cell key={i} fill={(d.wowSpec ?? 0) >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))"} />
+          ))}
+        </Bar>
         <Line yAxisId="px" type="monotone" dataKey="price" name="Price" stroke={inkColor} strokeWidth={1.75} dot={false} isAnimationActive={false} connectNulls />
         <Line yAxisId="px" type="monotone" dataKey="sma200" name="SMA 200" stroke="hsl(var(--pos-short))" strokeWidth={1.25} dot={false} isAnimationActive={false} connectNulls strokeOpacity={0.85} />
       </ComposedChart>
