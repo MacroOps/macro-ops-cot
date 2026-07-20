@@ -1,53 +1,111 @@
-## Problem
+# Move Macro Ops API to Fly.io (Kindergarten Guide)
 
-The Research Copilot only knows about a hardcoded list of 16 mock "indicators" (Trend Fragility, Risk-On, etc.). It has no tools that touch the real `cot_reports` / `positioning_snapshots` tables, so questions like "what's commercial positioning in GBP" are genuinely outside its toolset. It also has no awareness of the page/route you opened it from — `context` is only set when you click the spark icon on a specific `IndicatorCard`. Opening it from `/asset/6B` gives it zero context about GBP.
+Goal: Get your Macro Ops API running in the cloud on Fly.io with a permanent HTTPS URL, so you can retire the local machine. Then point the app at the new URL. No coding required from you — just clicks and copy/paste.
 
-## Fix — two parts
+---
 
-### 1. Give the Copilot real CoT tools (edge function)
+## Part A — What you'll end up with
 
-Extend `supabase/functions/copilot-agent/index.ts` with new tools that hit the database via the service-role client:
+- A live URL like `https://macro-ops.fly.dev` that works forever, from anywhere.
+- Your scheduled ingestion jobs running on Fly's cron.
+- The Lovable app switched over by updating one secret.
 
-- **`list_markets({ query?, sector? })`** — fuzzy search `markets` by symbol/name/sector. Returns `[{ id, symbol, name, sector }]`. Lets the model resolve "british pound" → `6B`.
-- **`query_cot({ symbol, lookback_weeks? })`** — looks up market by symbol, then:
-  - Pulls latest row from `get_cot_normalized(market_id, lookback)` → COT Index, Z, percentile, tier, regime tag, weeks-in-extreme, signal (BULLISH/BEARISH/NEUTRAL).
-  - Pulls latest `cot_reports` row + `positioning_snapshots` to return raw net contracts for **all categories present** (commercial, non-commercial, non-reportable, managed money, leveraged funds, asset managers, dealers) across legacy / disaggregated / TFF (incl. combined) formats.
-  - Returns `report_date`, `open_interest`, week-over-week deltas, and a `href: /asset/<symbol>`.
-- **`cot_history({ symbol, category, weeks? })`** — small time series (default 26w) of net contracts for one category, for sparkline-style answers.
-- **`scan_cot_extremes({ side?, min_index?, sector? })`** — wraps `get_cot_normalized` across all markets, returns top extremes (index ≥90 or ≤10), grouped by side. This is the "what's stretched in positioning right now" question.
+---
 
-Implementation notes:
-- Use `createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)` inside the function (read-only queries; service role already used elsewhere).
-- Symbol lookup is case-insensitive and also matches `name ILIKE %query%` so "british pound", "pound", "GBP", or "6B" all resolve.
-- Keep results compact (cap rows, round numbers) so the model's context stays small.
-- Update the `SYSTEM` prompt: add a CoT playbook section ("positioning / commercial / net specs / extremes" → these tools), and explicitly tell it: *"If the user references a market by common name (gold, pound, crude, ES, etc.), call `list_markets` first to resolve the symbol — never refuse."*
+## Part B — Step-by-step (do these in order)
 
-### 2. Auto-sync Copilot to the current page/asset (frontend)
+### Step 1 — Create a Fly.io account
+1. Go to **https://fly.io/app/sign-up**.
+2. Sign up with GitHub (fastest — it'll help us later).
+3. Add a credit card when it asks. Fly has a free allowance; a small always-on API usually costs **$0–$5/month**.
 
-- In `CopilotContext.tsx`, read `useLocation()` and `useParams()`-equivalent (parse pathname) to build an automatic **`pageContext`** every render:
-  - `{ route, label, symbol?, marketName? }`
-  - `/asset/6B` → `{ route: "/asset/6B", symbol: "6B", label: "Asset · British Pound (6B)" }` (resolve name from a small client-side market lookup, or just pass symbol and let the agent resolve).
-  - `/offsides`, `/breadth/overview`, `/risk-cycle`, etc. → human label only.
-- The provider sends BOTH `pageContext` (always) and the explicit `chartContext` (only when a chart's spark icon was clicked) to the edge function.
-- Edge function injects them into the system prompt as `CURRENT PAGE` and `ACTIVE CHART` blocks, and instructs the model: *"When the user says 'this', 'here', 'the chart I'm looking at', default to ACTIVE CHART; otherwise default to CURRENT PAGE's symbol if present."*
-- `CopilotDrawer` header: when no chart context, show a small chip like `Page · Asset · British Pound (6B)` so the user can see what the Copilot thinks they're looking at.
+### Step 2 — Install the Fly command-line tool (one time)
+This is the only "scary" part. It's just copy/paste into your computer's terminal.
 
-### Files touched
+- **Mac:** open the Terminal app, paste this, hit Enter:
+  ```
+  curl -L https://fly.io/install.sh | sh
+  ```
+- **Windows:** open PowerShell, paste this, hit Enter:
+  ```
+  iwr https://fly.io/install.ps1 -useb | iex
+  ```
+Then close and reopen the terminal, and run:
+```
+fly auth login
+```
+A browser window opens — click **Continue** to log in.
 
-- `supabase/functions/copilot-agent/index.ts` — add 4 tools, Supabase client, updated system prompt.
-- `src/components/copilot/CopilotContext.tsx` — derive + expose `pageContext`.
-- `src/components/copilot/CopilotDrawer.tsx` — send `pageContext`, render page chip, update tool-result summarizer for the new CoT tools.
-- (Small) `src/lib/marketLabels.ts` — symbol → friendly name map for the page chip (e.g. `6B → British Pound`), to avoid a DB roundtrip on every page nav.
+### Step 3 — Make sure your API repo has a Dockerfile
+Fly needs a `Dockerfile` in the repo root (a small text file telling Fly how to run your API). Open your GitHub repo in the browser and check.
 
-### Out of scope (can do next)
+- **If you see a `Dockerfile`:** great, skip to Step 4.
+- **If you don't:** tell me the repo URL and I'll write one for you and give you a single "add file" link on GitHub to paste it.
 
-- Price/return tools (the existing `run_backtest` is mock — could be rewritten against `price_history` later).
-- TPMR live tools (currently the agent only has the mock TPMR indicators).
-- Streaming responses.
+### Step 4 — Launch the app on Fly
+In the terminal, navigate into your API folder (if the code is on the old machine, download the repo from GitHub first: `git clone <your-repo-url>` then `cd <folder>`). Then run:
+```
+fly launch
+```
+Answer the prompts:
+- **App name:** `macro-ops` (or whatever you want — this becomes the URL)
+- **Region:** pick the one closest to you (e.g. `iad` for US East)
+- **Postgres / Redis:** **No** to both (unless your API needs them — tell me if it does)
+- **Deploy now:** **Yes**
 
-### Verification
+Wait ~2 minutes. When done it prints a URL like `https://macro-ops.fly.dev`.
 
-After build:
-1. Navigate to `/asset/6B`, open Copilot, ask "what's commercial positioning saying?" → should call `query_cot({symbol:"6B"})` and return real commercial/managed-money nets with COT Index.
-2. Ask "what's most stretched in metals?" without opening from a page → `scan_cot_extremes({sector:"Metals"})`.
-3. Open Copilot from `/offsides` — header chip shows `Page · Offsides`.
+### Step 5 — Set your API's own secrets on Fly
+If your Macro Ops API needs API keys or a database URL to run, set them with:
+```
+fly secrets set X_API_KEY=dev-key-12345 OTHER_KEY=...
+```
+(One command, all keys separated by spaces.) Tell me which keys the API needs and I'll give you the exact command.
+
+### Step 6 — Move the cron jobs to Fly
+Two clean options — I'll pick one for you once I see the repo:
+- **Option A (simplest):** Add a `[processes]` block to `fly.toml` with a scheduled machine. Fly runs your ingestion script on a schedule.
+- **Option B:** Trigger the ingestion via a Supabase `pg_cron` job that calls your Fly URL over HTTPS (we already use this pattern for the dashboard refresh).
+
+Either way I'll write the exact config and send you the one file to commit.
+
+### Step 7 — Test the new URL
+Open in browser:
+```
+https://macro-ops.fly.dev/docs
+```
+You should see the same Swagger docs page you have today. If yes — success.
+
+### Step 8 — Point Lovable at the new URL
+Once you confirm the new URL works, tell me and I'll update the `MACRO_OPS_API_URL` secret in Lovable to `https://macro-ops.fly.dev`. The whole Signals Lab and Copilot start working immediately, no code changes.
+
+### Step 9 — Retire the old machine
+Once the app is showing live data from the Fly URL for a day, you can safely turn off the old machine.
+
+---
+
+## Part C — What I need from you to start
+
+Just answer these two and I'll do the rest as far as I can from my side:
+
+1. **Paste your API's GitHub repo URL** (so I can check for a Dockerfile and see what secrets/cron jobs it needs).
+2. **Do you want me to draft the Dockerfile / fly.toml / cron config for you** so you only have to click "Add file" on GitHub and paste? (Recommended: yes.)
+
+I can't run `fly launch` for you — that command has to run on your computer where you're logged into Fly — but I can prep every config file and give you the exact commands to paste at each step.
+
+---
+
+## Part D — Cost & time expectations
+
+- **Time:** 20–40 minutes end-to-end the first time.
+- **Cost:** Fly's shared-cpu-1x with 256MB RAM is free. If your API needs more RAM, expect ~$2–5/month. Cron machines only bill while running.
+- **Reliability:** Fly restarts crashed apps automatically and has global HTTPS + a stable URL. This is production-grade.
+
+---
+
+## Technical notes (for reference, ignore if not curious)
+
+- Fly auto-provisions Let's Encrypt TLS for `*.fly.dev` — no cert work.
+- `fly.toml` controls port, health checks, and scheduled machines.
+- The existing `macro-ops-proxy` edge function and all frontend hooks continue to work unchanged; only `MACRO_OPS_API_URL` changes.
+- If ingestion writes to a database on the old machine, we'll need to migrate that too — flag it when you share the repo.
