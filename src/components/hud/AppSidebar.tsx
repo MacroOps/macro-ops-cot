@@ -124,9 +124,12 @@ const NAV: Group[] = [
     ],
   },
   {
-    title: "TP Research",
+    title: "Signals Lab",
     icon: Globe2,
     children: [
+      { title: "Explorer", url: "/signals/explorer" },
+      { title: "Scanner", url: "/signals/scanner" },
+      { title: "Rankings", url: "/signals/rankings" },
       { title: "Breadth", url: "/tp/breadth" },
       { title: "Trend Signals", url: "/tp/trend-signals" },
       { title: "Risk Composite", url: "/tp/risk-composite" },

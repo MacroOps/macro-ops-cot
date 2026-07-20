@@ -42,6 +42,9 @@ import TpBreadth from "./pages/tp/TpBreadth.tsx";
 import TpTrendSignals from "./pages/tp/TpTrendSignals.tsx";
 import TpRiskComposite from "./pages/tp/TpRiskComposite.tsx";
 import TpSectorTrends from "./pages/tp/TpSectorTrends.tsx";
+import SignalExplorer from "./pages/mops/SignalExplorer.tsx";
+import Scanner from "./pages/mops/Scanner.tsx";
+import Rankings from "./pages/mops/Rankings.tsx";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +107,9 @@ const App = () => (
             <Route path="/tp/trend-signals" element={<TpTrendSignals />} />
             <Route path="/tp/risk-composite" element={<TpRiskComposite />} />
             <Route path="/tp/sector-trends" element={<TpSectorTrends />} />
+            <Route path="/signals/explorer" element={<SignalExplorer />} />
+            <Route path="/signals/scanner" element={<Scanner />} />
+            <Route path="/signals/rankings" element={<Rankings />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />

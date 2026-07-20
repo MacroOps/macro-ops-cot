@@ -489,7 +489,101 @@ const TOOLS = [
       parameters: { type: "object", properties: { side: { type: "string", enum: ["long", "short"] }, min_index: { type: "number" }, sector: { type: "string" }, limit: { type: "number" } } },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "mops_signal",
+      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity: { type: "string" },
+          entity_type: { type: "string", enum: ["symbol", "index", "sector", "industry", "sub_industry"] },
+          from_date: { type: "string", description: "YYYY-MM-DD" },
+          to_date: { type: "string", description: "YYYY-MM-DD" },
+          limit: { type: "number" },
+        },
+        required: ["key", "entity"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_rank",
+      description: "Rank entities by a Macro Ops signal value. Useful for 'top sectors by breadth', 'strongest symbols by relative strength', etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity_type: { type: "string", enum: ["symbol", "index", "sector", "industry", "sub_industry"] },
+          order: { type: "string", enum: ["desc", "asc"] },
+          limit: { type: "number" },
+          date: { type: "string" },
+        },
+        required: ["key"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_scan",
+      description: "Find entities matching one or more signal conditions like 'pct_above_sma_50>60' or 'risk_lt_state=Risk-Off'. Combine with logic=and/or.",
+      parameters: {
+        type: "object",
+        properties: {
+          conditions: { type: "array", items: { type: "string" }, description: "Predicates using >, <, >=, <=, =, !=" },
+          logic: { type: "string", enum: ["and", "or"] },
+          entity_type: { type: "string" },
+          limit: { type: "number" },
+          date: { type: "string" },
+        },
+        required: ["conditions"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_percentile",
+      description: "Get the historical percentile rank of a signal's current value for one entity.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity: { type: "string" },
+          group: { type: "string" },
+        },
+        required: ["key", "entity"],
+      },
+    },
+  },
 ];
+
+// --- Macro Ops Signal API bridge -------------------------------------------
+const MOPS_URL = Deno.env.get("MACRO_OPS_API_URL") ?? "";
+const MOPS_KEY = Deno.env.get("MACRO_OPS_API_KEY") ?? "";
+async function mopsCall(path: string, params: Record<string, unknown>) {
+  if (!MOPS_URL || !MOPS_KEY) return { error: "Macro Ops API not configured" };
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    if (Array.isArray(v)) for (const x of v) qs.append(k, String(x));
+    else qs.append(k, String(v));
+  }
+  const url = `${MOPS_URL.replace(/\/$/, "")}${path}${qs.toString() ? `?${qs}` : ""}`;
+  try {
+    const r = await fetch(url, { headers: { "X-API-Key": MOPS_KEY, "Accept": "application/json" } });
+    const t = await r.text();
+    if (!r.ok) return { error: `mops ${r.status}: ${t.slice(0, 300)}` };
+    try {
+      const j = JSON.parse(t);
+      return j?.data !== undefined ? j.data : j;
+    } catch { return t; }
+  } catch (e) { return { error: `mops fetch: ${(e as Error).message}` }; }
+}
 
 function runTool(name: string, args: Record<string, unknown>): unknown | Promise<unknown> {
   switch (name) {
@@ -502,6 +596,10 @@ function runTool(name: string, args: Record<string, unknown>): unknown | Promise
     case "query_cot":       return tool_query_cot(args as { symbol: string; lookback_weeks?: number });
     case "cot_history":     return tool_cot_history(args as { symbol: string; category?: string; weeks?: number });
     case "scan_cot_extremes": return tool_scan_cot_extremes(args as { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number });
+    case "mops_signal":     return mopsCall("/v1/signal", args);
+    case "mops_rank":       return mopsCall("/v1/rank", args);
+    case "mops_scan":       return mopsCall("/v1/scan", args);
+    case "mops_percentile": return mopsCall("/v1/percentile", args);
     default:                return { error: `Unknown tool: ${name}` };
   }
 }
@@ -522,6 +620,15 @@ Mock-indicator playbook (Trend Fragility, Risk-On, Breadth, TPMR composites — 
 - "what's the read on Trend Fragility" → query_indicator
 - "backtest X above Y" → run_backtest
 - "find analogs to today's X" → find_analogs
+
+Equities / breadth / trend / risk (LIVE via Macro Ops Signal API — use these for ANY question about US equities, sectors, breadth, trend, risk regime, relative strength):
+- "how is SPX breadth / % above 50D" → mops_signal({key:"pct_above_sma_50", entity:"SPX", entity_type:"index"})
+- "is SPX in risk-on or risk-off" → mops_signal({key:"risk_lt_state", entity:"SPX", entity_type:"index", limit:1})
+- "top sectors by breadth" → mops_rank({key:"pct_above_sma_50", entity_type:"sector", order:"desc"})
+- "which stocks are above their 50D and 200D and outperforming spx" → mops_scan({conditions:["above_sma_50=true","above_sma_200=true","outperforming_spx_63d=true"], entity_type:"symbol", logic:"and"})
+- "where does today's read rank historically" → mops_percentile({key, entity})
+- Deep-link: point users to /signals/explorer, /signals/scanner, /signals/rankings, /tp/breadth, /tp/risk-composite, /tp/sector-trends, /tp/trend-signals when relevant.
+
 
 Context handling:
 - ACTIVE CHART context = a specific chart the user clicked. When user says "this", "the chart", "here", refer to it.
