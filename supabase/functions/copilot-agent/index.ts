@@ -562,6 +562,29 @@ const TOOLS = [
   },
 ];
 
+// --- Macro Ops Signal API bridge -------------------------------------------
+const MOPS_URL = Deno.env.get("MACRO_OPS_API_URL") ?? "";
+const MOPS_KEY = Deno.env.get("MACRO_OPS_API_KEY") ?? "";
+async function mopsCall(path: string, params: Record<string, unknown>) {
+  if (!MOPS_URL || !MOPS_KEY) return { error: "Macro Ops API not configured" };
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    if (Array.isArray(v)) for (const x of v) qs.append(k, String(x));
+    else qs.append(k, String(v));
+  }
+  const url = `${MOPS_URL.replace(/\/$/, "")}${path}${qs.toString() ? `?${qs}` : ""}`;
+  try {
+    const r = await fetch(url, { headers: { "X-API-Key": MOPS_KEY, "Accept": "application/json" } });
+    const t = await r.text();
+    if (!r.ok) return { error: `mops ${r.status}: ${t.slice(0, 300)}` };
+    try {
+      const j = JSON.parse(t);
+      return j?.data !== undefined ? j.data : j;
+    } catch { return t; }
+  } catch (e) { return { error: `mops fetch: ${(e as Error).message}` }; }
+}
+
 function runTool(name: string, args: Record<string, unknown>): unknown | Promise<unknown> {
   switch (name) {
     case "list_indicators": return tool_list_indicators(args as { category?: string });
@@ -573,6 +596,10 @@ function runTool(name: string, args: Record<string, unknown>): unknown | Promise
     case "query_cot":       return tool_query_cot(args as { symbol: string; lookback_weeks?: number });
     case "cot_history":     return tool_cot_history(args as { symbol: string; category?: string; weeks?: number });
     case "scan_cot_extremes": return tool_scan_cot_extremes(args as { side?: "long" | "short"; min_index?: number; sector?: string; limit?: number });
+    case "mops_signal":     return mopsCall("/v1/signal", args);
+    case "mops_rank":       return mopsCall("/v1/rank", args);
+    case "mops_scan":       return mopsCall("/v1/scan", args);
+    case "mops_percentile": return mopsCall("/v1/percentile", args);
     default:                return { error: `Unknown tool: ${name}` };
   }
 }
