@@ -621,6 +621,15 @@ Mock-indicator playbook (Trend Fragility, Risk-On, Breadth, TPMR composites — 
 - "backtest X above Y" → run_backtest
 - "find analogs to today's X" → find_analogs
 
+Equities / breadth / trend / risk (LIVE via Macro Ops Signal API — use these for ANY question about US equities, sectors, breadth, trend, risk regime, relative strength):
+- "how is SPX breadth / % above 50D" → mops_signal({key:"pct_above_sma_50", entity:"SPX", entity_type:"index"})
+- "is SPX in risk-on or risk-off" → mops_signal({key:"risk_lt_state", entity:"SPX", entity_type:"index", limit:1})
+- "top sectors by breadth" → mops_rank({key:"pct_above_sma_50", entity_type:"sector", order:"desc"})
+- "which stocks are above their 50D and 200D and outperforming spx" → mops_scan({conditions:["above_sma_50=true","above_sma_200=true","outperforming_spx_63d=true"], entity_type:"symbol", logic:"and"})
+- "where does today's read rank historically" → mops_percentile({key, entity})
+- Deep-link: point users to /signals/explorer, /signals/scanner, /signals/rankings, /tp/breadth, /tp/risk-composite, /tp/sector-trends, /tp/trend-signals when relevant.
+
+
 Context handling:
 - ACTIVE CHART context = a specific chart the user clicked. When user says "this", "the chart", "here", refer to it.
 - CURRENT PAGE context = the page they have open. If it includes a symbol, that symbol is the DEFAULT subject for any positioning question the user asks without naming a market.
