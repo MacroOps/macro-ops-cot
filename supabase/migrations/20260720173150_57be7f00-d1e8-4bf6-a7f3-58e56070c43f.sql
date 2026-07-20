@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Authenticated can read ingestion_log" ON public.ingestion_log; REVOKE SELECT ON public.ingestion_log FROM authenticated;
