@@ -26,7 +26,7 @@ export const useMopsEndpoints = () =>
 export const useMopsEntities = (params: { entity_type?: string; parent?: string } = {}, opts: Opts<string[]> = {}) =>
   useQuery({
     queryKey: ["mops", "entities", params],
-    queryFn: () => mopsGet<string[]>("/v1/entities", params as MopsParams),
+    queryFn: () => mopsGet<string[]>("/v1/entities", params as unknown as MopsParams),
     ...defaults,
     ...opts,
   });
@@ -62,7 +62,7 @@ export interface UseSignalParams {
 export const useMopsSignal = (params: UseSignalParams, opts: Opts<MopsSignalRow[]> = {}) =>
   useQuery({
     queryKey: ["mops", "signal", params],
-    queryFn: () => mopsGet<MopsSignalRow[]>("/v1/signal", params as MopsParams),
+    queryFn: () => mopsGet<MopsSignalRow[]>("/v1/signal", params as unknown as MopsParams),
     enabled: !!params.key,
     ...defaults,
     ...opts,
@@ -71,7 +71,7 @@ export const useMopsSignal = (params: UseSignalParams, opts: Opts<MopsSignalRow[
 export const useMopsSignals = (params: { keys: string[]; entity: string; date?: string }) =>
   useQuery({
     queryKey: ["mops", "signals", params],
-    queryFn: () => mopsGet<Record<string, unknown>>("/v1/signals", params as MopsParams),
+    queryFn: () => mopsGet<Record<string, unknown>>("/v1/signals", params as unknown as MopsParams),
     enabled: !!params.entity && params.keys.length > 0,
     ...defaults,
   });
@@ -113,7 +113,7 @@ export const useMopsRank = (params: UseRankParams, opts: Opts<MopsRankRow[]> = {
 export const useMopsWhere = (params: { key: string; predicate: string; date?: string; entity_type?: string; limit?: number }) =>
   useQuery({
     queryKey: ["mops", "where", params],
-    queryFn: () => mopsGet<MopsSignalRow[]>("/v1/signal/where", params as MopsParams),
+    queryFn: () => mopsGet<MopsSignalRow[]>("/v1/signal/where", params as unknown as MopsParams),
     enabled: !!params.key && !!params.predicate,
     ...defaults,
   });
@@ -122,7 +122,7 @@ export const useMopsWhere = (params: { key: string; predicate: string; date?: st
 export const useMopsChanges = (params: { key: string; date?: string; entity_type?: string; direction?: string; limit?: number }) =>
   useQuery({
     queryKey: ["mops", "changes", params],
-    queryFn: () => mopsGet<MopsChangeRow[]>("/v1/changes", params as MopsParams),
+    queryFn: () => mopsGet<MopsChangeRow[]>("/v1/changes", params as unknown as MopsParams),
     enabled: !!params.key,
     ...defaults,
   });
@@ -130,7 +130,7 @@ export const useMopsChanges = (params: { key: string; date?: string; entity_type
 export const useMopsTransitions = (params: { key: string; entity: string; from_date: string; to_date?: string }) =>
   useQuery({
     queryKey: ["mops", "transitions", params],
-    queryFn: () => mopsGet<MopsTransitionRow[]>("/v1/transitions", params as MopsParams),
+    queryFn: () => mopsGet<MopsTransitionRow[]>("/v1/transitions", params as unknown as MopsParams),
     enabled: !!params.key && !!params.entity && !!params.from_date,
     ...defaults,
   });
@@ -138,7 +138,7 @@ export const useMopsTransitions = (params: { key: string; entity: string; from_d
 export const useMopsStreak = (params: { key: string; entity: string; condition: string; date?: string }) =>
   useQuery({
     queryKey: ["mops", "streak", params],
-    queryFn: () => mopsGet<MopsStreak>("/v1/streak", params as MopsParams),
+    queryFn: () => mopsGet<MopsStreak>("/v1/streak", params as unknown as MopsParams),
     enabled: !!params.key && !!params.entity && !!params.condition,
     ...defaults,
   });
@@ -146,7 +146,7 @@ export const useMopsStreak = (params: { key: string; entity: string; condition: 
 export const useMopsExtremes = (params: { key: string; entity: string; lookback?: number; date?: string }) =>
   useQuery({
     queryKey: ["mops", "extremes", params],
-    queryFn: () => mopsGet<MopsExtremes>("/v1/extremes", params as MopsParams),
+    queryFn: () => mopsGet<MopsExtremes>("/v1/extremes", params as unknown as MopsParams),
     enabled: !!params.key && !!params.entity,
     ...defaults,
   });
@@ -155,7 +155,7 @@ export const useMopsExtremes = (params: { key: string; entity: string; lookback?
 export const useMopsPercentile = (params: { key: string; entity: string; group?: string; date?: string }) =>
   useQuery({
     queryKey: ["mops", "percentile", params],
-    queryFn: () => mopsGet<MopsPercentileResult>("/v1/percentile", params as MopsParams),
+    queryFn: () => mopsGet<MopsPercentileResult>("/v1/percentile", params as unknown as MopsParams),
     enabled: !!params.key && !!params.entity,
     ...defaults,
   });
@@ -163,7 +163,7 @@ export const useMopsPercentile = (params: { key: string; entity: string; group?:
 export const useMopsAggregate = (params: { key: string; group: string; func?: "mean" | "median" | "sum" | "count" | "min" | "max"; date?: string }) =>
   useQuery({
     queryKey: ["mops", "aggregate", params],
-    queryFn: () => mopsGet<unknown>("/v1/aggregate", params as MopsParams),
+    queryFn: () => mopsGet<unknown>("/v1/aggregate", params as unknown as MopsParams),
     enabled: !!params.key && !!params.group,
     ...defaults,
   });
@@ -171,7 +171,7 @@ export const useMopsAggregate = (params: { key: string; group: string; func?: "m
 export const useMopsDistribution = (params: { key: string; entity_type?: string; group?: string; date?: string }) =>
   useQuery({
     queryKey: ["mops", "distribution", params],
-    queryFn: () => mopsGet<MopsDistribution>("/v1/distribution", params as MopsParams),
+    queryFn: () => mopsGet<MopsDistribution>("/v1/distribution", params as unknown as MopsParams),
     enabled: !!params.key,
     ...defaults,
   });
