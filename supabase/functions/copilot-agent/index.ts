@@ -489,6 +489,77 @@ const TOOLS = [
       parameters: { type: "object", properties: { side: { type: "string", enum: ["long", "short"] }, min_index: { type: "number" }, sector: { type: "string" }, limit: { type: "number" } } },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "mops_signal",
+      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity: { type: "string" },
+          entity_type: { type: "string", enum: ["symbol", "index", "sector", "industry", "sub_industry"] },
+          from_date: { type: "string", description: "YYYY-MM-DD" },
+          to_date: { type: "string", description: "YYYY-MM-DD" },
+          limit: { type: "number" },
+        },
+        required: ["key", "entity"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_rank",
+      description: "Rank entities by a Macro Ops signal value. Useful for 'top sectors by breadth', 'strongest symbols by relative strength', etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity_type: { type: "string", enum: ["symbol", "index", "sector", "industry", "sub_industry"] },
+          order: { type: "string", enum: ["desc", "asc"] },
+          limit: { type: "number" },
+          date: { type: "string" },
+        },
+        required: ["key"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_scan",
+      description: "Find entities matching one or more signal conditions like 'pct_above_sma_50>60' or 'risk_lt_state=Risk-Off'. Combine with logic=and/or.",
+      parameters: {
+        type: "object",
+        properties: {
+          conditions: { type: "array", items: { type: "string" }, description: "Predicates using >, <, >=, <=, =, !=" },
+          logic: { type: "string", enum: ["and", "or"] },
+          entity_type: { type: "string" },
+          limit: { type: "number" },
+          date: { type: "string" },
+        },
+        required: ["conditions"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mops_percentile",
+      description: "Get the historical percentile rank of a signal's current value for one entity.",
+      parameters: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          entity: { type: "string" },
+          group: { type: "string" },
+        },
+        required: ["key", "entity"],
+      },
+    },
+  },
 ];
 
 function runTool(name: string, args: Record<string, unknown>): unknown | Promise<unknown> {
