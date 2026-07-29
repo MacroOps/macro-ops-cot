@@ -6,14 +6,14 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-const INDICES = ["SPX", "NDX", "RUT"];
+const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
 
 export default function TpRiskComposite() {
   const [entity, setEntity] = useState("SPX");
   const today = new Date();
   const from = new Date(today.getTime() - 365 * 86_400_000).toISOString().slice(0, 10);
   const to = today.toISOString().slice(0, 10);
-  const base = { entity, entity_type: "index", from_date: from, to_date: to, limit: 400 };
+  const base = { entity, from_date: from, to_date: to, limit: 400 };
 
   const lt = useMopsSignal({ ...base, key: "risk_lt_score" });
   const st = useMopsSignal({ ...base, key: "risk_st_score" });
