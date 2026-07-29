@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsScan } from "@/hooks/useMops";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 const PRESETS = [
   { label: "SPX components (bullish stack)", conds: ["above_sma_50=1", "above_sma_150=1", "above_sma_200=1"] },
