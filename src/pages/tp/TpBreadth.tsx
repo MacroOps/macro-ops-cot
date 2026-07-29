@@ -6,14 +6,14 @@ import { useMopsSignal } from "@/hooks/useMops";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Customized, ReferenceLine } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 
-const INDICES = ["SPX", "NDX", "RUT", "DJI"];
+const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
 
 export default function TpBreadth() {
   const [entity, setEntity] = useState("SPX");
   const today = new Date();
   const from = new Date(today.getTime() - 365 * 86_400_000).toISOString().slice(0, 10);
   const to = today.toISOString().slice(0, 10);
-  const base = { entity, entity_type: "index", from_date: from, to_date: to, limit: 400 };
+  const base = { entity, from_date: from, to_date: to, limit: 400 };
 
   const q50 = useMopsSignal({ ...base, key: "pct_above_sma_50" });
   const q200 = useMopsSignal({ ...base, key: "pct_above_sma_200" });

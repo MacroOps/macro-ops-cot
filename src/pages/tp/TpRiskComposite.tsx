@@ -6,14 +6,26 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-const INDICES = ["SPX", "NDX", "RUT"];
+const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
+
+// Upstream encodes regime state as 1 (Risk-On) / 0 (Risk-Off).
+function regimeLabel(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  const n = Number(v);
+  if (!Number.isNaN(n)) return n > 0 ? "Risk-On" : "Risk-Off";
+  return String(v);
+}
+function regimeTone(v: unknown): "pos" | "neg" | "n" {
+  const l = regimeLabel(v);
+  return l === "Risk-On" ? "pos" : l === "Risk-Off" ? "neg" : "n";
+}
 
 export default function TpRiskComposite() {
   const [entity, setEntity] = useState("SPX");
   const today = new Date();
   const from = new Date(today.getTime() - 365 * 86_400_000).toISOString().slice(0, 10);
   const to = today.toISOString().slice(0, 10);
-  const base = { entity, entity_type: "index", from_date: from, to_date: to, limit: 400 };
+  const base = { entity, from_date: from, to_date: to, limit: 400 };
 
   const lt = useMopsSignal({ ...base, key: "risk_lt_score" });
   const st = useMopsSignal({ ...base, key: "risk_st_score" });
@@ -34,8 +46,8 @@ export default function TpRiskComposite() {
     return Array.from(m.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [lt.data, st.data]);
 
-  const latestLt = ltState.data?.[ltState.data.length - 1];
-  const latestSt = stState.data?.[stState.data.length - 1];
+  const latestLt = ltState.data?.[0];
+  const latestSt = stState.data?.[0];
   const loading = lt.isLoading || st.isLoading;
   const err = lt.error || st.error || ltState.error || stState.error;
 
@@ -51,9 +63,9 @@ export default function TpRiskComposite() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border">
-        <Stat label="LT Regime" value={String(latestLt?.value ?? "—")} sub={latestLt?.date} tone={String(latestLt?.value).includes("On") ? "pos" : String(latestLt?.value).includes("Off") ? "neg" : "n"} />
+        <Stat label="LT Regime" value={regimeLabel(latestLt?.value)} sub={latestLt?.date} tone={regimeTone(latestLt?.value)} />
         <Stat label="LT Score" value={merged.length ? fmt.format(Number(merged[merged.length - 1].lt ?? 0)) : "—"} />
-        <Stat label="ST Regime" value={String(latestSt?.value ?? "—")} sub={latestSt?.date} tone={String(latestSt?.value).includes("On") ? "pos" : String(latestSt?.value).includes("Off") ? "neg" : "n"} />
+        <Stat label="ST Regime" value={regimeLabel(latestSt?.value)} sub={latestSt?.date} tone={regimeTone(latestSt?.value)} />
         <Stat label="ST Score" value={merged.length ? fmt.format(Number(merged[merged.length - 1].st ?? 0)) : "—"} />
       </div>
 

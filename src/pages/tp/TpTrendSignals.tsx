@@ -2,13 +2,13 @@
 import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsScan } from "@/hooks/useMops";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 const PRESETS = [
-  { label: "SPX components (bullish stack)", conds: ["above_sma_50=true", "above_sma_150=true", "above_sma_200=true"] },
-  { label: "Golden cross candidates", conds: ["ma_50_above_150=true", "above_sma_200=true"] },
-  { label: "Outperformers vs SPX (63d)", conds: ["outperforming_spx_63d=true"] },
-  { label: "Downtrend (below all MAs)", conds: ["above_sma_50=false", "above_sma_150=false", "above_sma_200=false"] },
+  { label: "SPX components (bullish stack)", conds: ["above_sma_50=1", "above_sma_150=1", "above_sma_200=1"] },
+  { label: "Golden cross candidates", conds: ["ma_50_above_150=1", "above_sma_200=1"] },
+  { label: "Outperformers vs SPX (63d)", conds: ["outperforming_spx_63d=1"] },
+  { label: "Downtrend (below all MAs)", conds: ["above_sma_50=0", "above_sma_150=0", "above_sma_200=0"] },
 ];
 
 export default function TpTrendSignals() {
@@ -45,19 +45,17 @@ export default function TpTrendSignals() {
             <span className="text-[10px] text-muted-foreground">{isLoading ? "…" : `${rows.length} symbols`}</span>
           </div>
           <div className="max-h-[75vh] overflow-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1 p-2">
-            {rows.map((r, i) => {
-              const passed = r.value === true || r.value === "true" || r.value === 1;
-              return (
-                <div
-                  key={`${r.entity}-${i}`}
-                  className="border border-border rounded-sm bg-background px-2 py-1.5 flex items-center gap-2"
-                >
-                  {passed ? <CheckCircle2 className="h-3 w-3 text-[hsl(var(--pos-long))]" /> : <XCircle className="h-3 w-3 text-[hsl(var(--pos-short))]" />}
-                  <span className="font-mono text-xs font-semibold">{r.entity}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">{r.date}</span>
-                </div>
-              );
-            })}
+            {rows.map((r, i) => (
+              <div
+                key={`${r.entity}-${i}`}
+                className="border border-border rounded-sm bg-background px-2 py-1.5 flex items-center gap-2"
+              >
+                {/* every returned row already satisfies the scan conditions */}
+                <CheckCircle2 className="h-3 w-3 text-[hsl(var(--pos-long))]" />
+                <span className="font-mono text-xs font-semibold">{r.entity}</span>
+                <span className="ml-auto text-[10px] text-muted-foreground">{r.date}</span>
+              </div>
+            ))}
             {!isLoading && rows.length === 0 && (
               <div className="col-span-full px-3 py-8 text-center text-muted-foreground text-xs">no matches</div>
             )}

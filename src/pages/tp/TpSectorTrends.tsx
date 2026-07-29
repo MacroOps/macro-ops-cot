@@ -7,8 +7,8 @@ const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const KEYS = [
   { key: "pct_above_sma_50", label: "% > 50D MA" },
   { key: "pct_above_sma_200", label: "% > 200D MA" },
-  { key: "pct_outperforming_spx_63d", label: "% outperforming SPX (63d)" },
-  { key: "pct_new_highs_252d", label: "% at 52w highs" },
+  { key: "pct_outperforming_63d", label: "% outperforming SPX (63d)" },
+  { key: "pct_near_high", label: "% near 52w highs" },
 ];
 
 export default function TpSectorTrends() {
