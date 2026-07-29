@@ -5,10 +5,10 @@ import { useMopsScan } from "@/hooks/useMops";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 const PRESETS = [
-  { label: "SPX components (bullish stack)", conds: ["above_sma_50=true", "above_sma_150=true", "above_sma_200=true"] },
-  { label: "Golden cross candidates", conds: ["ma_50_above_150=true", "above_sma_200=true"] },
-  { label: "Outperformers vs SPX (63d)", conds: ["outperforming_spx_63d=true"] },
-  { label: "Downtrend (below all MAs)", conds: ["above_sma_50=false", "above_sma_150=false", "above_sma_200=false"] },
+  { label: "SPX components (bullish stack)", conds: ["above_sma_50=1", "above_sma_150=1", "above_sma_200=1"] },
+  { label: "Golden cross candidates", conds: ["ma_50_above_150=1", "above_sma_200=1"] },
+  { label: "Outperformers vs SPX (63d)", conds: ["outperforming_spx_63d=1"] },
+  { label: "Downtrend (below all MAs)", conds: ["above_sma_50=0", "above_sma_150=0", "above_sma_200=0"] },
 ];
 
 export default function TpTrendSignals() {
