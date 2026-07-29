@@ -6,10 +6,10 @@ import { useMopsScan } from "@/hooks/useMops";
 import { X, Plus, Search } from "lucide-react";
 
 const PRESETS = [
-  { label: "Bullish trend (SPX components)", conds: ["above_sma_50=true", "above_sma_200=true", "outperforming_spx_63d=true"], t: "symbol" },
-  { label: "Fresh breakouts", conds: ["new_highs_252d=true"], t: "symbol" },
-  { label: "Risk-Off regime hits", conds: ["risk_lt_state=Risk-Off"], t: "index" },
-  { label: "Weak below MAs", conds: ["above_sma_50=false", "above_sma_200=false"], t: "symbol" },
+  { label: "Bullish trend (SPX components)", conds: ["above_sma_50=1", "above_sma_200=1", "outperforming_spx_63d=1"], t: "symbol" },
+  { label: "Fresh breakouts", conds: ["new_highs_252d=1"], t: "symbol" },
+  { label: "Risk-Off sectors", conds: ["risk_lt_state=0"], t: "sector" },
+  { label: "Weak below MAs", conds: ["above_sma_50=0", "above_sma_200=0"], t: "symbol" },
 ];
 
 export default function Scanner() {
