@@ -51,9 +51,9 @@ export default function TpRiskComposite() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border">
-        <Stat label="LT Regime" value={String(latestLt?.value ?? "—")} sub={latestLt?.date} tone={String(latestLt?.value).includes("On") ? "pos" : String(latestLt?.value).includes("Off") ? "neg" : "n"} />
+        <Stat label="LT Regime" value={regimeLabel(latestLt?.value)} sub={latestLt?.date} tone={regimeTone(latestLt?.value)} />
         <Stat label="LT Score" value={merged.length ? fmt.format(Number(merged[merged.length - 1].lt ?? 0)) : "—"} />
-        <Stat label="ST Regime" value={String(latestSt?.value ?? "—")} sub={latestSt?.date} tone={String(latestSt?.value).includes("On") ? "pos" : String(latestSt?.value).includes("Off") ? "neg" : "n"} />
+        <Stat label="ST Regime" value={regimeLabel(latestSt?.value)} sub={latestSt?.date} tone={regimeTone(latestSt?.value)} />
         <Stat label="ST Score" value={merged.length ? fmt.format(Number(merged[merged.length - 1].st ?? 0)) : "—"} />
       </div>
 
