@@ -22,6 +22,9 @@ export default function Scanner() {
     conditions: conds, logic, entity_type: entityType, limit: 500,
   });
 
+  // Each condition looks like `key>=value`; the scan response returns one column per key.
+  const condKeys = Array.from(new Set(conds.map(c => c.split(/[<>=!]/)[0].trim()).filter(Boolean)));
+
   const add = () => {
     const v = draft.trim();
     if (!v) return;
