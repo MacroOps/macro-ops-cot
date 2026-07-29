@@ -12,6 +12,8 @@ const PRESETS = [
   { label: "Weak below MAs", conds: ["above_sma_50=0", "above_sma_200=0"], t: "symbol" },
 ];
 
+const num = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+
 export default function Scanner() {
   const [conds, setConds] = useState<string[]>(PRESETS[0].conds);
   const [logic, setLogic] = useState<"and" | "or">("and");
