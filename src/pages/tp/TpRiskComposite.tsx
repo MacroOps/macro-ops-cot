@@ -34,8 +34,8 @@ export default function TpRiskComposite() {
     return Array.from(m.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [lt.data, st.data]);
 
-  const latestLt = ltState.data?.[ltState.data.length - 1];
-  const latestSt = stState.data?.[stState.data.length - 1];
+  const latestLt = ltState.data?.[0];
+  const latestSt = stState.data?.[0];
   const loading = lt.isLoading || st.isLoading;
   const err = lt.error || st.error || ltState.error || stState.error;
 
