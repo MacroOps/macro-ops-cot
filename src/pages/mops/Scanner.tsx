@@ -108,25 +108,34 @@ export default function Scanner() {
                 <tr className="text-left text-muted-foreground border-b border-border">
                   <th className="px-3 py-2 font-normal">#</th>
                   <th className="px-3 py-2 font-normal">Entity</th>
-                  <th className="px-3 py-2 font-normal">Type</th>
-                  <th className="px-3 py-2 font-normal">Signal</th>
-                  <th className="px-3 py-2 font-normal text-right">Value</th>
+                  {condKeys.map(k => (
+                    <th key={k} className="px-3 py-2 font-normal text-right font-mono text-[10px]">{k}</th>
+                  ))}
                   <th className="px-3 py-2 font-normal">Date</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr key={`${r.entity}-${r.key}-${i}`} className="border-b border-border/50 hover:bg-surface/40">
-                    <td className="px-3 py-1.5 text-muted-foreground">{i + 1}</td>
-                    <td className="px-3 py-1.5 font-mono font-semibold">{r.entity}</td>
-                    <td className="px-3 py-1.5 text-muted-foreground">{r.entity_type ?? "—"}</td>
-                    <td className="px-3 py-1.5 font-mono text-[10px] text-muted-foreground">{r.key ?? "—"}</td>
-                    <td className="px-3 py-1.5 text-right">{String(r.value ?? "—")}</td>
-                    <td className="px-3 py-1.5 text-muted-foreground">{r.date}</td>
-                  </tr>
-                ))}
+                {rows.map((r, i) => {
+                  const row = r as unknown as Record<string, unknown>;
+                  return (
+                    <tr key={`${r.entity}-${i}`} className="border-b border-border/50 hover:bg-surface/40">
+                      <td className="px-3 py-1.5 text-muted-foreground">{i + 1}</td>
+                      <td className="px-3 py-1.5 font-mono font-semibold">{r.entity}</td>
+                      {condKeys.map(k => {
+                        const v = row[k];
+                        const n = typeof v === "number" ? v : Number(v);
+                        return (
+                          <td key={k} className="px-3 py-1.5 text-right">
+                            {v === undefined || v === null ? "—" : Number.isNaN(n) ? String(v) : num.format(n)}
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-1.5 text-muted-foreground">{r.date}</td>
+                    </tr>
+                  );
+                })}
                 {!isLoading && rows.length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">no matches</td></tr>
+                  <tr><td colSpan={condKeys.length + 3} className="px-3 py-8 text-center text-muted-foreground">no matches</td></tr>
                 )}
               </tbody>
             </table>
