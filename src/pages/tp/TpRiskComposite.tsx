@@ -8,6 +8,18 @@ import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
 
+// Upstream encodes regime state as 1 (Risk-On) / 0 (Risk-Off).
+function regimeLabel(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  const n = Number(v);
+  if (!Number.isNaN(n)) return n > 0 ? "Risk-On" : "Risk-Off";
+  return String(v);
+}
+function regimeTone(v: unknown): "pos" | "neg" | "n" {
+  const l = regimeLabel(v);
+  return l === "Risk-On" ? "pos" : l === "Risk-Off" ? "neg" : "n";
+}
+
 export default function TpRiskComposite() {
   const [entity, setEntity] = useState("SPX");
   const today = new Date();
