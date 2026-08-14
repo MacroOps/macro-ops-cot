@@ -60,6 +60,16 @@ function PerfTable({ rows }: { rows: ModelPerfRow[] }) {
 }
 
 export default function MarketOverview() {
+  const { data, isLoading, error } = useTpmrSystems();
+  const spx = data?.spx;
+  const houseView = spx
+    ? [
+        { type: "Short-Term", direction: spx.riskST.signal, signalDate: spx.riskST.date },
+        { type: "Long-Term", direction: spx.riskLT.signal, signalDate: spx.riskLT.date },
+      ]
+    : [];
+  const indexRows = spx ? [spx] : [];
+
   return (
     <AppShell title="TPMR · Market Overview">
       <PageHeader
@@ -68,8 +78,22 @@ export default function MarketOverview() {
         description="Top-level directional call, TCTM composite status, and cross-system breakdown by index and sector."
       />
 
+      {error && (
+        <div className="mx-3 mt-3 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          Signal API error: {(error as Error).message}
+        </div>
+      )}
+
       <div className="p-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Panel title="House View" eyebrow="1A">
+        <Panel
+          title="House View"
+          eyebrow="1A"
+          badge={
+            data?.asOf ? (
+              <span className="text-[9px] font-mono text-muted-foreground">{data.asOf}</span>
+            ) : null
+          }
+        >
           <table className="w-full text-xs">
             <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
               <tr>
@@ -79,7 +103,10 @@ export default function MarketOverview() {
               </tr>
             </thead>
             <tbody>
-              {HOUSE_VIEW.map((r) => (
+              {isLoading && (
+                <tr><td colSpan={3} className="py-3 text-muted-foreground">Loading…</td></tr>
+              )}
+              {houseView.map((r) => (
                 <tr key={r.type} className="border-t border-border/50">
                   <td className="py-2">{r.type}</td>
                   <td className="py-2"><SignalBadge value={r.direction} /></td>
@@ -90,7 +117,7 @@ export default function MarketOverview() {
           </table>
         </Panel>
 
-        <Panel title="TCTM 5-Component Status" eyebrow="1B">
+        <Panel title="TCTM 5-Component Status" eyebrow="1B" badge={<MockBadge reason="TCTM component detail is not exposed by the Signal API yet." />}>
           <div className="grid grid-cols-5 gap-2">
             {TCTM_STATUS.map((c) => (
               <div key={c.name} className="border border-border/60 rounded-sm p-2">
@@ -118,9 +145,12 @@ export default function MarketOverview() {
               </tr>
             </thead>
             <tbody>
-              {INDEX_SYSTEMS.map((r) => (
-                <tr key={r.index} className="border-t border-border/50">
-                  <td className="py-1.5 font-medium">{r.index}</td>
+              {isLoading && (
+                <tr><td colSpan={4} className="py-3 text-muted-foreground">Loading…</td></tr>
+              )}
+              {indexRows.map((r) => (
+                <tr key={r.code} className="border-t border-border/50">
+                  <td className="py-1.5 font-medium">{r.label}</td>
                   {[r.riskST, r.riskLT, r.trend].map((s, i) => (
                     <td key={i} className="py-1.5">
                       <div className="flex items-center gap-2">
@@ -154,29 +184,32 @@ export default function MarketOverview() {
                 </tr>
               </thead>
               <tbody>
-                {SECTOR_SYSTEMS.map((r) => (
-                  <tr key={r.sector} className="border-t border-border/50">
-                    <td className="py-1.5">{r.sector}</td>
+                {isLoading && (
+                  <tr><td colSpan={6} className="py-3 text-muted-foreground">Loading…</td></tr>
+                )}
+                {(data?.sectors ?? []).map((r) => (
+                  <tr key={r.code} className="border-t border-border/50">
+                    <td className="py-1.5">{r.label}</td>
                     <td className="py-1.5">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.riskST.signal} />
                         <LevelBar value={r.riskST.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskST.date}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskST.date} · {r.riskST.days}d</div>
                     </td>
                     <td className="py-1.5">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.riskLT.signal} />
                         <LevelBar value={r.riskLT.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskLT.date}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskLT.date} · {r.riskLT.days}d</div>
                     </td>
                     <td className="py-1.5">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.trend.signal} />
                         <LevelBar value={r.trend.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.trend.date}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.trend.date} · {r.trend.days}d</div>
                     </td>
                     <td className="py-1.5 text-right font-mono tabular-nums">{r.trend.tLevel}</td>
                     <td className="py-1.5 text-right font-mono tabular-nums">{r.trend.rLevel}</td>
@@ -187,6 +220,8 @@ export default function MarketOverview() {
           </div>
         </Panel>
       </div>
+
+
 
       <div className="px-3 pb-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Panel title="Risk On/Off (LT) Performance" eyebrow="1E"><PerfTable rows={PERF_RISK_LT} /></Panel>
