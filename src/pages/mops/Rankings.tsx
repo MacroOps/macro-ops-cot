@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsRank, useSignalKeys } from "@/hooks/useMops";
+import { breadthScopeWarning, symbolEquivalent } from "@/lib/mops/signalScope";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
