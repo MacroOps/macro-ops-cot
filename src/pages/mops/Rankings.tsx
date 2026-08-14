@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsRank, useSignalKeys } from "@/hooks/useMops";
+import { breadthScopeWarning, symbolEquivalent } from "@/lib/mops/signalScope";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
@@ -13,6 +14,9 @@ export default function Rankings() {
 
   const { data: keys = [] } = useSignalKeys();
   const { data: rows = [], isLoading, error } = useMopsRank({ key, entity_type: entityType, order, limit });
+
+  const scopeWarning = entityType === "symbol" ? breadthScopeWarning(key) : null;
+
 
   const nums = rows.map(r => typeof r.value === "number" ? r.value : Number(r.value)).filter(n => !Number.isNaN(n));
   const max = nums.length ? Math.max(...nums) : 1;
@@ -44,6 +48,17 @@ export default function Rankings() {
         <span className="hud-label ml-3 mr-1">Limit</span>
         <input type="number" value={limit} min={10} max={500} onChange={e => setLimit(Number(e.target.value) || 50)} className="h-7 w-16 bg-background border border-border rounded-sm px-2 tabular-nums" />
       </div>
+
+      {scopeWarning && (
+        <div className="px-3 py-2 text-[11px] text-muted-foreground border-b border-border bg-surface/20">
+          {scopeWarning}
+          {symbolEquivalent(key) && (
+            <button onClick={() => setKey(symbolEquivalent(key)!)} className="ml-2 underline hover:text-foreground">
+              switch signal
+            </button>
+          )}
+        </div>
+      )}
 
       {error && <div className="px-3 py-3 text-xs text-destructive border-b border-border">{(error as Error).message}</div>}
 

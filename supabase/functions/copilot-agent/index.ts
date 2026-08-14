@@ -493,7 +493,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "mops_signal",
-      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors.",
+      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors. IMPORTANT: keys starting with pct_ (and *_count) are BREADTH metrics computed only over a group — they exist for sector/index entities (e.g. SPX, S5INFT) and return nothing for entity_type=symbol. For a single symbol use the boolean equivalent instead: above_sma_50 / above_sma_200 / ma_50_above_150 / outperforming_spx_63d.",
       parameters: {
         type: "object",
         properties: {
@@ -626,6 +626,7 @@ Equities / breadth / trend / risk (LIVE via Macro Ops Signal API — use these f
 - "is SPX in risk-on or risk-off" → mops_signal({key:"risk_lt_state", entity:"SPX", entity_type:"index", limit:1})
 - "top sectors by breadth" → mops_rank({key:"pct_above_sma_50", entity_type:"sector", order:"desc"})
 - "which stocks are above their 50D and 200D and outperforming spx" → mops_scan({conditions:["above_sma_50=true","above_sma_200=true","outperforming_spx_63d=true"], entity_type:"symbol", logic:"and"})
+- "is AAPL above its 50D" → mops_signal({key:"above_sma_50", entity:"AAPL", entity_type:"symbol"}) — NEVER use pct_above_sma_50 for a single symbol; pct_* keys are group breadth (sector/index only) and return empty at symbol level.
 - "where does today's read rank historically" → mops_percentile({key, entity})
 - Deep-link: point users to /signals/explorer, /signals/scanner, /signals/rankings, /tp/breadth, /tp/risk-composite, /tp/sector-trends, /tp/trend-signals when relevant.
 

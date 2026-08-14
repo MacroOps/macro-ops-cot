@@ -7,6 +7,7 @@ import {
   CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Customized, ReferenceLine,
 } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { breadthScopeWarning, symbolEquivalent } from "@/lib/mops/signalScope";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
@@ -41,6 +42,8 @@ export default function SignalExplorer() {
   const latest = series[series.length - 1];
   const prev = series[series.length - 2];
   const delta = latest && prev ? latest.value - prev.value : 0;
+  const scopeWarning = entityType === "symbol" ? breadthScopeWarning(key) : null;
+
 
   return (
     <AppShell title="Signal Explorer">
@@ -80,6 +83,19 @@ export default function SignalExplorer() {
 
         <span className="ml-auto text-[10px] text-muted-foreground">{keys.length} keys · {entities.length} {entityType}s</span>
       </div>
+
+      {scopeWarning && (
+        <div className="px-3 py-2 text-[11px] text-muted-foreground border-b border-border bg-surface/20">
+          {scopeWarning}
+          {symbolEquivalent(key) && (
+            <button onClick={() => setKey(symbolEquivalent(key)!)} className="ml-2 underline hover:text-foreground">
+              switch signal
+            </button>
+          )}
+        </div>
+      )}
+
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border">
         <Stat label="Latest" value={latest ? fmt.format(latest.value) : "—"} sub={latest?.date} />
