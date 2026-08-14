@@ -1,10 +1,11 @@
 // Live S&P 500 dual-trend constituent table (Macro Ops Signal API).
 import { useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { ChevronDown, Download, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LevelBar, SignalBadge } from "@/components/hud/SignalBadge";
 import { cn } from "@/lib/utils";
+import { useSymbolTrendDetail } from "@/hooks/useSymbolTrendDetail";
 import { useSpxDualTrend, SECTOR_LABELS, type SpxDualTrendRow } from "@/hooks/useSpxDualTrend";
 
 type SortKey = keyof Pick<
