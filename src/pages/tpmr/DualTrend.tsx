@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
+import { SpxDualTrendTable } from "@/components/hud/SpxDualTrendTable";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
 
 
@@ -165,6 +166,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
 
 
       <div className="px-3 pb-6">
+        {slug === "sp500" ? (
+          <SpxDualTrendTable />
+        ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
@@ -215,7 +219,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
             </table>
           </div>
         </div>
+        )}
       </div>
+
     </AppShell>
   );
 }
