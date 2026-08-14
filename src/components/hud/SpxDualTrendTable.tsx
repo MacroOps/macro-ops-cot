@@ -30,7 +30,130 @@ function exportCsv(rows: SpxDualTrendRow[]) {
   a.click();
 }
 
+function DetailPanel({
+  label,
+  accent,
+  trend,
+  relative,
+  signal,
+  days,
+  signalDate,
+  loading,
+}: {
+  label: string;
+  accent: string;
+  trend: number;
+  relative: number;
+  signal: "Bullish" | "Bearish";
+  days?: number;
+  signalDate?: string;
+  loading: boolean;
+}) {
+  const bull = signal === "Bullish";
+  return (
+    <div className={cn("rounded-sm border bg-card", accent)}>
+      <div className="px-3 py-2 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-center text-surface-foreground">
+        {label} Dual Trend System
+      </div>
+      <div className="p-3 space-y-2 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Trend Level</span>
+          <span className="font-mono tabular-nums">{trend}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Relative Level</span>
+          <span className="font-mono tabular-nums">{relative}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">Signal</span>
+          <SignalBadge value={signal.toUpperCase() as "BULLISH" | "BEARISH"} />
+        </div>
+        <div
+          className={cn(
+            "rounded-sm border-l-2 p-2 space-y-1.5",
+            bull ? "border-success bg-success/5" : "border-destructive bg-destructive/5",
+          )}
+        >
+          <div className={cn("text-[10px] font-semibold uppercase tracking-wider text-center", bull ? "text-success" : "text-destructive")}>
+            {signal} Signal
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Days in Signal</span>
+            <span className="font-mono tabular-nums">{loading ? "…" : days ?? "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Signal Date</span>
+            <span className="font-mono tabular-nums">{loading ? "…" : signalDate || "—"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SpxRow({ r }: { r: SpxDualTrendRow }) {
+  const [open, setOpen] = useState(false);
+  const { data, isLoading } = useSymbolTrendDetail(r.symbol, open);
+
+  return (
+    <>
+      <tr
+        className={cn("border-t border-border/50 cursor-pointer hover:bg-muted/30", open && "bg-muted/40")}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <td className="py-1.5 pl-2">
+          <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+        </td>
+        <td className="py-1.5 font-mono font-medium">{r.symbol}</td>
+        <td className="py-1.5 truncate max-w-[180px]">{r.name}</td>
+        <td className="py-1.5 text-[10px] text-muted-foreground whitespace-nowrap">{r.sectorLabel}</td>
+        <td className="py-1.5 text-[10px] text-muted-foreground truncate max-w-[160px]">{r.subIndustry}</td>
+        <td className="py-1.5"><LevelBar value={r.ltTrend} /></td>
+        <td className="py-1.5"><LevelBar value={r.ltRelative} /></td>
+        <td className="py-1.5"><SignalBadge value={r.ltSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
+        <td className="py-1.5 text-right font-mono tabular-nums">{data ? data.lt.days : r.ltDays || "—"}</td>
+        <td className="py-1.5"><LevelBar value={r.stTrend} /></td>
+        <td className="py-1.5"><LevelBar value={r.stRelative} /></td>
+        <td className="py-1.5"><SignalBadge value={r.stSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
+        <td className="py-1.5 text-right font-mono tabular-nums pr-2">{data ? data.st.days : r.stDays || "—"}</td>
+      </tr>
+      {open && (
+        <tr className="bg-muted/20 border-t border-border/50">
+          <td colSpan={13} className="p-3">
+            <div className="text-[11px] font-semibold mb-2">
+              {r.symbol} · <span className="text-muted-foreground font-normal">{r.name}</span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <DetailPanel
+                label="Short-Term"
+                accent="border-t-2 border-t-warning"
+                trend={r.stTrend}
+                relative={r.stRelative}
+                signal={r.stSignal}
+                days={data?.st.days}
+                signalDate={data?.st.signalDate}
+                loading={isLoading}
+              />
+              <DetailPanel
+                label="Long-Term"
+                accent="border-t-2 border-t-primary"
+                trend={r.ltTrend}
+                relative={r.ltRelative}
+                signal={r.ltSignal}
+                days={data?.lt.days}
+                signalDate={data?.lt.signalDate}
+                loading={isLoading}
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 export function SpxDualTrendTable() {
+
   const { data, isLoading, error } = useSpxDualTrend();
   const [q, setQ] = useState("");
   const [sector, setSector] = useState("all");
