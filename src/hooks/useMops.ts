@@ -10,7 +10,9 @@ import type {
 
 type Opts<T> = Omit<UseQueryOptions<T, Error, T, unknown[]>, "queryKey" | "queryFn">;
 
-const defaults = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false };
+// retry: false — the client already retries with Retry-After-aware backoff,
+// so React Query retrying on top would multiply requests against the 100/min budget.
+const defaults = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false, retry: false } as const;
 
 // --- signal keys / catalog ------------------------------------------------
 export const useSignalKeys = () =>
