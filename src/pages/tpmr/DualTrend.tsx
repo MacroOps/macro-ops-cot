@@ -6,7 +6,9 @@ import { SignalBadge, LevelBar, DeltaCell } from "@/components/hud/SignalBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
+
 
 function exportCsv(rows: DualTrendStock[], filename: string) {
   const headers = [
@@ -122,6 +124,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
       <PageHeader eyebrow="TurningPoint · Dual Trend" title={u.title} description={u.description} />
 
       <div className="p-3">
+        {slug === "sp500" ? (
+          <SectorOverviewTable />
+        ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
             Sector Overview Summary
@@ -155,7 +160,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
             </table>
           </div>
         </div>
+        )}
       </div>
+
 
       <div className="px-3 pb-6">
         <div className="hud-panel">
