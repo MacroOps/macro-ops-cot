@@ -1,13 +1,17 @@
-// Per-symbol dual-trend detail: current signal run length and signal date,
-// derived from the Macro Ops state history (the API's *_days key is not populated).
+// Per-symbol dual-trend detail: current signal run length, signal date and
+// since-signal returns. Days/date derive from the Macro Ops state history
+// (the API's *_days key is not populated); returns come from the symbol-returns function.
 import { useQuery } from "@tanstack/react-query";
 import { mopsGet } from "@/lib/mops/client";
+import { supabase } from "@/integrations/supabase/client";
 import type { MopsSignalRow } from "@/lib/mops/types";
 
 export interface TrendRun {
   signal: "Bullish" | "Bearish" | null;
   days: number;          // trading sessions in current signal
   signalDate: string;    // ISO date the signal started
+  ret: number | null;    // % return since signal date
+  net: number | null;    // % return vs S&P 500 since signal date
 }
 
 export interface SymbolTrendDetail {
@@ -16,7 +20,7 @@ export interface SymbolTrendDetail {
   st: TrendRun;
 }
 
-const EMPTY: TrendRun = { signal: null, days: 0, signalDate: "" };
+const EMPTY: TrendRun = { signal: null, days: 0, signalDate: "", ret: null, net: null };
 
 function run(rows: MopsSignalRow[]): TrendRun {
   // rows are newest-first
@@ -30,8 +34,28 @@ function run(rows: MopsSignalRow[]): TrendRun {
     signal: sign > 0 ? "Bullish" : "Bearish",
     days: i - 1,
     signalDate: sorted[i - 1].date,
+    ret: null,
+    net: null,
   };
 }
+
+type ReturnsMap = Record<string, { ret: number | null; net: number | null }>;
+
+async function fetchReturns(symbol: string, dates: string[]): Promise<ReturnsMap> {
+  const unique = [...new Set(dates.filter(Boolean))];
+  if (!unique.length) return {};
+  try {
+    const { data, error } = await supabase.functions.invoke<{ returns: ReturnsMap }>(
+      `symbol-returns?symbol=${encodeURIComponent(symbol)}&dates=${unique.join(",")}`,
+      { method: "GET" },
+    );
+    if (error) return {};
+    return data?.returns ?? {};
+  } catch {
+    return {};
+  }
+}
+
 
 export const useSymbolTrendDetail = (symbol: string, enabled: boolean) =>
   useQuery({
