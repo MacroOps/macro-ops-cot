@@ -73,10 +73,15 @@ export const useSymbolTrendDetail = (symbol: string, enabled: boolean) =>
         mopsGet<MopsSignalRow[]>("/v1/signal", { key: "trend_rel_lt_state", ...params }),
         mopsGet<MopsSignalRow[]>("/v1/signal", { key: "trend_rel_st_state", ...params }),
       ]);
+      const lt = run(ltRows);
+      const st = run(stRows);
+      const rets = await fetchReturns(symbol, [lt.signalDate, st.signalDate]);
+      const apply = (r: TrendRun): TrendRun => ({ ...r, ...(rets[r.signalDate] ?? {}) });
       return {
         asOf: ltRows[0]?.date ?? stRows[0]?.date ?? "",
-        lt: run(ltRows),
-        st: run(stRows),
+        lt: apply(lt),
+        st: apply(st),
       };
+
     },
   });
