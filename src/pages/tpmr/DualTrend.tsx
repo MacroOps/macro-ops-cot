@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
 import { SpxDualTrendTable } from "@/components/hud/SpxDualTrendTable";
+import { EtfDualTrendTable } from "@/components/hud/EtfDualTrendTable";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
 
 
@@ -125,7 +126,7 @@ export default function DualTrendPage({ slug }: { slug: string }) {
       <PageHeader eyebrow="TurningPoint · Dual Trend" title={u.title} description={u.description} />
 
       <div className="p-3">
-        {slug === "sp500" ? (
+        {slug === "sp500" || slug === "etfs" ? (
           <SectorOverviewTable />
         ) : (
         <div className="hud-panel">
@@ -168,6 +169,8 @@ export default function DualTrendPage({ slug }: { slug: string }) {
       <div className="px-3 pb-6">
         {slug === "sp500" ? (
           <SpxDualTrendTable />
+        ) : slug === "etfs" ? (
+          <EtfDualTrendTable />
         ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
