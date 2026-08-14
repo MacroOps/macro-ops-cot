@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
+import { SpxDualTrendTable } from "@/components/hud/SpxDualTrendTable";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
 
 
