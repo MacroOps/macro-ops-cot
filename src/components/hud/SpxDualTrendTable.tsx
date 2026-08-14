@@ -31,6 +31,16 @@ function exportCsv(rows: SpxDualTrendRow[]) {
   a.click();
 }
 
+function Pct({ v, loading }: { v: number | null | undefined; loading: boolean }) {
+  if (loading) return <span className="font-mono tabular-nums">…</span>;
+  if (v === null || v === undefined) return <span className="font-mono tabular-nums">—</span>;
+  return (
+    <span className={cn("font-mono tabular-nums", v >= 0 ? "text-success" : "text-destructive")}>
+      {v > 0 ? "+" : ""}{v.toFixed(1)}%
+    </span>
+  );
+}
+
 function DetailPanel({
   label,
   accent,
@@ -39,6 +49,8 @@ function DetailPanel({
   signal,
   days,
   signalDate,
+  ret,
+  net,
   loading,
 }: {
   label: string;
@@ -48,6 +60,8 @@ function DetailPanel({
   signal: "Bullish" | "Bearish";
   days?: number;
   signalDate?: string;
+  ret?: number | null;
+  net?: number | null;
   loading: boolean;
 }) {
   const bull = signal === "Bullish";
@@ -86,11 +100,20 @@ function DetailPanel({
             <span className="text-muted-foreground">Signal Date</span>
             <span className="font-mono tabular-nums">{loading ? "…" : signalDate || "—"}</span>
           </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Return</span>
+            <Pct v={ret} loading={loading} />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Net Return</span>
+            <Pct v={net} loading={loading} />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 function SpxRow({ r }: { r: SpxDualTrendRow }) {
   const [open, setOpen] = useState(false);
@@ -133,6 +156,8 @@ function SpxRow({ r }: { r: SpxDualTrendRow }) {
                 signal={r.stSignal}
                 days={data?.st.days}
                 signalDate={data?.st.signalDate}
+                ret={data?.st.ret}
+                net={data?.st.net}
                 loading={isLoading}
               />
               <DetailPanel
@@ -143,6 +168,8 @@ function SpxRow({ r }: { r: SpxDualTrendRow }) {
                 signal={r.ltSignal}
                 days={data?.lt.days}
                 signalDate={data?.lt.signalDate}
+                ret={data?.lt.ret}
+                net={data?.lt.net}
                 loading={isLoading}
               />
             </div>
