@@ -65,7 +65,7 @@ export default function SignalExplorer() {
           onChange={e => setEntityType(e.target.value)}
           className="h-7 bg-background border border-border rounded-sm px-2"
         >
-          {["symbol", "index", "sector", "industry", "sub_industry"].map(t => (
+          {["symbol", "index"].map(t => (
             <option key={t}>{t}</option>
           ))}
         </select>

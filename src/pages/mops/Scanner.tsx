@@ -8,7 +8,7 @@ import { X, Plus, Search } from "lucide-react";
 const PRESETS = [
   { label: "Bullish trend (SPX components)", conds: ["above_sma_50=1", "above_sma_200=1", "outperforming_spx_63d=1"], t: "symbol" },
   { label: "Fresh breakouts", conds: ["new_highs_252d=1"], t: "symbol" },
-  { label: "Risk-Off sectors", conds: ["risk_lt_state=0"], t: "sector" },
+  { label: "Risk-Off sectors", conds: ["risk_lt_state=0"], t: "index" },
   { label: "Weak below MAs", conds: ["above_sma_50=0", "above_sma_200=0"], t: "symbol" },
 ];
 
@@ -84,7 +84,7 @@ export default function Scanner() {
             onChange={e => setEntityType(e.target.value)}
             className="h-7 bg-background border border-border rounded-sm px-2 text-xs"
           >
-            {["symbol", "index", "sector", "industry", "sub_industry"].map(t => <option key={t}>{t}</option>)}
+            {["symbol", "index"].map(t => <option key={t}>{t}</option>)}
           </select>
           <button
             onClick={() => refetch()}

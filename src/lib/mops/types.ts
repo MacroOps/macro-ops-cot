@@ -1,7 +1,11 @@
 // Types for the Macro Ops Signal API. Kept loose since upstream payloads vary
 // slightly per endpoint; the client normalizes envelopes into arrays or scalars.
 
-export type MopsEntityType = "symbol" | "sector" | "index" | "industry" | "sub_industry" | string;
+// The signals table only ever stores "symbol" or "index". Sector/index codes
+// (SPX, S5INFT, S5HLTH, ...) are entity_type="index". "sector" is NOT a valid
+// value — filtered endpoints (/v1/rank, /v1/signal, /v1/distribution) return
+// empty for it, and /v1/entities echoes the index list for any non-"symbol" value.
+export type MopsEntityType = "symbol" | "index";
 
 export interface MopsSignalRow {
   entity: string;

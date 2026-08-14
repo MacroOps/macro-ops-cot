@@ -13,7 +13,7 @@ const KEYS = [
 
 export default function TpSectorTrends() {
   const [key, setKey] = useState(KEYS[0].key);
-  const { data: rows = [], isLoading, error } = useMopsRank({ key, entity_type: "sector", order: "desc", limit: 30 });
+  const { data: rows = [], isLoading, error } = useMopsRank({ key, entity_type: "index", order: "desc", limit: 30 });
 
   const nums = rows.map(r => typeof r.value === "number" ? r.value : Number(r.value)).filter(n => !Number.isNaN(n));
   const max = Math.max(100, ...nums);

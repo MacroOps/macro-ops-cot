@@ -8,7 +8,7 @@ const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
 export default function Rankings() {
   const [key, setKey] = useState<string>("pct_above_sma_50");
-  const [entityType, setEntityType] = useState<string>("sector");
+  const [entityType, setEntityType] = useState<string>("index");
   const [order, setOrder] = useState<"desc" | "asc">("desc");
   const [limit, setLimit] = useState(50);
 
@@ -37,7 +37,7 @@ export default function Rankings() {
 
         <span className="hud-label ml-3 mr-1">Type</span>
         <select value={entityType} onChange={e => setEntityType(e.target.value)} className="h-7 bg-background border border-border rounded-sm px-2">
-          {["sector", "industry", "sub_industry", "index", "symbol"].map(t => <option key={t}>{t}</option>)}
+          {["index", "symbol"].map(t => <option key={t}>{t}</option>)}
         </select>
 
         <span className="hud-label ml-3 mr-1">Order</span>
