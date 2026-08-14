@@ -493,7 +493,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "mops_signal",
-      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors.",
+      description: "Fetch a Macro Ops signal time series for one entity. Signal keys include pct_above_sma_50, pct_above_sma_200, risk_lt_state, risk_lt_score, risk_st_state, above_sma_50, above_sma_200, ma_50_above_150, outperforming_spx_63d, new_highs_252d_count, new_lows_252d_count. Entities are US equity symbols (AAPL), indices (SPX, NDX, RUT), or sectors. IMPORTANT: keys starting with pct_ (and *_count) are BREADTH metrics computed only over a group — they exist for sector/index entities (e.g. SPX, S5INFT) and return nothing for entity_type=symbol. For a single symbol use the boolean equivalent instead: above_sma_50 / above_sma_200 / ma_50_above_150 / outperforming_spx_63d.",
       parameters: {
         type: "object",
         properties: {
