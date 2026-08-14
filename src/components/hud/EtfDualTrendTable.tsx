@@ -15,14 +15,14 @@ type SortKey =
 const badge = (s: EtfDualTrendRow["ltSignal"]) =>
   s === "Bullish" ? "BULLISH" : s === "Bearish" ? "BEARISH" : "NEUTRAL";
 
-const pct = (v: number | null) => (v === null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`);
+const pct = (v?: number | null) => (v == null || !Number.isFinite(v) ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`);
 
-function PctCell({ v, className }: { v: number | null; className?: string }) {
+function PctCell({ v, className }: { v?: number | null; className?: string }) {
   return (
     <td
       className={cn(
         "py-1.5 text-right font-mono tabular-nums",
-        v === null ? "text-muted-foreground" : v >= 0 ? "text-success" : "text-destructive",
+        v == null ? "text-muted-foreground" : v >= 0 ? "text-success" : "text-destructive",
         className,
       )}
     >
