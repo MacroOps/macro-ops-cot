@@ -76,7 +76,9 @@ function countRow(
       return acc + (v !== undefined && Math.sign(v) === sign ? 1 : 0);
     }, 0);
 
-  const total = members.filter((s) => lt.has(s) || st.has(s)).length || members.length;
+  // Total = full sector membership from the API (not just symbols with a signal today).
+  const total = members.length;
+
   const bullishLT = tally(lt, 1);
   const bearishLT = tally(lt, -1);
   const bullishST = tally(st, 1);
