@@ -120,6 +120,7 @@ export function SpxDualTrendTable() {
           <table className="w-full text-xs min-w-[1000px]">
             <thead className="text-[9px] uppercase tracking-wider text-muted-foreground sticky top-0 bg-card z-10">
               <tr className="border-b border-border">
+                <th className="w-6"></th>
                 {th("Symbol", "symbol")}
                 {th("Name", "name")}
                 {th("Sector", "sectorLabel")}
@@ -136,22 +137,10 @@ export function SpxDualTrendTable() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.symbol} className="border-t border-border/50 hover:bg-muted/30">
-                  <td className="py-1.5 pl-2 font-mono font-medium">{r.symbol}</td>
-                  <td className="py-1.5 truncate max-w-[180px]">{r.name}</td>
-                  <td className="py-1.5 text-[10px] text-muted-foreground whitespace-nowrap">{r.sectorLabel}</td>
-                  <td className="py-1.5 text-[10px] text-muted-foreground truncate max-w-[160px]">{r.subIndustry}</td>
-                  <td className="py-1.5"><LevelBar value={r.ltTrend} /></td>
-                  <td className="py-1.5"><LevelBar value={r.ltRelative} /></td>
-                  <td className="py-1.5"><SignalBadge value={r.ltSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
-                  <td className="py-1.5 text-right font-mono tabular-nums">{r.ltDays}</td>
-                  <td className="py-1.5"><LevelBar value={r.stTrend} /></td>
-                  <td className="py-1.5"><LevelBar value={r.stRelative} /></td>
-                  <td className="py-1.5"><SignalBadge value={r.stSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
-                  <td className="py-1.5 text-right font-mono tabular-nums pr-2">{r.stDays}</td>
-                </tr>
+                <SpxRow key={r.symbol} r={r} />
               ))}
             </tbody>
+
           </table>
         </div>
       )}
