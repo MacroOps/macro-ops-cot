@@ -93,11 +93,11 @@ async function fetchSpxDualTrend(): Promise<SpxDualTrend> {
       subIndustry,
       ltTrend: level(ltV1.get(symbol)),
       ltRelative: level(ltV2.get(symbol)),
-      ltSignal: (ltState.get(symbol) ?? 0) > 0 ? "Bullish" : "Bearish",
+      ltSignal: ((ltState.get(symbol) ?? 0) > 0 ? "Bullish" : "Bearish") as "Bullish" | "Bearish",
       ltDays: Math.round(ltDays.get(symbol) ?? 0),
       stTrend: level(stV1.get(symbol)),
       stRelative: level(stV2.get(symbol)),
-      stSignal: (stState.get(symbol) ?? 0) > 0 ? "Bullish" : "Bearish",
+      stSignal: ((stState.get(symbol) ?? 0) > 0 ? "Bullish" : "Bearish") as "Bullish" | "Bearish",
       stDays: Math.round(stDays.get(symbol) ?? 0),
     }))
     .sort((a, b) => a.symbol.localeCompare(b.symbol));
