@@ -81,6 +81,19 @@ export default function SignalExplorer() {
         <span className="ml-auto text-[10px] text-muted-foreground">{keys.length} keys · {entities.length} {entityType}s</span>
       </div>
 
+      {scopeWarning && (
+        <div className="px-3 py-2 text-[11px] text-muted-foreground border-b border-border bg-surface/20">
+          {scopeWarning}
+          {symbolEquivalent(key) && (
+            <button onClick={() => setKey(symbolEquivalent(key)!)} className="ml-2 underline hover:text-foreground">
+              switch signal
+            </button>
+          )}
+        </div>
+      )}
+
+
+
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-border">
         <Stat label="Latest" value={latest ? fmt.format(latest.value) : "—"} sub={latest?.date} />
         <Stat label="1D Change" value={fmt.format(delta)} tone={delta > 0 ? "pos" : delta < 0 ? "neg" : "n"} />
