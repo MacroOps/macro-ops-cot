@@ -7,6 +7,7 @@ import {
   CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Customized, ReferenceLine,
 } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { breadthScopeWarning, symbolEquivalent } from "@/lib/mops/signalScope";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
