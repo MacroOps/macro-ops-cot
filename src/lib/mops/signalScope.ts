@@ -26,7 +26,7 @@ export const symbolEquivalent = (key: string): string | undefined => SYMBOL_EQUI
 export const breadthScopeWarning = (key: string): string | null => {
   if (!isBreadthKey(key)) return null;
   const alt = symbolEquivalent(key);
-  return `${key} is a group breadth metric — it only exists for sector / index entities.${
+  return `${key} is a group breadth metric — it only exists for index-level entities (SPX, S5INFT, …).${
     alt ? ` For symbol-level data use ${alt} (boolean).` : ""
   }`;
 };
