@@ -9,16 +9,16 @@ function Row({ r, emphasis }: { r: SectorOverviewRow; emphasis?: boolean }) {
       <td className="py-1.5 text-right font-mono tabular-nums">{r.total}</td>
       <td className="py-1.5 text-right font-mono tabular-nums text-success">{r.bullishLT}</td>
       <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBullishLT}%</td>
-      <td className="py-1.5 text-right"><DeltaCell value={r.bullishLTChg} /></td>
+      <td className="py-1.5 text-right"><DeltaCell value={r.bullishLTChg || null} /></td>
       <td className="py-1.5 text-right font-mono tabular-nums text-destructive">{r.bearishLT}</td>
       <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBearishLT}%</td>
-      <td className="py-1.5 text-right"><DeltaCell value={r.bearishLTChg} /></td>
+      <td className="py-1.5 text-right"><DeltaCell value={r.bearishLTChg || null} /></td>
       <td className="py-1.5 text-right font-mono tabular-nums text-success">{r.bullishST}</td>
       <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBullishST}%</td>
-      <td className="py-1.5 text-right"><DeltaCell value={r.bullishSTChg} /></td>
+      <td className="py-1.5 text-right"><DeltaCell value={r.bullishSTChg || null} /></td>
       <td className="py-1.5 text-right font-mono tabular-nums text-destructive">{r.bearishST}</td>
       <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBearishST}%</td>
-      <td className="py-1.5 text-right pr-2"><DeltaCell value={r.bearishSTChg} /></td>
+      <td className="py-1.5 text-right pr-2"><DeltaCell value={r.bearishSTChg || null} /></td>
     </tr>
   );
 }
