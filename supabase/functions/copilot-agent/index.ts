@@ -626,6 +626,7 @@ Equities / breadth / trend / risk (LIVE via Macro Ops Signal API — use these f
 - "is SPX in risk-on or risk-off" → mops_signal({key:"risk_lt_state", entity:"SPX", entity_type:"index", limit:1})
 - "top sectors by breadth" → mops_rank({key:"pct_above_sma_50", entity_type:"sector", order:"desc"})
 - "which stocks are above their 50D and 200D and outperforming spx" → mops_scan({conditions:["above_sma_50=true","above_sma_200=true","outperforming_spx_63d=true"], entity_type:"symbol", logic:"and"})
+- "is AAPL above its 50D" → mops_signal({key:"above_sma_50", entity:"AAPL", entity_type:"symbol"}) — NEVER use pct_above_sma_50 for a single symbol; pct_* keys are group breadth (sector/index only) and return empty at symbol level.
 - "where does today's read rank historically" → mops_percentile({key, entity})
 - Deep-link: point users to /signals/explorer, /signals/scanner, /signals/rankings, /tp/breadth, /tp/risk-composite, /tp/sector-trends, /tp/trend-signals when relevant.
 
