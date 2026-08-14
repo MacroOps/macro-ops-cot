@@ -93,7 +93,31 @@ Deno.serve(async (req) => {
     const text = await res.text();
 
     if (!res.ok) {
-      return json({ error: "upstream_error", status: res.status, path: upstreamPath, body: text.slice(0, 800) }, res.status);
+      // Forward the upstream backoff hint. `Retry-After` may be seconds or an
+      // HTTP-date; normalize to seconds so the client can just sleep on it.
+      const raw = res.headers.get("retry-after");
+      let retryAfter: number | null = null;
+      if (raw) {
+        const n = Number(raw);
+        if (Number.isFinite(n)) retryAfter = Math.max(0, n);
+        else {
+          const when = Date.parse(raw);
+          if (!Number.isNaN(when)) retryAfter = Math.max(0, Math.round((when - Date.now()) / 1000));
+        }
+      }
+      // Respond 200 with an error envelope: supabase.functions.invoke discards
+      // the body on non-2xx, which would drop retry_after before it reaches us.
+      return json(
+        {
+          error: "upstream_error",
+          status: res.status,
+          path: upstreamPath,
+          retry_after: retryAfter,
+          body: text.slice(0, 800),
+        },
+        200,
+        retryAfter !== null ? { "Retry-After": String(retryAfter) } : {},
+      );
     }
     let data: unknown;
     try { data = JSON.parse(text); } catch { data = text; }
