@@ -1,50 +1,47 @@
-// Live dual-trend rows for the sector-ETF universe.
+// Dual-trend rows for the full ETF universe (127 ETFs).
 // The Macro Ops Signal API carries index-level (S5xxx) relative-trend series;
-// each maps 1:1 to its SPDR sector ETF proxy.
+// each maps 1:1 to its SPDR sector ETF proxy and is overlaid live on top of the
+// published snapshot. All other ETFs render from the snapshot vintage.
 import { useQuery } from "@tanstack/react-query";
 import { mopsGet } from "@/lib/mops/client";
 import type { MopsSignalRow } from "@/lib/mops/types";
+import { ETF_SNAPSHOT, ETF_SNAPSHOT_DATE, type EtfSignal } from "@/lib/etfUniverse";
 
-export interface EtfMeta {
-  code: string;   // index entity in the API
-  etf: string;    // ETF proxy ticker
+export type Signal = EtfSignal;
+
+// index entity -> SPDR sector ETF proxy
+export const SECTOR_INDEX_BY_ETF: Record<string, string> = {
+  XLC: "S5TELS", XLY: "S5COND", XLP: "S5CONS", XLE: "S5ENRS", XLF: "S5FINL",
+  XLV: "S5HLTH", XLI: "S5INDU", XLK: "S5INFT", XLB: "S5MATR", XLRE: "S5RLST",
+  XLU: "S5UTIL",
+};
+
+export interface EtfDualTrendRow {
+  etf: string;
   name: string;
   category: string;
-}
-
-export const ETF_UNIVERSE: EtfMeta[] = [
-  { code: "S5TELS", etf: "XLC", name: "Communication Services Select Sector SPDR", category: "US Sector" },
-  { code: "S5COND", etf: "XLY", name: "Consumer Discretionary Select Sector SPDR", category: "US Sector" },
-  { code: "S5CONS", etf: "XLP", name: "Consumer Staples Select Sector SPDR", category: "US Sector" },
-  { code: "S5ENRS", etf: "XLE", name: "Energy Select Sector SPDR", category: "US Sector" },
-  { code: "S5FINL", etf: "XLF", name: "Financial Select Sector SPDR", category: "US Sector" },
-  { code: "S5HLTH", etf: "XLV", name: "Health Care Select Sector SPDR", category: "US Sector" },
-  { code: "S5INDU", etf: "XLI", name: "Industrial Select Sector SPDR", category: "US Sector" },
-  { code: "S5INFT", etf: "XLK", name: "Technology Select Sector SPDR", category: "US Sector" },
-  { code: "S5MATR", etf: "XLB", name: "Materials Select Sector SPDR", category: "US Sector" },
-  { code: "S5RLST", etf: "XLRE", name: "Real Estate Select Sector SPDR", category: "US Sector" },
-  { code: "S5UTIL", etf: "XLU", name: "Utilities Select Sector SPDR", category: "US Sector" },
-];
-
-export type Signal = "Bullish" | "Bearish" | "Neutral";
-
-export interface EtfDualTrendRow extends EtfMeta {
+  live: boolean;
   ltTrend: number;
   ltRelative: number;
   ltSignal: Signal;
   ltDays: number;
   ltDate: string;
+  ltReturn: number | null;
+  ltNet: number | null;
   stTrend: number;
   stRelative: number;
   stSignal: Signal;
   stDays: number;
   stDate: string;
+  stReturn: number | null;
+  stNet: number | null;
   riskLtSignal: Signal;
   riskStSignal: Signal;
 }
 
 export interface EtfDualTrend {
   asOf: string;
+  liveCount: number;
   rows: EtfDualTrendRow[];
 }
 
@@ -58,7 +55,7 @@ type Maps = Record<(typeof KEYS)[number], Map<string, number>>;
 
 function toMap(rows: MopsSignalRow[]) {
   const m = new Map<string, number>();
-  for (const r of rows) {
+  for (const r of rows ?? []) {
     const v = typeof r.value === "number" ? r.value : Number(r.value);
     if (!Number.isNaN(v)) m.set(r.entity, v);
   }
@@ -81,30 +78,48 @@ const sig = (v: number | undefined): Signal =>
 const level = (v: number | undefined) => (v === undefined ? 0 : Math.round(v * 10));
 
 async function fetchEtfDualTrend(): Promise<EtfDualTrend> {
-  const results = await Promise.all(
-    KEYS.map((key) => mopsGet<MopsSignalRow[]>("/v1/signal", { key, entity_type: "index", limit: 100 })),
-  );
-  const asOf = results.flat().find((r) => r?.date)?.date ?? "";
-  const m = {} as Maps;
-  KEYS.forEach((k, i) => { m[k] = toMap(results[i]); });
+  let m = {} as Maps;
+  let apiDate = "";
+  try {
+    const results = await Promise.all(
+      KEYS.map((key) => mopsGet<MopsSignalRow[]>("/v1/signal", { key, entity_type: "index", limit: 100 })),
+    );
+    apiDate = results.flat().find((r) => r?.date)?.date ?? "";
+    KEYS.forEach((k, i) => { m[k] = toMap(results[i]); });
+  } catch {
+    KEYS.forEach((k) => { m[k] = new Map(); });
+  }
 
-  const rows = ETF_UNIVERSE.map((e) => ({
-    ...e,
-    ltTrend: level(m.trend_rel_lt_value1.get(e.code)),
-    ltRelative: level(m.trend_rel_lt_value2.get(e.code)),
-    ltSignal: sig(m.trend_rel_lt_state.get(e.code)),
-    ltDays: Math.round(m.trend_rel_lt_days.get(e.code) ?? 0),
-    ltDate: dateLabel(m.trend_rel_lt_start.get(e.code)),
-    stTrend: level(m.trend_rel_st_value1.get(e.code)),
-    stRelative: level(m.trend_rel_st_value2.get(e.code)),
-    stSignal: sig(m.trend_rel_st_state.get(e.code)),
-    stDays: Math.round(m.trend_rel_st_days.get(e.code) ?? 0),
-    stDate: dateLabel(m.trend_rel_st_start.get(e.code)),
-    riskLtSignal: sig(m.risk_lt_state.get(e.code)),
-    riskStSignal: sig(m.risk_st_state.get(e.code)),
-  }));
+  let liveCount = 0;
+  const rows: EtfDualTrendRow[] = ETF_SNAPSHOT.map((s) => {
+    const code = SECTOR_INDEX_BY_ETF[s.etf];
+    const hasLive = !!code && m.trend_rel_lt_state?.has(code);
+    if (hasLive) liveCount += 1;
+    return {
+      etf: s.etf,
+      name: s.name,
+      category: s.category,
+      live: hasLive,
+      ltTrend: hasLive ? level(m.trend_rel_lt_value1.get(code)) : s.ltTrend,
+      ltRelative: hasLive ? level(m.trend_rel_lt_value2.get(code)) : s.ltRelative,
+      ltSignal: hasLive ? sig(m.trend_rel_lt_state.get(code)) : s.ltSignal,
+      ltDays: hasLive ? Math.round(m.trend_rel_lt_days.get(code) ?? 0) : s.ltDays,
+      ltDate: hasLive ? dateLabel(m.trend_rel_lt_start.get(code)) : "—",
+      ltReturn: s.ltReturn,
+      ltNet: s.ltNet,
+      stTrend: hasLive ? level(m.trend_rel_st_value1.get(code)) : s.stTrend,
+      stRelative: hasLive ? level(m.trend_rel_st_value2.get(code)) : s.stRelative,
+      stSignal: hasLive ? sig(m.trend_rel_st_state.get(code)) : s.stSignal,
+      stDays: hasLive ? Math.round(m.trend_rel_st_days.get(code) ?? 0) : s.stDays,
+      stDate: hasLive ? dateLabel(m.trend_rel_st_start.get(code)) : "—",
+      stReturn: s.stReturn,
+      stNet: s.stNet,
+      riskLtSignal: sig(m.risk_lt_state?.get(code ?? "")),
+      riskStSignal: sig(m.risk_st_state?.get(code ?? "")),
+    };
+  });
 
-  return { asOf, rows };
+  return { asOf: apiDate || ETF_SNAPSHOT_DATE, liveCount, rows };
 }
 
 export const useEtfDualTrend = () =>
