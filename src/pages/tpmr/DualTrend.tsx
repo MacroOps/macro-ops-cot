@@ -165,6 +165,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
 
 
       <div className="px-3 pb-6">
+        {slug === "sp500" ? (
+          <SpxDualTrendTable />
+        ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
@@ -215,7 +218,9 @@ export default function DualTrendPage({ slug }: { slug: string }) {
             </table>
           </div>
         </div>
+        )}
       </div>
+
     </AppShell>
   );
 }
