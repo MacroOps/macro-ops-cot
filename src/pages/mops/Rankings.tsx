@@ -15,6 +15,9 @@ export default function Rankings() {
   const { data: keys = [] } = useSignalKeys();
   const { data: rows = [], isLoading, error } = useMopsRank({ key, entity_type: entityType, order, limit });
 
+  const scopeWarning = entityType === "symbol" ? breadthScopeWarning(key) : null;
+
+
   const nums = rows.map(r => typeof r.value === "number" ? r.value : Number(r.value)).filter(n => !Number.isNaN(n));
   const max = nums.length ? Math.max(...nums) : 1;
   const min = nums.length ? Math.min(...nums) : 0;
