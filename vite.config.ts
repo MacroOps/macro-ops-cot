@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Cursor Cloud preview uses *.cursorvm.com proxy hostnames
+    allowedHosts: [".cursorvm.com", "localhost"],
     hmr: {
       overlay: false,
     },
