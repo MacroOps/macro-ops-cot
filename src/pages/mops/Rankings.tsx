@@ -45,6 +45,17 @@ export default function Rankings() {
         <input type="number" value={limit} min={10} max={500} onChange={e => setLimit(Number(e.target.value) || 50)} className="h-7 w-16 bg-background border border-border rounded-sm px-2 tabular-nums" />
       </div>
 
+      {scopeWarning && (
+        <div className="px-3 py-2 text-[11px] text-muted-foreground border-b border-border bg-surface/20">
+          {scopeWarning}
+          {symbolEquivalent(key) && (
+            <button onClick={() => setKey(symbolEquivalent(key)!)} className="ml-2 underline hover:text-foreground">
+              switch signal
+            </button>
+          )}
+        </div>
+      )}
+
       {error && <div className="px-3 py-3 text-xs text-destructive border-b border-border">{(error as Error).message}</div>}
 
       <div className="p-3">
