@@ -224,13 +224,13 @@ export default function MarketOverview() {
 
 
       <div className="px-3 pb-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Panel title="Risk On/Off (LT) Performance" eyebrow="1E"><PerfTable rows={PERF_RISK_LT} /></Panel>
-        <Panel title="Risk On/Off (ST) Performance" eyebrow="1E"><PerfTable rows={PERF_RISK_ST} /></Panel>
-        <Panel title="TCTM (LT) Performance" eyebrow="1E"><PerfTable rows={PERF_TCTM_LT} /></Panel>
+        <Panel title="Risk On/Off (LT) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_RISK_LT} /></Panel>
+        <Panel title="Risk On/Off (ST) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_RISK_ST} /></Panel>
+        <Panel title="TCTM (LT) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_TCTM_LT} /></Panel>
       </div>
 
       <div className="px-3 pb-6">
-        <Panel title="TCTM Threshold Conditions" eyebrow="1E">
+        <Panel title="TCTM Threshold Conditions" eyebrow="1E" badge={<MockBadge reason="Threshold study is static reference data." />}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs min-w-[520px]">
               <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
