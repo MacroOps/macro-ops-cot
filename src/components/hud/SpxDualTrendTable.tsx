@@ -156,6 +156,8 @@ function SpxRow({ r }: { r: SpxDualTrendRow }) {
                 signal={r.stSignal}
                 days={data?.st.days}
                 signalDate={data?.st.signalDate}
+                ret={data?.st.ret}
+                net={data?.st.net}
                 loading={isLoading}
               />
               <DetailPanel
@@ -166,6 +168,8 @@ function SpxRow({ r }: { r: SpxDualTrendRow }) {
                 signal={r.ltSignal}
                 days={data?.lt.days}
                 signalDate={data?.lt.signalDate}
+                ret={data?.lt.ret}
+                net={data?.lt.net}
                 loading={isLoading}
               />
             </div>
