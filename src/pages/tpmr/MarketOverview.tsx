@@ -1,11 +1,10 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { SignalBadge, LevelBar, DeltaCell } from "@/components/hud/SignalBadge";
+import { MockBadge } from "@/components/hud/MockBadge";
+import { useTpmrSystems } from "@/hooks/useTpmrSystems";
 import {
-  HOUSE_VIEW,
   TCTM_STATUS,
-  INDEX_SYSTEMS,
-  SECTOR_SYSTEMS,
   PERF_RISK_LT,
   PERF_RISK_ST,
   PERF_TCTM_LT,
@@ -13,18 +12,21 @@ import {
   type ModelPerfRow,
 } from "@/lib/turningPointSpecs";
 
-function Panel({ title, eyebrow, children }: { title: string; eyebrow?: string; children: React.ReactNode }) {
+function Panel({ title, eyebrow, badge, children }: { title: string; eyebrow?: string; badge?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="hud-panel">
-      <div className="px-3 py-2 border-b border-border">
-        {eyebrow && (
-          <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-            {eyebrow}
+      <div className="px-3 py-2 border-b border-border flex items-start justify-between gap-2">
+        <div>
+          {eyebrow && (
+            <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+              {eyebrow}
+            </div>
+          )}
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
+            {title}
           </div>
-        )}
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
-          {title}
         </div>
+        {badge}
       </div>
       <div className="p-3">{children}</div>
     </div>
