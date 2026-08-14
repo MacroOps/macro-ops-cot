@@ -6,7 +6,9 @@ import { SignalBadge, LevelBar, DeltaCell } from "@/components/hud/SignalBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
+
 
 function exportCsv(rows: DualTrendStock[], filename: string) {
   const headers = [
