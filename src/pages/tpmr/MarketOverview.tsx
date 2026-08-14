@@ -135,7 +135,8 @@ export default function MarketOverview() {
         </Panel>
 
         <Panel title="Systems Overview by Index" eyebrow="1C">
-          <table className="w-full text-xs">
+          <div className="overflow-x-auto">
+          <table className="w-full text-xs min-w-[420px]">
             <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left py-1 font-medium">Index</th>
@@ -166,6 +167,7 @@ export default function MarketOverview() {
               ))}
             </tbody>
           </table>
+          </div>
         </Panel>
       </div>
 
