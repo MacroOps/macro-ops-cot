@@ -42,6 +42,8 @@ export default function SignalExplorer() {
   const latest = series[series.length - 1];
   const prev = series[series.length - 2];
   const delta = latest && prev ? latest.value - prev.value : 0;
+  const scopeWarning = entityType === "symbol" ? breadthScopeWarning(key) : null;
+
 
   return (
     <AppShell title="Signal Explorer">
