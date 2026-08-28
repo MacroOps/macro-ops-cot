@@ -499,19 +499,22 @@ export type Database = {
           created_at: string
           id: string
           market_id: string
-          user_id: string
+          outseta_person_uid: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           market_id: string
-          user_id: string
+          outseta_person_uid?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           market_id?: string
-          user_id?: string
+          outseta_person_uid?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
