@@ -4,7 +4,6 @@ import { PercentileGauge } from "./PercentileGauge";
 import { ExtremityBadge } from "./ExtremityBadge";
 import type { MarketSnapshot } from "@/lib/mockData";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
@@ -12,14 +11,13 @@ const fmtInt = new Intl.NumberFormat("en-US");
 
 export function MarketCard({ m }: { m: MarketSnapshot }) {
   const up = m.weekChangePct >= 0;
-  const { user } = useAuth();
-  const { ids, add, remove } = useWatchlist();
+  const { ids, add, remove, signedIn } = useWatchlist();
   const starred = m.id ? ids.has(m.id) : false;
 
   function toggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { toast.error("Sign in to save markets"); return; }
+    if (!signedIn) { toast.error("Log in to save markets"); return; }
     if (!m.id) return;
     if (starred) remove.mutate(m.id);
     else add.mutate(m.id);

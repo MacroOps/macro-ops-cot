@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { OutsetaProvider } from "@outseta/react";
 import { ThemeProvider } from "@/components/hud/ThemeProvider";
 import { CopilotProvider } from "@/components/copilot/CopilotContext";
 import { CopilotDrawer, CopilotLauncher } from "@/components/copilot/CopilotDrawer";
@@ -51,6 +52,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      <OutsetaProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -121,6 +123,7 @@ const App = () => (
           </CopilotProvider>
         </BrowserRouter>
       </TooltipProvider>
+      </OutsetaProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

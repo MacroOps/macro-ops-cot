@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Outseta MCP API keys (local only)
+.cursor/mcp.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

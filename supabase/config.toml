@@ -1,3 +1,5 @@
 project_id = "lxupnuggnkjtfkrvvtev"
 [functions.symbol-returns]
 verify_jwt = false
+[functions.watchlist]
+verify_jwt = false

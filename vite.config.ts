@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Package barrel re-exports createClient in a way Vite/esbuild cannot parse.
+      "@outseta/react": path.resolve(__dirname, "node_modules/@outseta/react/src/components/index.ts"),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },

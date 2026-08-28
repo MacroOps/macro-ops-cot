@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "outseta": {
+      "source": "outseta/agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/outseta/SKILL.md",
+      "computedHash": "2e6d9df071754e3b268b0927710896c3adc6a93113dacc9553c552ba12b86a71"
+    }
+  }
+}

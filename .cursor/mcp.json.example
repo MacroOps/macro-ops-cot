@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "outseta": {
+      "url": "https://mcp.outseta.com",
+      "headers": {
+        "Authorization": "Outseta YOUR_KEY:YOUR_SECRET",
+        "X-Outseta-Subdomain": "foundation-alpha-llc.outseta.com"
+      }
+    }
+  }
+}

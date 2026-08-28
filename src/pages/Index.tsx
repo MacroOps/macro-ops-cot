@@ -5,7 +5,6 @@ import { AppShell } from "@/components/hud/AppShell";
 import { SECTORS, type Sector, type MarketSnapshot } from "@/lib/mockData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -244,14 +243,13 @@ function Th({ children, className = "" }: { children?: React.ReactNode; classNam
 
 function Row({ m, idx }: { m: MarketSnapshot; idx: number }) {
   const up = m.weekChangePct >= 0;
-  const { user } = useAuth();
-  const { ids, add, remove } = useWatchlist();
+  const { ids, add, remove, signedIn } = useWatchlist();
   const starred = m.id ? ids.has(m.id) : false;
 
   function toggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { toast.error("Sign in to save markets"); return; }
+    if (!signedIn) { toast.error("Log in to save markets"); return; }
     if (!m.id) return;
     if (starred) remove.mutate(m.id);
     else add.mutate(m.id);

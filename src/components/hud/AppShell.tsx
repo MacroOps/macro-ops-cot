@@ -1,17 +1,15 @@
 import { type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useTheme } from "./ThemeProvider";
-import { useAuth } from "@/hooks/useAuth";
-import { Moon, Sun, Circle, LogOut, User as UserIcon } from "lucide-react";
+import { OutsetaAuthControls } from "./OutsetaAuthControls";
+import { Moon, Sun, Circle } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
 import { AlertsInbox } from "./AlertsInbox";
 import { GlobalScrubber } from "./GlobalScrubber";
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const { theme, toggle } = useTheme();
-  const { user, signOut } = useAuth();
 
   return (
     <SidebarProvider>
@@ -35,23 +33,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
               </div>
               <div className="hidden md:block h-4 w-px bg-border" />
               <AlertsInbox />
-              {user ? (
-                <button
-                  onClick={() => signOut()}
-                  className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
-                  aria-label="Sign out"
-                >
-                  <LogOut className="h-3 w-3" />
-                  <span className="hidden sm:inline">{user.email?.split("@")[0]}</span>
-                </button>
-              ) : (
-                <Link
-                  to="/auth"
-                  className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
-                >
-                  <UserIcon className="h-3 w-3" /> Sign in
-                </Link>
-              )}
+              <OutsetaAuthControls />
               <button
                 onClick={toggle}
                 className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
