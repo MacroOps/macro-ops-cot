@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unauthorized";
-    const status = /token|person id|Missing/i.test(msg) ? 401 : 500;
+    const status = /token|person id|Missing|JWS|JWT|signature|claim/i.test(msg) ? 401 : 500;
     return json({ error: msg }, status);
   }
 });
