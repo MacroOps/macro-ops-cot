@@ -7,6 +7,7 @@ import {
   Newspaper,
   FlaskConical,
   Settings,
+  LogOut,
   LayoutDashboard,
   Waves,
   Gauge,
@@ -30,6 +31,7 @@ import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -43,6 +45,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useOutseta } from "@outseta/react";
 
 type Leaf = { title: string; url: string };
 type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
@@ -204,24 +207,54 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <WorkspacesGroup collapsed={collapsed} pathname={pathname} />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[9px] uppercase tracking-[0.14em]">
-            System
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Settings">
-                  <Settings className="h-4 w-4" />
-                  {!collapsed && <span className="text-xs">Settings</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="border-t border-sidebar-border">
+        <AccountFooter collapsed={collapsed} />
+      </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function AccountFooter({ collapsed }: { collapsed: boolean }) {
+  const { user, openProfile, logout } = useOutseta();
+  const name = user?.FullName || user?.FirstName || user?.Email?.split("@")[0] || "Account";
+  const initial = (name.trim()[0] || "U").toUpperCase();
+
+  return (
+    <div className={`flex items-center gap-0.5 ${collapsed ? "flex-col" : ""}`}>
+      <button
+        type="button"
+        onClick={() => openProfile({ tab: "profile" })}
+        className="flex flex-1 min-w-0 items-center gap-2 rounded-sm px-1.5 py-1.5 hover:bg-sidebar-accent text-left"
+        aria-label="Profile"
+        title="Profile"
+      >
+        <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold text-surface-foreground">
+          {initial}
+        </div>
+        {!collapsed && (
+          <span className="truncate text-xs text-sidebar-foreground">{name}</span>
+        )}
+      </button>
+      <button
+        type="button"
+        className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        aria-label="Settings"
+        title="Settings (coming soon)"
+      >
+        <Settings className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={logout}
+        className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        aria-label="Sign out"
+        title="Sign out"
+      >
+        <LogOut className="h-4 w-4" />
+      </button>
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ const btnClass =
   "text-[10px] uppercase tracking-wider px-3 py-1.5 border border-border rounded-sm hover:border-primary hover:text-primary";
 
 export function PaywallGate({ signedIn }: { signedIn: boolean }) {
-  const { openLogin, openSignup, openProfile } = useOutseta();
+  const { openLogin, openSignup, openProfile, logout } = useOutseta();
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
@@ -20,9 +20,14 @@ export function PaywallGate({ signedIn }: { signedIn: boolean }) {
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           {signedIn ? (
-            <button type="button" className={btnClass} onClick={() => openProfile({ tab: "planChange" })}>
-              View plans
-            </button>
+            <>
+              <button type="button" className={btnClass} onClick={() => openProfile({ tab: "planChange" })}>
+                View plans
+              </button>
+              <button type="button" className={btnClass} onClick={logout}>
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <button type="button" className={btnClass} onClick={() => openLogin()}>

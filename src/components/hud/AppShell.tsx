@@ -2,7 +2,6 @@ import { type ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useTheme } from "./ThemeProvider";
-import { OutsetaAuthControls } from "./OutsetaAuthControls";
 import { PaywallGate } from "./PaywallGate";
 import { Moon, Sun, Circle } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
@@ -38,7 +37,6 @@ function ShellHeader({
         </div>
         <div className="hidden md:block h-4 w-px bg-border" />
         {showAlerts && <AlertsInbox />}
-        <OutsetaAuthControls />
         <button
           onClick={toggle}
           className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
