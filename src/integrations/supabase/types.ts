@@ -23,8 +23,7 @@ export type Database = {
           indicator_value: number
           message: string | null
           percentile: number | null
-          user_id: string | null
-          outseta_person_uid: string | null
+          user_id: string
         }
         Insert: {
           acknowledged?: boolean
@@ -34,8 +33,7 @@ export type Database = {
           indicator_value: number
           message?: string | null
           percentile?: number | null
-          user_id?: string | null
-          outseta_person_uid?: string | null
+          user_id: string
         }
         Update: {
           acknowledged?: boolean
@@ -45,8 +43,7 @@ export type Database = {
           indicator_value?: number
           message?: string | null
           percentile?: number | null
-          user_id?: string | null
-          outseta_person_uid?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -72,8 +69,7 @@ export type Database = {
           regime_filter: string | null
           threshold: number
           updated_at: string
-          user_id: string | null
-          outseta_person_uid: string | null
+          user_id: string
         }
         Insert: {
           active?: boolean
@@ -88,8 +84,7 @@ export type Database = {
           regime_filter?: string | null
           threshold: number
           updated_at?: string
-          user_id?: string | null
-          outseta_person_uid?: string | null
+          user_id: string
         }
         Update: {
           active?: boolean
@@ -104,8 +99,7 @@ export type Database = {
           regime_filter?: string | null
           threshold?: number
           updated_at?: string
-          user_id?: string | null
-          outseta_person_uid?: string | null
+          user_id?: string
         }
         Relationships: []
       }
