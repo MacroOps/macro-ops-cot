@@ -114,7 +114,8 @@ export type Database = {
           stats: Json
           symbol: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
+          outseta_person_uid: string | null
         }
         Insert: {
           created_at?: string
@@ -126,7 +127,8 @@ export type Database = {
           stats?: Json
           symbol?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
+          outseta_person_uid?: string | null
         }
         Update: {
           created_at?: string
@@ -138,7 +140,8 @@ export type Database = {
           stats?: Json
           symbol?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
+          outseta_person_uid?: string | null
         }
         Relationships: []
       }

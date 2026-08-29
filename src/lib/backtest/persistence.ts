@@ -1,13 +1,14 @@
-// Save / load backtest runs to Lovable Cloud.
-// Falls back gracefully when the user isn't signed in (returns null).
+// Save / load backtest runs via Outseta JWT (same identity as watchlist).
+// Returns null / [] when the user isn't signed in.
 
-import { supabase } from "@/integrations/supabase/client";
+import { outsetaEdgePost } from "@/lib/outseta/edge";
 
 export type BtSource = "lab" | "copilot" | "chart-toolbar";
 
 export interface BtRunRow {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  outseta_person_uid?: string | null;
   source: BtSource;
   indicator_key: string;
   symbol: string | null;
@@ -27,48 +28,46 @@ export interface PersistRunInput {
 }
 
 export async function persistRun(input: PersistRunInput): Promise<BtRunRow | null> {
-  const { data: u } = await supabase.auth.getUser();
-  const userId = u?.user?.id;
-  if (!userId) return null;
-  // Type assertion: table was added via migration; types.ts may regen async.
-  const { data, error } = await (supabase.from as any)("backtest_runs")
-    .insert({
-      user_id: userId,
+  try {
+    const res = await outsetaEdgePost<{ run?: BtRunRow }>("backtest-runs", {
+      action: "save",
       source: input.source,
-      indicator_key: input.indicatorKey,
+      indicatorKey: input.indicatorKey,
       symbol: input.symbol ?? null,
       params: input.params,
       stats: input.stats,
       label: input.label ?? null,
-    })
-    .select()
-    .single();
-  if (error) {
-    console.warn("[backtest] persistRun failed:", error.message);
+    });
+    return res.run ?? null;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Sign in required") return null;
+    console.warn("[backtest] persistRun failed:", msg);
     return null;
   }
-  return data as BtRunRow;
 }
 
 export async function listRuns(limit = 200): Promise<BtRunRow[]> {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u?.user?.id) return [];
-  const { data, error } = await (supabase.from as any)("backtest_runs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) {
-    console.warn("[backtest] listRuns failed:", error.message);
+  try {
+    const res = await outsetaEdgePost<{ runs?: BtRunRow[] }>("backtest-runs", {
+      action: "list",
+      limit,
+    });
+    return res.runs ?? [];
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Sign in required") return [];
+    console.warn("[backtest] listRuns failed:", msg);
     return [];
   }
-  return (data ?? []) as BtRunRow[];
 }
 
 export async function deleteRun(id: string): Promise<boolean> {
-  const { error } = await (supabase.from as any)("backtest_runs").delete().eq("id", id);
-  if (error) {
-    console.warn("[backtest] deleteRun failed:", error.message);
+  try {
+    await outsetaEdgePost("backtest-runs", { action: "delete", id });
+    return true;
+  } catch (e) {
+    console.warn("[backtest] deleteRun failed:", e instanceof Error ? e.message : e);
     return false;
   }
-  return true;
 }

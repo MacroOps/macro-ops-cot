@@ -3,3 +3,5 @@ project_id = "lxupnuggnkjtfkrvvtev"
 verify_jwt = false
 [functions.watchlist]
 verify_jwt = false
+[functions.backtest-runs]
+verify_jwt = false

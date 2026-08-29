@@ -7,7 +7,7 @@ import { runBacktest, INDICATOR_OPTIONS, type BtCondition, type BtIndicator } fr
 import { REGISTRY, REGISTRY_BY_KEY, buildIndicatorSeries, CATEGORIES, type RegistryIndicator } from "@/lib/backtest/registry";
 import { runGenericBacktest, type GenericBtResult } from "@/lib/backtest/generic";
 import { persistRun, listRuns, deleteRun, type BtRunRow } from "@/lib/backtest/persistence";
-import { useAuth } from "@/hooks/useAuth";
+import { useOutseta } from "@outseta/react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Customized,
@@ -28,7 +28,7 @@ const Backtests = () => {
   const loc = useLocation();
   const params = useMemo(() => new URLSearchParams(loc.search), [loc.search]);
 
-  const { user } = useAuth();
+  const { user } = useOutseta();
   const { data: dash } = useDashboardData();
   const markets = dash?.markets ?? [];
 
@@ -222,7 +222,7 @@ const Backtests = () => {
   async function saveRun() {
     if (!unified) return;
     if (!user) {
-      toast({ title: "Sign in to save", description: "Backtest runs are saved per-user." });
+      toast({ title: "Log in to save", description: "Saved runs follow the same login as your watchlist." });
       return;
     }
     const indicatorKey = mode === "cot" ? `cot:${cotIndicator}` : ind.key;
@@ -249,6 +249,8 @@ const Backtests = () => {
     if (row) {
       toast({ title: "Run saved", description: "Find it under History." });
       window.dispatchEvent(new CustomEvent("mhud:bt-runs-changed"));
+    } else {
+      toast({ title: "Could not save run", description: "Try again, or check that you are still logged in.", variant: "destructive" });
     }
   }
 
@@ -670,7 +672,7 @@ function EmptyState() {
 }
 
 function HistoryTab({ onReopen }: { onReopen: (row: BtRunRow) => void }) {
-  const { user } = useAuth();
+  const { user } = useOutseta();
   const [rows, setRows] = useState<BtRunRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -691,7 +693,7 @@ function HistoryTab({ onReopen }: { onReopen: (row: BtRunRow) => void }) {
   if (!user) {
     return (
       <div className="p-6 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
-        Sign in to view your saved backtest runs.
+        Log in to view your saved backtest runs.
       </div>
     );
   }
@@ -762,7 +764,7 @@ function HistoryTab({ onReopen }: { onReopen: (row: BtRunRow) => void }) {
 }
 
 function CompareTab() {
-  const { user } = useAuth();
+  const { user } = useOutseta();
   const [rows, setRows] = useState<BtRunRow[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -773,7 +775,7 @@ function CompareTab() {
   const chosen = rows.filter((r) => selected.includes(r.id));
 
   if (!user) {
-    return <div className="p-6 text-center text-[11px] uppercase tracking-wider text-muted-foreground">Sign in to compare saved runs.</div>;
+    return <div className="p-6 text-center text-[11px] uppercase tracking-wider text-muted-foreground">Log in to compare saved runs.</div>;
   }
 
   return (
