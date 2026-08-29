@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +19,6 @@ import AssetDetail from "./pages/AssetDetail.tsx";
 import SectorAggregates from "./pages/SectorAggregates.tsx";
 import Backtests from "./pages/Backtests.tsx";
 import News from "./pages/News.tsx";
-import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Overview from "./pages/Overview.tsx";
 import TrendFragility from "./pages/TrendFragility.tsx";
@@ -112,7 +111,7 @@ const App = () => (
             <Route path="/signals/explorer" element={<SignalExplorer />} />
             <Route path="/signals/scanner" element={<Scanner />} />
             <Route path="/signals/rankings" element={<Rankings />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
