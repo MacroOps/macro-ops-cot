@@ -22,8 +22,9 @@ export type Database = {
           id: string
           indicator_value: number
           message: string | null
+          outseta_person_uid: string | null
           percentile: number | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           acknowledged?: boolean
@@ -32,8 +33,9 @@ export type Database = {
           id?: string
           indicator_value: number
           message?: string | null
+          outseta_person_uid?: string | null
           percentile?: number | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           acknowledged?: boolean
@@ -42,8 +44,9 @@ export type Database = {
           id?: string
           indicator_value?: number
           message?: string | null
+          outseta_person_uid?: string | null
           percentile?: number | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -66,10 +69,11 @@ export type Database = {
           last_value: number | null
           name: string
           operator: string
+          outseta_person_uid: string | null
           regime_filter: string | null
           threshold: number
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -81,10 +85,11 @@ export type Database = {
           last_value?: number | null
           name: string
           operator: string
+          outseta_person_uid?: string | null
           regime_filter?: string | null
           threshold: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -96,10 +101,11 @@ export type Database = {
           last_value?: number | null
           name?: string
           operator?: string
+          outseta_person_uid?: string | null
           regime_filter?: string | null
           threshold?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
