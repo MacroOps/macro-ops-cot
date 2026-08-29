@@ -109,36 +109,39 @@ export type Database = {
           id: string
           indicator_key: string
           label: string | null
+          outseta_person_uid: string | null
           params: Json
           source: string
           stats: Json
           symbol: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           indicator_key: string
           label?: string | null
+          outseta_person_uid?: string | null
           params?: Json
           source?: string
           stats?: Json
           symbol?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           indicator_key?: string
           label?: string | null
+          outseta_person_uid?: string | null
           params?: Json
           source?: string
           stats?: Json
           symbol?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
