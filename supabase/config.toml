@@ -5,3 +5,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.backtest-runs]
 verify_jwt = false
+[functions.alerts]
+verify_jwt = false

@@ -1,5 +1,5 @@
 // Alert builder + inbox.
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -7,34 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAlerts, type AlertRule } from "@/hooks/useAlerts";
 import { REGISTRY } from "@/lib/backtest/registry";
 import { toast } from "sonner";
 import { Bell, Check, Play, Trash2 } from "lucide-react";
 
-interface Alert {
-  id: string;
-  name: string;
-  indicator_key: string;
-  operator: "gte" | "lte" | "crosses_above" | "crosses_below";
-  threshold: number;
-  active: boolean;
-  cooldown_minutes: number;
-  last_fired_at: string | null;
-  last_value: number | null;
-}
-interface Event {
-  id: string;
-  alert_id: string;
-  fired_at: string;
-  indicator_value: number;
-  percentile: number | null;
-  message: string | null;
-  acknowledged: boolean;
-}
-
-const OPS: Array<{ value: Alert["operator"]; label: string }> = [
+const OPS: Array<{ value: AlertRule["operator"]; label: string }> = [
   { value: "gte", label: "≥ (greater than or equal)" },
   { value: "lte", label: "≤ (less than or equal)" },
   { value: "crosses_above", label: "crosses above" },
@@ -42,75 +20,46 @@ const OPS: Array<{ value: Alert["operator"]; label: string }> = [
 ];
 
 export default function Alerts() {
-  const { user } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { alerts, events, signedIn, create, setActive, remove, ack, ackAll, evaluate } = useAlerts();
 
-  // builder
   const [name, setName] = useState("");
   const [indicatorKey, setIndicatorKey] = useState(REGISTRY[0].key);
-  const [operator, setOperator] = useState<Alert["operator"]>("gte");
+  const [operator, setOperator] = useState<AlertRule["operator"]>("gte");
   const [threshold, setThreshold] = useState<string>("75");
   const [cooldown, setCooldown] = useState("360");
 
-  const load = async () => {
-    const [{ data: a }, { data: e }] = await Promise.all([
-      supabase.from("alerts").select("*").order("created_at", { ascending: false }),
-      supabase.from("alert_events").select("*").order("fired_at", { ascending: false }).limit(50),
-    ]);
-    setAlerts((a ?? []) as Alert[]);
-    setEvents((e ?? []) as Event[]);
-  };
-
-  useEffect(() => { if (user) load(); }, [user]);
-
-  const create = async () => {
-    if (!user) return toast.error("Sign in to create alerts");
+  const onCreate = async () => {
+    if (!signedIn) return toast.error("Log in to create alerts");
     if (!name.trim()) return toast.error("Name required");
     const th = parseFloat(threshold);
     if (Number.isNaN(th)) return toast.error("Invalid threshold");
-    const { error } = await supabase.from("alerts").insert({
-      user_id: user.id,
-      name: name.trim(),
-      indicator_key: indicatorKey,
-      operator,
-      threshold: th,
-      cooldown_minutes: parseInt(cooldown) || 360,
-    });
-    if (error) return toast.error(error.message);
-    toast.success("Alert created");
-    setName("");
-    load();
-  };
-
-  const toggleActive = async (a: Alert) => {
-    await supabase.from("alerts").update({ active: !a.active }).eq("id", a.id);
-    load();
-  };
-  const remove = async (id: string) => {
-    await supabase.from("alerts").delete().eq("id", id);
-    load();
-  };
-  const ack = async (id: string) => {
-    await supabase.from("alert_events").update({ acknowledged: true }).eq("id", id);
-    load();
-  };
-  const ackAll = async () => {
-    await supabase.from("alert_events").update({ acknowledged: true }).eq("acknowledged", false);
-    load();
+    try {
+      await create.mutateAsync({
+        name: name.trim(),
+        indicatorKey,
+        operator,
+        threshold: th,
+        cooldownMinutes: parseInt(cooldown) || 360,
+      });
+      toast.success("Alert created");
+      setName("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create alert");
+    }
   };
 
   const runNow = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.functions.invoke("evaluate-alerts");
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success(`Evaluated ${data?.evaluated ?? 0} alerts, ${data?.fired ?? 0} fired`);
-    load();
+    if (!signedIn) return toast.error("Log in to run alerts");
+    try {
+      const data = await evaluate.mutateAsync();
+      toast.success(`Evaluated ${data.evaluated ?? 0} alerts, ${data.fired ?? 0} fired`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Evaluate failed");
+    }
   };
 
   const indicator = REGISTRY.find((r) => r.key === indicatorKey);
+  const unacked = events.filter((e) => !e.acknowledged).length;
 
   return (
     <AppShell title="Alerts">
@@ -120,14 +69,19 @@ export default function Alerts() {
         description="Get notified when indicators cross thresholds. Evaluated every 15 minutes; firing respects per-alert cooldowns."
       />
 
+      {!signedIn ? (
+        <div className="px-3 pb-4 text-center text-[11px] uppercase tracking-wider text-muted-foreground">
+          Log in to create and view your alerts.
+        </div>
+      ) : (
       <div className="px-3 pb-4">
         <Tabs defaultValue="inbox" className="w-full">
           <TabsList>
             <TabsTrigger value="inbox">
               Inbox
-              {events.filter((e) => !e.acknowledged).length > 0 && (
+              {unacked > 0 && (
                 <span className="ml-2 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold tabular-nums">
-                  {events.filter((e) => !e.acknowledged).length}
+                  {unacked}
                 </span>
               )}
             </TabsTrigger>
@@ -140,10 +94,10 @@ export default function Alerts() {
               <div className="px-3 py-2 border-b border-border flex items-center justify-between">
                 <div className="text-[11px] uppercase tracking-wider font-semibold">Recent fires</div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={runNow} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={runNow} disabled={evaluate.isPending}>
                     <Play className="h-3 w-3 mr-1" /> Run now
                   </Button>
-                  <Button size="sm" variant="outline" onClick={ackAll}>
+                  <Button size="sm" variant="outline" onClick={() => ackAll.mutate()} disabled={ackAll.isPending}>
                     <Check className="h-3 w-3 mr-1" /> Mark all read
                   </Button>
                 </div>
@@ -167,7 +121,7 @@ export default function Alerts() {
                           {new Date(e.fired_at).toLocaleString()}
                         </div>
                         {!e.acknowledged && (
-                          <Button size="sm" variant="ghost" onClick={() => ack(e.id)}>
+                          <Button size="sm" variant="ghost" onClick={() => ack.mutate(e.id)}>
                             <Check className="h-3 w-3" />
                           </Button>
                         )}
@@ -200,7 +154,12 @@ export default function Alerts() {
                       const ind = REGISTRY.find((r) => r.key === a.indicator_key);
                       return (
                         <tr key={a.id} className="border-b border-border/50">
-                          <td className="py-2 pl-3"><Switch checked={a.active} onCheckedChange={() => toggleActive(a)} /></td>
+                          <td className="py-2 pl-3">
+                            <Switch
+                              checked={a.active}
+                              onCheckedChange={(on) => setActive.mutate({ id: a.id, active: on })}
+                            />
+                          </td>
                           <td className="py-2 font-medium">{a.name}</td>
                           <td className="py-2 font-mono text-[11px] text-muted-foreground">
                             {ind?.label ?? a.indicator_key} {a.operator.replace("_", " ")} {a.threshold}
@@ -210,7 +169,7 @@ export default function Alerts() {
                             {a.last_fired_at ? new Date(a.last_fired_at).toLocaleDateString() : "—"}
                           </td>
                           <td className="py-2 pr-3 text-right">
-                            <Button size="sm" variant="ghost" onClick={() => remove(a.id)}>
+                            <Button size="sm" variant="ghost" onClick={() => remove.mutate(a.id)}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </td>
@@ -243,7 +202,7 @@ export default function Alerts() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Operator</label>
-                  <Select value={operator} onValueChange={(v) => setOperator(v as Alert["operator"])}>
+                  <Select value={operator} onValueChange={(v) => setOperator(v as AlertRule["operator"])}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {OPS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -261,11 +220,12 @@ export default function Alerts() {
                   <Input type="number" value={cooldown} onChange={(e) => setCooldown(e.target.value)} />
                 </div>
               </div>
-              <Button onClick={create}>Create alert</Button>
+              <Button onClick={onCreate} disabled={create.isPending}>Create alert</Button>
             </div>
           </TabsContent>
         </Tabs>
       </div>
+      )}
     </AppShell>
   );
 }

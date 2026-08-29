@@ -1,55 +1,34 @@
 // Topbar bell with unacknowledged alert events. Polls every 30s; surfaces
 // toast on new fires. Click → /alerts.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-
-interface AlertEvent {
-  id: string;
-  fired_at: string;
-  message: string | null;
-}
+import { useAlerts } from "@/hooks/useAlerts";
 
 export function AlertsInbox() {
-  const { user } = useAuth();
-  const [events, setEvents] = useState<AlertEvent[]>([]);
+  const { signedIn, events } = useAlerts();
   const seen = useRef<Set<string>>(new Set());
   const bootstrapped = useRef(false);
+  const unacked = events.filter((e) => !e.acknowledged);
 
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    const load = async () => {
-      const { data } = await supabase
-        .from("alert_events")
-        .select("id, fired_at, message")
-        .eq("acknowledged", false)
-        .order("fired_at", { ascending: false })
-        .limit(20);
-      if (cancelled || !data) return;
-      if (bootstrapped.current) {
-        for (const e of data) {
-          if (!seen.current.has(e.id)) {
-            toast(`🔔 ${e.message ?? "Alert fired"}`, {
-              action: { label: "View", onClick: () => (window.location.href = "/alerts") },
-            });
-          }
+    if (!signedIn) return;
+    if (bootstrapped.current) {
+      for (const e of unacked) {
+        if (!seen.current.has(e.id)) {
+          toast(`🔔 ${e.message ?? "Alert fired"}`, {
+            action: { label: "View", onClick: () => (window.location.href = "/alerts") },
+          });
         }
       }
-      data.forEach((e) => seen.current.add(e.id));
-      setEvents(data);
-      bootstrapped.current = true;
-    };
-    load();
-    const t = setInterval(load, 30_000);
-    return () => { cancelled = true; clearInterval(t); };
-  }, [user]);
+    }
+    unacked.forEach((e) => seen.current.add(e.id));
+    bootstrapped.current = true;
+  }, [signedIn, events]);
 
-  if (!user) return null;
-  const count = events.length;
+  if (!signedIn) return null;
+  const count = unacked.length;
 
   return (
     <Link
