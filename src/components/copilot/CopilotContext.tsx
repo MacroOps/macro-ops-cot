@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams, matchPath } from "react-router-dom";
 import { MARKET_LABELS } from "@/lib/marketLabels";
+import { useCollectiveAccess } from "@/hooks/useCollectiveAccess";
 
 export interface ChartContext {
   title: string;
@@ -83,6 +84,7 @@ export function CopilotProvider({ children }: { children: ReactNode }) {
   const [context, setContext] = useState<ChartContext | null>(null);
   const [seedPrompt, setSeedPrompt] = useState<string | null>(null);
 
+  const { hasAccess } = useCollectiveAccess();
   const location = useLocation();
   const params = useParams();
   const pageContext = useMemo(
@@ -91,10 +93,11 @@ export function CopilotProvider({ children }: { children: ReactNode }) {
   );
 
   const openCopilot = useCallback((opts?: { context?: ChartContext; prompt?: string }) => {
+    if (!hasAccess) return;
     setContext(opts?.context ?? null);
     setSeedPrompt(opts?.prompt ?? null);
     setOpen(true);
-  }, []);
+  }, [hasAccess]);
 
   const close = useCallback(() => setOpen(false), []);
 

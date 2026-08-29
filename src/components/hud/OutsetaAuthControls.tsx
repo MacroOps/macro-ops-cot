@@ -4,7 +4,7 @@ import { LogOut, User as UserIcon } from "lucide-react";
 const btnClass =
   "flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors";
 
-/** Outseta login in the HUD header. Does not gate routes. */
+/** Outseta login in the HUD header. Route access is gated in AppShell. */
 export function OutsetaAuthControls() {
   const { user, openLogin, openSignup, openProfile, logout } = useOutseta();
 

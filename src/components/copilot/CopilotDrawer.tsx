@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCopilot } from "./CopilotContext";
 import { cn } from "@/lib/utils";
 import { persistRun } from "@/lib/backtest/persistence";
+import { useCollectiveAccess } from "@/hooks/useCollectiveAccess";
 
 type Role = "user" | "assistant";
 interface ToolEvent {
@@ -337,7 +338,8 @@ function Stat({ label, v }: { label: string; v: string }) {
 
 export function CopilotLauncher() {
   const { openCopilot, open } = useCopilot();
-  if (open) return null;
+  const { hasAccess } = useCollectiveAccess();
+  if (open || !hasAccess) return null;
   return (
     <button
       onClick={() => openCopilot()}

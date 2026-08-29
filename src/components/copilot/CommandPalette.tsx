@@ -4,6 +4,7 @@ import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { useCopilot } from "./CopilotContext";
+import { useCollectiveAccess } from "@/hooks/useCollectiveAccess";
 import { Sparkles, LayoutDashboard, Activity, TrendingDown, Layers, Newspaper, LineChart, Boxes, FlaskConical } from "lucide-react";
 
 const ROUTES = [
@@ -31,9 +32,11 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
   const { openCopilot } = useCopilot();
+  const { hasAccess } = useCollectiveAccess();
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
+      if (!hasAccess) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
@@ -41,7 +44,7 @@ export function CommandPalette() {
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, []);
+  }, [hasAccess]);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
