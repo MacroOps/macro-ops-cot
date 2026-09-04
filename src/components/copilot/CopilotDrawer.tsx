@@ -343,11 +343,15 @@ export function CopilotLauncher() {
   return (
     <button
       onClick={() => openCopilot()}
-      className="fixed bottom-4 right-4 z-40 h-11 px-3.5 flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:opacity-90 text-[11px] uppercase tracking-[0.16em] font-semibold"
+      className="group/copilot fixed bottom-4 right-4 z-40 h-11 w-11 min-w-11 hover:w-auto hover:px-3.5 focus-visible:w-auto focus-visible:px-3.5 overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center hover:justify-start focus-visible:justify-start gap-0 hover:gap-2 focus-visible:gap-2 text-[11px] uppercase tracking-[0.16em] font-semibold transition-all duration-200 ease-out"
       title="Open Research Copilot (⌘K)"
+      aria-label="Open Research Copilot"
     >
-      <Sparkles className="h-3.5 w-3.5" /> Copilot
-      <kbd className="ml-1 text-[9px] opacity-80 font-mono">⌘K</kbd>
+      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+      <span className="inline-flex max-w-0 items-center gap-2 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/copilot:max-w-[10rem] group-hover/copilot:opacity-100 group-focus-visible/copilot:max-w-[10rem] group-focus-visible/copilot:opacity-100">
+        Copilot
+        <kbd className="text-[9px] opacity-80 font-mono normal-case tracking-normal">⌘K</kbd>
+      </span>
     </button>
   );
 }
