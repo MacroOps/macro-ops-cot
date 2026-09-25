@@ -323,12 +323,12 @@ function ChartPanel({
 }) {
   const domain = useMemo(() => {
     const vals = data.map((d) => d.ytd).filter(Number.isFinite);
-    if (!pad || !vals.length) return ["auto", "auto"] as const;
+    if (!pad || !vals.length) return ["auto", "auto"] as [string, string];
     const lo = Math.min(...vals);
     const hi = Math.max(...vals);
     const range = hi - lo;
     const room = Math.max(range * 0.12, 0.4);
-    return [lo - room, hi + room] as const;
+    return [lo - room, hi + room] as [number, number];
   }, [data, pad]);
 
   return (
