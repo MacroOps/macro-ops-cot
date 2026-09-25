@@ -34,7 +34,7 @@ const EQ_LABELS: Array<{ id: EqFilter; label: string }> = [
   { id: "other", label: "Other" },
 ];
 
-function sumAbs(arr: PublicPosition[]) {
+function sumAbs(arr: Array<{ notional: number | null }>) {
   return arr.reduce((t, p) => t + (p.notional != null ? Math.abs(p.notional) : 0), 0);
 }
 
