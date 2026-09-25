@@ -34,7 +34,7 @@ const EQ_LABELS: Array<{ id: EqFilter; label: string }> = [
   { id: "other", label: "Other" },
 ];
 
-function sumAbs(arr: PublicPosition[]) {
+function sumAbs(arr: Array<{ notional: number | null }>) {
   return arr.reduce((t, p) => t + (p.notional != null ? Math.abs(p.notional) : 0), 0);
 }
 
@@ -323,12 +323,12 @@ function ChartPanel({
 }) {
   const domain = useMemo(() => {
     const vals = data.map((d) => d.ytd).filter(Number.isFinite);
-    if (!pad || !vals.length) return ["auto", "auto"] as const;
+    if (!pad || !vals.length) return ["auto", "auto"] as [string, string];
     const lo = Math.min(...vals);
     const hi = Math.max(...vals);
     const range = hi - lo;
     const room = Math.max(range * 0.12, 0.4);
-    return [lo - room, hi + room] as const;
+    return [lo - room, hi + room] as [number, number];
   }, [data, pad]);
 
   return (
