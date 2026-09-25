@@ -68,7 +68,7 @@ export function BriefingTile() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-primary font-semibold">
+            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-deep font-medium">
               Daily Briefing
             </div>
             {isToday && (

@@ -19,6 +19,8 @@ const ROUTES = [
   { label: "Breadth Overview", to: "/breadth/overview", icon: Layers },
   { label: "TPMR Market Overview", to: "/tpmr/market-overview", icon: LineChart },
   { label: "News", to: "/news", icon: Newspaper },
+  { label: "Macro Portfolio", to: "/portfolio", icon: LineChart },
+  { label: "Classic HUD", to: "/classic-hud", icon: LayoutDashboard },
 ];
 
 const ASKS = [

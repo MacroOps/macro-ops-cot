@@ -31,7 +31,7 @@ function useRegime(): Tile[] {
 export function RegimeRibbon() {
   const tiles = useRegime();
   return (
-    <div className="flex items-stretch border-b border-border bg-surface/30 text-[10px] font-mono">
+    <div className="flex items-stretch border-b border-border bg-surface text-[10px] font-mono">
       {tiles.map((t) => {
         const up = t.value >= t.hi;
         const down = t.value <= t.lo;

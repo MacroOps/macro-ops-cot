@@ -165,7 +165,7 @@ export function EndLabelLayer({ yAxisMap, xAxisMap, offset, data, unit = "", ban
       {/* Label chip */}
       <g transform={`translate(${labelX}, ${y - 8})`}>
         <rect x={0} y={0} width={labelW} height={16} rx={2} ry={2} fill="hsl(var(--chart-surface))" stroke={tone} strokeOpacity={0.6} />
-        <text x={labelW / 2} y={11} textAnchor="middle" fontSize={10} fontFamily="JetBrains Mono, ui-monospace, monospace" fill={tone} fontWeight={600}>
+        <text x={labelW / 2} y={11} textAnchor="middle" fontSize={10} fontFamily="IBM Plex Mono, ui-monospace, monospace" fill={tone} fontWeight={600}>
           {label}
         </text>
       </g>
@@ -211,7 +211,7 @@ export function HoverAxisChipLayer({ yAxisMap, xAxisMap, offset, hoverT, data, u
       <circle cx={x} cy={y} r={6} fill="hsl(var(--chart-halo) / 0.15)" />
       <g transform={`translate(${Math.max(offset.left + 2, x - w / 2)}, ${offset.top + offset.height + 2})`}>
         <rect width={w} height={14} rx={2} fill="hsl(var(--chart-halo))" />
-        <text x={w / 2} y={10} textAnchor="middle" fontSize={9} fontFamily="JetBrains Mono, ui-monospace, monospace" fill="white" fontWeight={600}>
+        <text x={w / 2} y={10} textAnchor="middle" fontSize={9} fontFamily="IBM Plex Mono, ui-monospace, monospace" fill="white" fontWeight={600}>
           {point.t}
         </text>
       </g>

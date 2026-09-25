@@ -2,154 +2,156 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Macro HUD Design System — Porcelain & Electric
- * Institutional, light-forward palette: cool greys + restrained vivid blue accent.
- * Light is default; dark mode mirrors the same accents on deep slate-navy.
- * All colors MUST be HSL.
+/* Macro HUD Design System — Paper, Ink & Tan
+ * Brand spirit from the public Foundation site: warm paper, near-black ink,
+ * Hanken Grotesk + Newsreader + IBM Plex Mono, tan accent (#be9173).
+ * Dense HUD chrome stays grotesk; display serif is for page titles only.
+ * Data semantics (long/short/success) stay green/red. All colors MUST be HSL.
  */
 
 @layer base {
   :root {
-    /* Porcelain & Electric (light, default) -------------------- */
-    --background: 0 0% 100%;              /* pure white for readability */
-    --foreground: 217 33% 15%;            /* #1a2433 near-navy ink */
+    /* Paper & Ink (light, default) ----------------------------- */
+    --background: 48 20% 95%;             /* #f5f4f0 warm paper */
+    --foreground: 0 0% 9%;                /* #181818 ink */
 
-    --surface: 0 0% 100%;                 /* #ffffff paper */
-    --surface-foreground: 217 33% 15%;
-    --surface-2: 214 32% 95%;             /* #eef2f7 muted surface */
+    --surface: 45 27% 94%;                /* #f4f2ec card paper */
+    --surface-foreground: 0 0% 9%;
+    --surface-2: 40 18% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 217 33% 15%;
+    --card: 45 27% 94%;
+    --card-foreground: 0 0% 9%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 15%;
+    --popover: 45 27% 94%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 220 100% 56%;              /* #1e63ff electric blue */
-    --primary-foreground: 0 0% 100%;
-    --accent-soft: 216 100% 74%;          /* #7aa8ff layered light blue */
+    --primary: 0 0% 9%;                   /* ink, not electric blue */
+    --primary-foreground: 48 20% 95%;
+    --accent-soft: 28 36% 82%;            /* washed tan */
 
-    --secondary: 214 32% 95%;
-    --secondary-foreground: 217 33% 15%;
+    --secondary: 45 27% 94%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 214 32% 95%;
-    --muted-foreground: 216 16% 43%;      /* #5b6b80 slate */
+    --muted: 40 18% 90%;
+    --muted-foreground: 36 6% 31%;        /* #55514b */
 
-    --accent: 220 100% 56%;
+    --accent: 24 37% 60%;                 /* #be9173 warm tan */
     --accent-foreground: 0 0% 100%;
+    --accent-deep: 26 35% 45%;            /* #9c6f4c eyebrows */
 
-    --destructive: 355 67% 54%;           /* #d83a4a muted red */
+    --destructive: 355 67% 54%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 155 87% 30%;               /* #0a8f5f forest green */
-    --warning: 36 79% 45%;                /* #c8861a amber */
-    --info: 220 100% 56%;
-    --violet: 250 70% 60%;
+    --success: 155 87% 30%;
+    --warning: 36 79% 45%;
+    --info: 26 35% 45%;
+    --violet: 250 40% 48%;
 
-    --border: 213 27% 93%;                /* #e6ecf3 hairline */
-    --input: 213 27% 93%;
-    --ring: 220 100% 56%;
-    --ledger: 214 26% 89%;                /* #dbe3ed stronger divider */
+    --border: 36 10% 82%;
+    --input: 36 10% 82%;
+    --ring: 24 37% 60%;
+    --ledger: 36 12% 74%;
 
-    --radius: 0.1875rem;
+    --radius: 0.125rem;
 
     /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 216 16% 43%;
-    --sidebar-primary: 220 100% 56%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 32% 95%;
-    --sidebar-accent-foreground: 217 33% 15%;
-    --sidebar-border: 213 27% 93%;
-    --sidebar-ring: 220 100% 56%;
+    --sidebar-background: 48 20% 95%;
+    --sidebar-foreground: 36 6% 31%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 48 20% 95%;
+    --sidebar-accent: 40 18% 90%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 36 10% 82%;
+    --sidebar-ring: 24 37% 60%;
 
     /* Semantic positioning colors */
     --pos-long: 155 87% 30%;
     --pos-short: 355 67% 54%;
-    --pos-neutral: 216 16% 43%;
+    --pos-neutral: 36 6% 31%;
 
-    /* Chart canvas — pure paper, layered-blues series */
-    --chart-surface: 0 0% 100%;
-    --chart-surface-foreground: 217 33% 15%;
-    --chart-grid: 214 32% 92%;             /* hairline grid */
-    --chart-axis: 216 16% 43%;
-    --chart-ink: 217 33% 15%;
-    --chart-ink-muted: 215 19% 35%;        /* #475569 reference series */
-    --chart-accent: 211 100% 52%;          /* #0a84ff primary series */
-    --chart-accent-2: 216 100% 74%;        /* #7aa8ff secondary series */
-    --chart-band-low: 155 87% 30%;         /* cool / depressed band */
-    --chart-band-mid: 216 16% 43%;         /* neutral band */
-    --chart-band-high: 355 67% 54%;        /* hot / stretched band */
-    --chart-halo: 220 100% 56%;            /* hover crosshair + end-dot */
+    /* Chart canvas — same warm paper as the site */
+    --chart-surface: 48 20% 95%;
+    --chart-surface-foreground: 0 0% 9%;
+    --chart-grid: 40 12% 86%;
+    --chart-axis: 36 6% 31%;
+    --chart-ink: 0 0% 9%;
+    --chart-ink-muted: 36 6% 38%;
+    --chart-accent: 0 0% 18%;             /* ink series */
+    --chart-accent-2: 24 37% 60%;         /* tan series */
+    --chart-band-low: 155 87% 30%;
+    --chart-band-mid: 36 6% 31%;
+    --chart-band-high: 355 67% 54%;
+    --chart-halo: 24 37% 60%;
   }
 
   .dark {
-    /* Deep Slate-Navy (institutional dark, not pure black) ------ */
-    --background: 220 49% 8%;             /* #0b1220 */
-    --foreground: 213 27% 93%;            /* #e6ecf3 */
+    /* Ink inverse (dark) — paper/ink flipped, tan kept ---------- */
+    --background: 0 0% 9%;                /* #181818 */
+    --foreground: 45 27% 94%;             /* #f4f2ec */
 
-    --surface: 220 39% 12%;               /* #121a2b */
-    --surface-foreground: 213 27% 93%;
-    --surface-2: 220 35% 16%;
+    --surface: 0 0% 12%;
+    --surface-foreground: 45 27% 94%;
+    --surface-2: 30 8% 16%;
 
-    --card: 220 39% 12%;
-    --card-foreground: 213 27% 93%;
+    --card: 0 0% 12%;
+    --card-foreground: 45 27% 94%;
 
-    --popover: 220 39% 12%;
-    --popover-foreground: 213 27% 93%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 45 27% 94%;
 
-    --primary: 219 100% 62%;              /* #3b7bff lifted */
-    --primary-foreground: 0 0% 100%;
-    --accent-soft: 216 90% 70%;
+    --primary: 45 27% 94%;
+    --primary-foreground: 0 0% 9%;
+    --accent-soft: 26 22% 28%;
 
-    --secondary: 220 35% 16%;
-    --secondary-foreground: 213 27% 93%;
+    --secondary: 30 8% 16%;
+    --secondary-foreground: 45 27% 94%;
 
-    --muted: 220 35% 16%;
-    --muted-foreground: 215 18% 62%;
+    --muted: 30 8% 16%;
+    --muted-foreground: 41 5% 52%;        /* #8c887f */
 
-    --accent: 219 100% 62%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 24 37% 60%;
+    --accent-foreground: 0 0% 9%;
+    --accent-deep: 28 36% 68%;
 
     --destructive: 355 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 155 70% 45%;
     --warning: 36 90% 55%;
-    --info: 219 100% 62%;
-    --violet: 250 75% 70%;
+    --info: 28 36% 68%;
+    --violet: 250 40% 70%;
 
-    --border: 220 35% 19%;                /* #1f2a40 */
-    --input: 220 35% 19%;
-    --ring: 219 100% 62%;
-    --ledger: 220 35% 22%;
+    --border: 40 10% 18%;
+    --input: 40 10% 18%;
+    --ring: 24 37% 60%;
+    --ledger: 40 10% 22%;
 
-    --sidebar-background: 220 49% 6%;
-    --sidebar-foreground: 215 18% 65%;
-    --sidebar-primary: 219 100% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 35% 16%;
-    --sidebar-accent-foreground: 213 27% 93%;
-    --sidebar-border: 220 35% 18%;
-    --sidebar-ring: 219 100% 62%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 41 5% 62%;
+    --sidebar-primary: 45 27% 94%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 30 8% 16%;
+    --sidebar-accent-foreground: 45 27% 94%;
+    --sidebar-border: 40 10% 16%;
+    --sidebar-ring: 24 37% 60%;
 
     --pos-long: 155 70% 45%;
     --pos-short: 355 75% 60%;
-    --pos-neutral: 215 18% 62%;
+    --pos-neutral: 41 5% 52%;
 
-    /* Chart canvas in dark mode: keep paper-bright for data legibility
-       (Bridgewater/Two Sigma research-deck pattern). */
-    --chart-surface: 0 0% 100%;
-    --chart-surface-foreground: 217 33% 15%;
-    --chart-grid: 214 32% 92%;
-    --chart-axis: 216 16% 43%;
-    --chart-ink: 217 33% 15%;
-    --chart-ink-muted: 215 19% 35%;
-    --chart-accent: 211 100% 52%;
-    --chart-accent-2: 216 100% 74%;
+    /* Charts stay on warm paper for legibility in both themes. */
+    --chart-surface: 48 20% 95%;
+    --chart-surface-foreground: 0 0% 9%;
+    --chart-grid: 40 12% 86%;
+    --chart-axis: 36 6% 31%;
+    --chart-ink: 0 0% 9%;
+    --chart-ink-muted: 36 6% 38%;
+    --chart-accent: 0 0% 18%;
+    --chart-accent-2: 24 37% 60%;
     --chart-band-low: 155 87% 30%;
-    --chart-band-mid: 216 16% 43%;
+    --chart-band-mid: 36 6% 31%;
     --chart-band-high: 355 67% 54%;
-    --chart-halo: 219 100% 62%;
+    --chart-halo: 24 37% 60%;
   }
 }
 
@@ -164,15 +166,14 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, sans-serif;
-    font-feature-settings: "tnum" 1, "cv11" 1, "ss01" 1;
+    font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1, "tnum" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   .font-mono {
-    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
       Consolas, "Liberation Mono", "Courier New", monospace;
     font-feature-settings: "tnum" 1, "zero" 1;
   }
@@ -184,7 +185,7 @@
   }
 
   .hud-label {
-    @apply text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-medium;
+    @apply text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium font-mono;
   }
 
   .hud-stat {
@@ -263,7 +264,7 @@
     margin-bottom: 0.75rem;
   }
   .hud-section-eyebrow {
-    @apply text-[9px] uppercase tracking-[0.18em] text-muted-foreground font-medium;
+    @apply text-[9px] uppercase tracking-[0.22em] text-accent-deep font-medium font-mono;
   }
   .hud-section-title {
     @apply text-[13px] font-semibold uppercase tracking-[0.08em] text-surface-foreground;

@@ -8,7 +8,7 @@ export function GlobalScrubber() {
   const dateLabel = asOfDate.toISOString().slice(0, 10);
 
   return (
-    <div className="h-9 border-t border-border bg-surface/60 backdrop-blur-sm px-3 flex items-center gap-3">
+    <div className="h-9 border-t border-border bg-surface px-3 flex items-center gap-3">
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
         <Rewind className="h-3 w-3" />
         As of

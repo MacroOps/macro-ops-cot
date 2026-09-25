@@ -61,6 +61,8 @@ const ROUTE_LABELS: Array<{ pattern: string; label: string }> = [
   { pattern: "/tp/trend-signals", label: "TP · Trend Signals" },
   { pattern: "/tp/risk-composite", label: "TP · Risk Composite" },
   { pattern: "/tp/sector-trends", label: "TP · Sector Trends" },
+  { pattern: "/portfolio", label: "Macro Portfolio" },
+  { pattern: "/classic-hud", label: "Classic HUD" },
 ];
 
 function derivePageContext(pathname: string, params: Record<string, string | undefined>): PageContext {

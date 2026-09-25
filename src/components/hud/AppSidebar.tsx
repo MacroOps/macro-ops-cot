@@ -52,6 +52,8 @@ type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
 
 const NAV: Group[] = [
   { title: "Overview", icon: LayoutDashboard, url: "/overview" },
+  { title: "Classic HUD", icon: LayoutGrid, url: "/classic-hud" },
+  { title: "Macro Portfolio", icon: BarChart3, url: "/portfolio" },
   { title: "Daily Briefing", icon: Sparkles, url: "/briefing" },
   { title: "Heatmap", icon: Flame, url: "/heatmap" },
   { title: "Analogs", icon: Telescope, url: "/analogs" },
@@ -99,7 +101,9 @@ const NAV: Group[] = [
   {
     title: "Tools",
     icon: Calculator,
-    children: [{ title: "Position Sizing", url: "/tools/position-sizing" }],
+    children: [
+      { title: "Position Sizing", url: "/tools/position-sizing" },
+    ],
   },
   { title: "TPMR Overview", icon: Compass, url: "/tpmr/market-overview" },
   {
@@ -156,15 +160,15 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-mono text-xs font-bold">
+          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-mono text-[10px] font-medium tracking-wider">
             FR
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-surface-foreground">
+              <span className="font-serif italic font-light text-[15px] text-surface-foreground">
                 Foundation Research
               </span>
-              <span className="text-[9px] text-muted-foreground tracking-widest uppercase">
+              <span className="font-mono text-[9px] text-accent-deep tracking-[0.22em] uppercase">
                 Terminus Platform
               </span>
             </div>

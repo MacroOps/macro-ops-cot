@@ -13,6 +13,12 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Hanken Grotesk"', "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        serif: ["Newsreader", "Georgia", "Times New Roman", "serif"],
+        display: ["Newsreader", "Georgia", "Times New Roman", "serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -56,6 +62,7 @@ export default {
         info: "hsl(var(--info))",
         violet: "hsl(var(--violet))",
         "accent-soft": "hsl(var(--accent-soft))",
+        "accent-deep": "hsl(var(--accent-deep))",
         ledger: "hsl(var(--ledger))",
         "pos-long": "hsl(var(--pos-long))",
         "pos-short": "hsl(var(--pos-short))",

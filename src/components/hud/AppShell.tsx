@@ -50,7 +50,19 @@ function ShellHeader({
   );
 }
 
-export function AppShell({ children, title }: { children: ReactNode; title: string }) {
+export function AppShell({
+  children,
+  title,
+  hideScrubber = false,
+  hideRibbon = false,
+  fillViewport = false,
+}: {
+  children: ReactNode;
+  title: string;
+  hideScrubber?: boolean;
+  hideRibbon?: boolean;
+  fillViewport?: boolean;
+}) {
   const { isLoading, signedIn, hasAccess } = useCollectiveAccess();
 
   if (isLoading) {
@@ -75,14 +87,20 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className={`${fillViewport ? "h-screen" : "min-h-screen"} flex w-full bg-background`}>
         <AppSidebar />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <ShellHeader title={title} showSidebarTrigger showAlerts />
-          <RegimeRibbon />
-          <main className="flex-1 overflow-auto">{children}</main>
-          <GlobalScrubber />
+          {!hideRibbon && <RegimeRibbon />}
+          <main
+            className={
+              fillViewport ? "flex-1 min-h-0 overflow-hidden flex flex-col" : "flex-1 overflow-auto"
+            }
+          >
+            {children}
+          </main>
+          {!hideScrubber && <GlobalScrubber />}
         </div>
       </div>
     </SidebarProvider>

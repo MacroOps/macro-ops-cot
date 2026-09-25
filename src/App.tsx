@@ -32,6 +32,8 @@ import {
 } from "./pages/Breadth.tsx";
 import MacroPage from "./pages/MacroPage.tsx";
 import PositionSizing from "./pages/PositionSizing.tsx";
+import Portfolio from "./pages/Portfolio.tsx";
+import ClassicHud from "./pages/ClassicHud.tsx";
 import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
@@ -88,7 +90,10 @@ const App = () => (
             <Route path="/macro/inflation" element={<MacroPage slug="inflation" />} />
             <Route path="/macro/recession" element={<MacroPage slug="recession" />} />
             <Route path="/macro/implied-regime" element={<MacroPage slug="implied-regime" />} />
+            <Route path="/classic-hud" element={<ClassicHud />} />
+            <Route path="/tools/classic-hud" element={<Navigate to="/classic-hud" replace />} />
             <Route path="/tools/position-sizing" element={<PositionSizing />} />
+            <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/tpmr/market-overview" element={<MarketOverview />} />
             <Route path="/tpmr/dual-trend/sp500" element={<DualTrendPage slug="sp500" />} />
             <Route path="/tpmr/dual-trend/sp400" element={<DualTrendPage slug="sp400" />} />

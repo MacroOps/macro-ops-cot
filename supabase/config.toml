@@ -7,3 +7,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.alerts]
 verify_jwt = false
+[functions.portfolio-snapshot]
+verify_jwt = false
