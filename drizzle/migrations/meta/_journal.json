@@ -15,6 +15,13 @@
       "when": 1790635781345,
       "tag": "0001_temp_grant_sandbox_seed_import",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790635796670,
+      "tag": "0002_revoke_temp_grant_sandbox_seed_import",
+      "breakpoints": true
     }
   ]
 }
