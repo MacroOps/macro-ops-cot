@@ -1,111 +1,105 @@
-# Move Macro Ops API to Fly.io (Kindergarten Guide)
+# Community Alpha — Finishing Plan
 
-Goal: Get your Macro Ops API running in the cloud on Fly.io with a permanent HTTPS URL, so you can retire the local machine. Then point the app at the new URL. No coding required from you — just clicks and copy/paste.
-
----
-
-## Part A — What you'll end up with
-
-- A live URL like `https://macro-ops.fly.dev` that works forever, from anywhere.
-- Your scheduled ingestion jobs running on Fly's cron.
-- The Lovable app switched over by updating one secret.
+Goal: move the weekly Slack digest off the laptop into Terminus. It runs by itself every Friday, writes to staging for now, sends a Slack summary, and members read it on a protected /community-alpha page.
 
 ---
 
-## Part B — Step-by-step (do these in order)
+## 1. Components and how they connect
 
-### Step 1 — Create a Fly.io account
-1. Go to **https://fly.io/app/sign-up**.
-2. Sign up with GitHub (fastest — it'll help us later).
-3. Add a credit card when it asks. Fly has a free allowance; a small always-on API usually costs **$0–$5/month**.
-
-### Step 2 — Install the Fly command-line tool (one time)
-This is the only "scary" part. It's just copy/paste into your computer's terminal.
-
-- **Mac:** open the Terminal app, paste this, hit Enter:
-  ```
-  curl -L https://fly.io/install.sh | sh
-  ```
-- **Windows:** open PowerShell, paste this, hit Enter:
-  ```
-  iwr https://fly.io/install.ps1 -useb | iex
-  ```
-Then close and reopen the terminal, and run:
+```text
+pg_cron (hourly, Fri–Sat only)
+   │  POST + internal token (from Vault)
+   ▼
+ca-scheduler ──► works out missed windows ──► creates 1 run + tasks (week x channel)
+   │                                              in community_alpha_runs / _tasks
+   ▼ kicks
+ca-worker (called repeatedly, one task per call)
+   ca_claim_task() → fetch 1 channel for 1 week from Slack → filter in code
+   → Claude Sonnet 5 extraction → validate → save ideas/counts on the task
+   → if tasks remain: kick itself again (with a hop budget)
+   → if none remain: kick ca-finalize
+   ▼
+ca-finalize
+   merge tasks into weeks table (staging or live) by (permalink + tickers)
+   → advance state row → record token/credit usage on run → post Slack message
+   ▼
+community-alpha-read (Outseta-verified) ◄── /community-alpha page
 ```
-fly auth login
-```
-A browser window opens — click **Continue** to log in.
 
-### Step 3 — Make sure your API repo has a Dockerfile
-Fly needs a `Dockerfile` in the repo root (a small text file telling Fly how to run your API). Open your GitHub repo in the browser and check.
+**Functions (4 new, nothing existing changes):**
+- `ca-scheduler` — decides which weeks are due and queues the work.
+- `ca-worker` — processes exactly one (week, channel) task per call.
+- `ca-finalize` — merges results, advances state, sends the Slack message.
+- `community-alpha-read` — serves digest data to logged-in members only.
 
-- **If you see a `Dockerfile`:** great, skip to Step 4.
-- **If you don't:** tell me the repo URL and I'll write one for you and give you a single "add file" link on GitHub to paste it.
+**Shared code (`_shared/community-alpha/`):** window math, Slack client, pre-AI filters, extraction prompt + schema, validator, merge, config.
 
-### Step 4 — Launch the app on Fly
-In the terminal, navigate into your API folder (if the code is on the old machine, download the repo from GitHub first: `git clone <your-repo-url>` then `cd <folder>`). Then run:
-```
-fly launch
-```
-Answer the prompts:
-- **App name:** `macro-ops` (or whatever you want — this becomes the URL)
-- **Region:** pick the one closest to you (e.g. `iad` for US East)
-- **Postgres / Redis:** **No** to both (unless your API needs them — tell me if it does)
-- **Deploy now:** **Yes**
+**One config switch:** a `CA_MODE` secret (`staging` | `live`) picks target table, state row, and Slack destination (DM with `[STAGING]` prefix vs. channel). Switching to live = change one value.
 
-Wait ~2 minutes. When done it prints a URL like `https://macro-ops.fly.dev`.
+**Table changes (small):**
+- `community_alpha_runs`: add `hops_remaining`, `credits_used`, `last_kick_at` (credit/cost tracking and chain safety).
+- `community_alpha_tasks`: add `anchor_at` (exact window end) so each task knows its window.
+- Unique index on runs to prevent two active runs at once (single-flight lock).
+- No changes to weeks tables — ideas stay jsonb.
 
-### Step 5 — Set your API's own secrets on Fly
-If your Macro Ops API needs API keys or a database URL to run, set them with:
-```
-fly secrets set X_API_KEY=dev-key-12345 OTHER_KEY=...
-```
-(One command, all keys separated by spaces.) Tell me which keys the API needs and I'll give you the exact command.
+## 2. Handling time limits
 
-### Step 6 — Move the cron jobs to Fly
-Two clean options — I'll pick one for you once I see the repo:
-- **Option A (simplest):** Add a `[processes]` block to `fly.toml` with a scheduled machine. Fly runs your ingestion script on a schedule.
-- **Option B:** Trigger the ingestion via a Supabase `pg_cron` job that calls your Fly URL over HTTPS (we already use this pattern for the dashboard refresh).
+- Work is split into the smallest unit: one channel for one week per call (~8 tasks per week). Each call does one Slack fetch (paginated, with threads) and one AI call — well inside the limit.
+- `ca_claim_task()` already hands out one task at a time and reclaims tasks stuck over 10 minutes; tasks that fail 3 times are marked failed and reported as a warning instead of retried forever.
+- Self-chaining has a hop budget, a short delay between hops, and only continues while pending tasks exist. The hourly cron doubles as a backstop to resume a stalled chain.
+- Catch-up: 4 missed weeks = 32 tasks in one run; each week is finalized as its own digest with its own window.
+- Slack rate limits (429) honor `Retry-After`; AI 429/5xx use bounded backoff; AI 402/403 pause the run and send a warning Slack message.
 
-Either way I'll write the exact config and send you the one file to commit.
+## 3. Security
 
-### Step 7 — Test the new URL
-Open in browser:
-```
-https://macro-ops.fly.dev/docs
-```
-You should see the same Swagger docs page you have today. If yes — success.
+**Functions not publicly callable, with no secret for you to manage:**
+- I generate a random internal token myself (you never see or handle it), store it as a backend secret and in the database's encrypted Vault. Cron reads it from Vault; each `ca-*` function rejects any request without it. Manual reruns go through the same path when you ask me.
+- Workers/finalize only ever called by the scheduler or each other with that token.
 
-### Step 8 — Point Lovable at the new URL
-Once you confirm the new URL works, tell me and I'll update the `MACRO_OPS_API_URL` secret in Lovable to `https://macro-ops.fly.dev`. The whole Signals Lab and Copilot start working immediately, no code changes.
+**Member data protected server-side:**
+- Tables stay locked (RLS on, no policies) — the browser can never read them directly.
+- `community-alpha-read` verifies the Outseta token exactly like watchlist/alerts do today (`_shared/outseta-jwt.ts`), then reads with backend privileges. Only the live table is served (staging reachable only for an admin check if you want it).
 
-### Step 9 — Retire the old machine
-Once the app is showing live data from the Fly URL for a day, you can safely turn off the old machine.
+**Private exclusion list:** stored only as a secret, used in memory during filtering, never logged, stored, returned, or counted separately in anything members see (only "team excluded" and a combined excluded count on runs, internal only).
 
----
+**AI:** Claude Sonnet 5 via the gateway's Messages endpoint (allowed under your retention settings); prompts not logged by our code.
 
-## Part C — What I need from you to start
+## 4. Build order (each step testable on its own)
 
-Just answer these two and I'll do the rest as far as I can from my side:
+1. **Window logic + tests.** Pure functions using a real timezone library (Luxon, `America/Los_Angeles`). Tests: Friday 1:59 PM vs 2:01 PM PT; window containing DST start (March) and end (November) — both still 2:00 PM PT; exclusive start / inclusive end at exactly 2:00:00; 3-week catch-up returns 3 distinct windows; result independent of when "now" is inside the week.
+2. **Filters + validator + merge + tests.** Team/private list, bot/system, empty/emoji-only; validator rejects unknown messages, author mismatch, excluded authors, bad enum values; merge by permalink+tickers is idempotent (re-run twice = same row).
+3. **Slack reader (dry run).** Manual call for one channel/week; report message counts and excluded counts only — nothing saved.
+4. **Extraction step.** Plug in your exact prompt; run on one channel/week in staging; inspect ideas in the task row.
+5. **Queue + worker chain.** Scheduler creates tasks; worker chain completes all 8 channels for 2026-10-02 into staging.
+6. **Finalize + Slack DM.** Merge into staging, advance state row 2, `[STAGING]` DM with summary and warnings; record token/credit usage. Re-run the same week to prove no duplicates.
+7. **Catch-up test.** Staging row 2 is at Sep 18 → first run should produce Sep 25 and Oct 2 (compare Sep 25 with Mike's archive).
+8. **Schedule.** Enable the cron (hourly Friday 2 PM PT–Saturday only, ~30 checks/week; it exits immediately when nothing is due).
+9. **Members page.** `community-alpha-read` + `/community-alpha` built from your HTML reference: Friday list, weekly digest, search across weeks, top tickers 1W/1M, Technical tag + hide toggle, mobile layout.
+10. **Go live (after 3–4 weeks).** Flip `CA_MODE` to `live` and set the channel.
 
-1. **Paste your API's GitHub repo URL** (so I can check for a Dockerfile and see what secrets/cron jobs it needs).
-2. **Do you want me to draft the Dockerfile / fly.toml / cron config for you** so you only have to click "Add file" on GitHub and paste? (Recommended: yes.)
+## 5. What I need from you
 
-I can't run `fly launch` for you — that command has to run on your computer where you're logged into Fly — but I can prep every config file and give you the exact commands to paste at each step.
+- Slack bot token (scopes: `channels:history`, `channels:read`, `chat:write`, `im:write`, plus `groups:history` if any channel is private) and the bot added to all 8 channels.
+- The 8 channel IDs.
+- Macro Ops team Slack user IDs.
+- Private exclusion list (you'll paste it into a secure form).
+- Staging DM recipient user ID; later, the live channel.
+- The exact extraction instructions (step 4) and the dashboard HTML (step 9).
+- Page link to put in the Slack message (published URL `/community-alpha`?).
 
----
+## Open questions / risks
 
-## Part D — Cost & time expectations
+- **Should the page show all Terminus members or only certain Outseta plans?** Currently no paywall exists; I'll default to "any logged-in member".
+- **Edits/deletes in Slack after the window:** re-runs merge, so a deleted message's idea stays unless we also prune. Proposal: a re-run replaces ideas for that week rather than only adding. Your call.
+- **Thread replies posted after the window closes** to a message inside the window: include or exclude? Proposal: judge by the reply's own timestamp.
+- **Idea identity with changed tickers** on a re-run (AI returns different tickers) creates a second idea — risk of near-duplicates; replace-per-week avoids it.
+- **Credit cost:** ~8 Sonnet calls per week; #general may be large — may need chunking if a channel exceeds input limits.
+- **Slack free-plan history limits** could hide older messages during long catch-ups.
+- **Old vs new comparison** depends on the same prompt; small model differences are expected.
 
-- **Time:** 20–40 minutes end-to-end the first time.
-- **Cost:** Fly's shared-cpu-1x with 256MB RAM is free. If your API needs more RAM, expect ~$2–5/month. Cron machines only bill while running.
-- **Reliability:** Fly restarts crashed apps automatically and has global HTTPS + a stable URL. This is production-grade.
+## Technical notes
 
----
-
-## Technical notes (for reference, ignore if not curious)
-
-- Fly auto-provisions Let's Encrypt TLS for `*.fly.dev` — no cert work.
-- `fly.toml` controls port, health checks, and scheduled machines.
-- The existing `macro-ops-proxy` edge function and all frontend hooks continue to work unchanged; only `MACRO_OPS_API_URL` changes.
-- If ingestion writes to a database on the old machine, we'll need to migrate that too — flag it when you share the repo.
+- Luxon via `npm:luxon` in Deno; tests run with `deno test`.
+- Gateway endpoint for Anthropic uses Messages API with tool-based structured output; usage tokens saved per task and summed on the run.
+- Cron: `pg_cron` + `pg_net`, token read via `vault.decrypted_secrets`; SQL run once (not a migration) so it isn't copied on remix.
+- Single-flight: partial unique index on runs where status in (processing, finalizing) per mode.
