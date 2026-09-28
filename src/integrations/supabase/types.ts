@@ -151,6 +151,233 @@ export type Database = {
         }
         Relationships: []
       }
+      community_alpha_runs: {
+        Row: {
+          anchors: string[]
+          finished_at: string | null
+          id: string
+          mode: string
+          started_at: string | null
+          status: string
+          summary: string | null
+          token_usage: Json | null
+          trigger: string
+          warnings: Json | null
+        }
+        Insert: {
+          anchors?: string[]
+          finished_at?: string | null
+          id?: string
+          mode: string
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          token_usage?: Json | null
+          trigger: string
+          warnings?: Json | null
+        }
+        Update: {
+          anchors?: string[]
+          finished_at?: string | null
+          id?: string
+          mode?: string
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          token_usage?: Json | null
+          trigger?: string
+          warnings?: Json | null
+        }
+        Relationships: []
+      }
+      community_alpha_state: {
+        Row: {
+          id: number
+          last_anchor_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id: number
+          last_anchor_at: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          last_anchor_at?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      community_alpha_tasks: {
+        Row: {
+          anchor_date: string
+          attempts: number
+          channel_id: string
+          channel_name: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          ideas: Json | null
+          input_tokens: number | null
+          messages_fetched: number | null
+          output_tokens: number | null
+          rejected: Json | null
+          run_id: string | null
+          started_at: string | null
+          status: string
+          tactical_author_excluded: number | null
+          tactical_dropped: number | null
+          team_excluded: number | null
+          tighter_filter: boolean
+        }
+        Insert: {
+          anchor_date: string
+          attempts?: number
+          channel_id: string
+          channel_name: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          ideas?: Json | null
+          input_tokens?: number | null
+          messages_fetched?: number | null
+          output_tokens?: number | null
+          rejected?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status?: string
+          tactical_author_excluded?: number | null
+          tactical_dropped?: number | null
+          team_excluded?: number | null
+          tighter_filter?: boolean
+        }
+        Update: {
+          anchor_date?: string
+          attempts?: number
+          channel_id?: string
+          channel_name?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          ideas?: Json | null
+          input_tokens?: number | null
+          messages_fetched?: number | null
+          output_tokens?: number | null
+          rejected?: Json | null
+          run_id?: string | null
+          started_at?: string | null
+          status?: string
+          tactical_author_excluded?: number | null
+          tactical_dropped?: number | null
+          team_excluded?: number | null
+          tighter_filter?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_alpha_tasks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "community_alpha_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_alpha_weeks: {
+        Row: {
+          anchor_at: string
+          channel_status: Json
+          channels_scanned: number
+          created_at: string | null
+          ideas: Json
+          ideas_count: number
+          run_at: string
+          tactical_excluded_count: number
+          team_excluded_count: number
+          updated_at: string | null
+          week_date: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          anchor_at: string
+          channel_status?: Json
+          channels_scanned?: number
+          created_at?: string | null
+          ideas?: Json
+          ideas_count?: number
+          run_at: string
+          tactical_excluded_count?: number
+          team_excluded_count?: number
+          updated_at?: string | null
+          week_date: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          anchor_at?: string
+          channel_status?: Json
+          channels_scanned?: number
+          created_at?: string | null
+          ideas?: Json
+          ideas_count?: number
+          run_at?: string
+          tactical_excluded_count?: number
+          team_excluded_count?: number
+          updated_at?: string | null
+          week_date?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      community_alpha_weeks_staging: {
+        Row: {
+          anchor_at: string
+          channel_status: Json
+          channels_scanned: number
+          created_at: string | null
+          ideas: Json
+          ideas_count: number
+          run_at: string
+          tactical_excluded_count: number
+          team_excluded_count: number
+          updated_at: string | null
+          week_date: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          anchor_at: string
+          channel_status?: Json
+          channels_scanned?: number
+          created_at?: string | null
+          ideas?: Json
+          ideas_count?: number
+          run_at: string
+          tactical_excluded_count?: number
+          team_excluded_count?: number
+          updated_at?: string | null
+          week_date: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          anchor_at?: string
+          channel_status?: Json
+          channels_scanned?: number
+          created_at?: string | null
+          ideas?: Json
+          ideas_count?: number
+          run_at?: string
+          tactical_excluded_count?: number
+          team_excluded_count?: number
+          updated_at?: string | null
+          week_date?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       cot_reports: {
         Row: {
           created_at: string
@@ -539,6 +766,36 @@ export type Database = {
       }
     }
     Functions: {
+      ca_claim_task: {
+        Args: never
+        Returns: {
+          anchor_date: string
+          attempts: number
+          channel_id: string
+          channel_name: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          ideas: Json | null
+          input_tokens: number | null
+          messages_fetched: number | null
+          output_tokens: number | null
+          rejected: Json | null
+          run_id: string | null
+          started_at: string | null
+          status: string
+          tactical_author_excluded: number | null
+          tactical_dropped: number | null
+          team_excluded: number | null
+          tighter_filter: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "community_alpha_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_asset_cot_series: { Args: { p_market_id: string }; Returns: Json }
       get_asset_price_series: { Args: { p_market_id: string }; Returns: Json }
       get_cot_normalized: {
