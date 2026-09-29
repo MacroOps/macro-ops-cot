@@ -78,6 +78,13 @@
       "when": 1790709303264,
       "tag": "0010_tmp_grant_ca_read_3",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790709414788,
+      "tag": "0011_revoke_tmp_ca_read_3",
+      "breakpoints": true
     }
   ]
 }
