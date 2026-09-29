@@ -16,4 +16,4 @@ This app (Terminus / Foundation Research) uses Outseta for authentication, CRM, 
 ## Community Alpha
 
 - Weekly window logic lives in `supabase/functions/_shared/community-alpha/window.ts` (Luxon, America/Los_Angeles, Slack ts compared as integer microseconds) — one source of truth for DST-safe Friday 2 PM PT windows.
-- Members page `/community-alpha` reads only via `community-alpha-read` (Outseta JWT verified in-function, live/staging weeks tables only, no author_id); its dashboard logic is a verbatim port of Mike's reference HTML in `src/pages/communityAlphaDashboard.ts` — keep it matching the reference rather than refactoring.
+- Members page `/community-alpha` renders inside `AppShell` (Collective-plan gate, same as other sections) and reads only via `community-alpha-read` (Outseta JWT verified in-function, live/staging weeks tables only, no author_id); its dashboard logic is a verbatim port of Mike's reference HTML in `src/pages/communityAlphaDashboard.ts` — keep it matching the reference rather than refactoring.

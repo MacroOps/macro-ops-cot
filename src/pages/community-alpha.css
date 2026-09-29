@@ -494,7 +494,7 @@
   margin-bottom: 6px;
 }
 
-@media (max-width: 720px) {
+@container ca (max-width: 720px) {
   /* Header — stack rows, smaller title, hide divider */
   .ca-page header.app-header {
     flex-direction: column;
@@ -585,7 +585,7 @@
 }
 
 /* Very small phones (≤380px) */
-@media (max-width: 380px) {
+@container ca (max-width: 380px) {
   .ca-page header.app-header { padding: 12px 12px 8px; }
   .ca-page .wordmark-logo { height: 26px; }
   .ca-page h1.page-title { font-size: 20px; }
@@ -598,23 +598,25 @@
 }
 
 
-.ca-page { display:flex; flex-direction:column; min-height:100vh; background:hsl(var(--background)); color:hsl(var(--foreground)); font-family:"Hanken Grotesk", system-ui, sans-serif; font-size:16px; line-height:1.6; }
+.ca-page { display:flex; flex-direction:column; background:hsl(var(--background)); color:hsl(var(--foreground)); font-family:"Hanken Grotesk", system-ui, sans-serif; font-size:16px; line-height:1.6; }
 .ca-page *, .ca-page *::before, .ca-page *::after { box-sizing:border-box; }
-.ca-page .ca-mark { height:36px; width:36px; display:flex; align-items:center; justify-content:center; background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); font-family:"IBM Plex Mono", monospace; font-size:12px; letter-spacing:.1em; border-radius:2px; }
-.ca-page .ca-brand-text { display:flex; flex-direction:column; line-height:1.15; }
-.ca-page .ca-brand-text .ca-b1 { font-family: var(--font-serif, serif); font-style:italic; font-weight:300; font-size:15px; }
-.ca-page .ca-brand-text .ca-b2 { font-family:"IBM Plex Mono", monospace; font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:hsl(var(--accent-deep)); }
 .ca-page .ca-mode { display:inline-flex; border:1px solid hsl(var(--ledger)); border-radius:2px; overflow:hidden; font-size:12px; }
 .ca-page .ca-mode button { padding:6px 12px; background:transparent; border:none; cursor:pointer; color:hsl(var(--muted-foreground)); font-family:inherit; }
 .ca-page .ca-mode button.on { background:hsl(var(--accent-deep)); color:hsl(var(--accent-foreground)); font-weight:600; }
-.ca-page .ca-staging-banner { background:hsl(var(--warning)); color:hsl(var(--background)); text-align:center; font-family:"IBM Plex Mono", monospace; font-size:12px; font-weight:600; letter-spacing:.14em; padding:6px 12px; }
+.ca-page .ca-staging-banner { flex-shrink:0; background:hsl(var(--warning)); color:hsl(var(--background)); text-align:center; font-family:"IBM Plex Mono", monospace; font-size:12px; font-weight:600; letter-spacing:.14em; padding:6px 12px; }
 .ca-page .ca-status { padding:64px 32px; text-align:center; color:hsl(var(--muted-foreground)); }
 .ca-page .ca-status button { margin-top:14px; padding:8px 16px; background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); border:none; border-radius:2px; cursor:pointer; font-family:inherit; }
-.ca-page { height: 100vh; }
-.ca-page a.ca-brand-link { display:flex; align-items:center; gap:10px; color:inherit; text-decoration:none; }
+.ca-page { height: 100%; min-height: 0; container: ca / inline-size; }
+.ca-page > .ca-inner { display:flex; flex-direction:column; height:100%; min-height:0; }
 .ca-page .header-right { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-@media (max-width: 720px) {
-  .ca-page { height: auto; min-height: 100vh; }
+@container ca (max-width: 720px) {
+  .ca-page > .ca-inner { height: auto; }
   .ca-page .header-right { flex-direction: column; align-items: stretch; }
   .ca-page .ca-mode { align-self: flex-start; }
+}
+
+/* Phones: let the Terminus main area scroll the digest as one column. */
+@media (max-width: 767px) {
+  main:has(> .ca-page) { overflow: auto !important; }
+  .ca-page { height: auto; }
 }
