@@ -12,3 +12,7 @@ This app (Terminus / Foundation Research) uses Outseta for authentication, CRM, 
 - Gate product features with Outseta JWT claims or the REST API (`outseta:planUid`, subscription status).
 - Keep Supabase for market data; do not use it as the billing or CRM system.
 - Use `@outseta/react` on the frontend and `@outseta/node-sdk` on the server when implementing auth or billing in this repo.
+
+## Community Alpha
+
+- Weekly window logic lives in `supabase/functions/_shared/community-alpha/window.ts` (Luxon, America/Los_Angeles, Slack ts compared as integer microseconds) — one source of truth for DST-safe Friday 2 PM PT windows.
