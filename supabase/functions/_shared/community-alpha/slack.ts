@@ -64,7 +64,7 @@ export async function fetchChannelWindow(token: string, channelId: string, w: Ca
   const topLevel = history.filter((m) => isInWindow(m.ts, w));
   const replies: SlackMessage[] = [];
   const parents = history.filter((m) =>
-    (m.reply_count ?? 0) > 0 && m.latest_reply && BigInt(m.latest_reply.replace(".", "").padEnd(16, "0")) > 0n &&
+    (m.reply_count ?? 0) > 0 && m.latest_reply &&
     isAfterStart(m.latest_reply, w)
   );
   for (const parent of parents) {
