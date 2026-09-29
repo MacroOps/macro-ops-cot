@@ -76,7 +76,8 @@ export function buildPermalink(channelId: string, msg: SlackMessage): string {
 
 export function tsToPtIso(ts: string): string {
   const ms = Number(slackTsToMicros(ts) / 1000n);
-  return DateTime.fromMillis(ms, { zone: CA_ZONE }).toISO({ suppressMilliseconds: true })!;
+  // Archive format: whole seconds with PT offset, e.g. 2026-09-24T09:34:20-07:00
+  return DateTime.fromMillis(Math.floor(ms / 1000) * 1000, { zone: CA_ZONE }).toISO({ suppressMilliseconds: true })!;
 }
 
 const TICKER_RE = /^[A-Z0-9][A-Z0-9.\-=/^!]{0,19}$/;
