@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { useOutseta } from "@outseta/react";
+import { AppShell } from "@/components/hud/AppShell";
 import { outsetaEdgePost } from "@/lib/outseta/edge";
 import { mountDashboard } from "./communityAlphaDashboard";
 import "./community-alpha.css";
@@ -11,7 +11,7 @@ type Payload = { generated_at: string | null; days: unknown[] };
 const MODE_KEY = "ca-data-mode";
 
 export default function CommunityAlpha() {
-  const { user, openLogin } = useOutseta();
+  const { user } = useOutseta();
   const [mode, setMode] = useState<Mode>(() => {
     try { return sessionStorage.getItem(MODE_KEY) === "staging" ? "staging" : "live"; } catch { return "live"; }
   });
@@ -50,44 +50,26 @@ export default function CommunityAlpha() {
   const ready = !!user && !!data && !error;
 
   return (
+    <AppShell title="Community Alpha" hideScrubber hideRibbon fillViewport>
     <div className="ca-page">
+      <div className="ca-inner">
       {mode === "staging" && <div className="ca-staging-banner" role="status">STAGING — test data</div>}
       <header className="app-header">
-        <div className="brand-row">
-          <Link to="/" className="ca-brand-link" aria-label="Terminus home">
-            <span className="ca-mark">FR</span>
-            <span className="ca-brand-text">
-              <span className="ca-b1">Foundation Research</span>
-              <span className="ca-b2">Terminus Platform</span>
-            </span>
-          </Link>
-          <span className="brand-divider" aria-hidden="true">|</span>
-          <h1 className="page-title">Community Alpha</h1>
+        <div className="ca-mode" role="group" aria-label="Data source">
+          <button type="button" className={mode === "live" ? "on" : ""} aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live</button>
+          <button type="button" className={mode === "staging" ? "on" : ""} aria-pressed={mode === "staging"} onClick={() => setMode("staging")}>Staging</button>
         </div>
-        <div className="header-right">
-          {user && (
-            <div className="ca-mode" role="group" aria-label="Data source">
-              <button type="button" className={mode === "live" ? "on" : ""} aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live</button>
-              <button type="button" className={mode === "staging" ? "on" : ""} aria-pressed={mode === "staging"} onClick={() => setMode("staging")}>Staging</button>
-            </div>
-          )}
-          <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>
-            <span className="search-hint">Press <kbd>/</kbd> to search</span>
-            <div className="search-wrap">
-              <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="7" /><path d="m21 21-3.5-3.5" /></svg>
-              <input ref={searchRef} type="text" id="search" className="search-input" placeholder="Search ticker, member, channel, keyword…" autoComplete="off" spellCheck={false} />
-              <button ref={clearRef} className="search-clear" id="search-clear" aria-label="Clear search" title="Clear search (Esc)">&times;</button>
-            </div>
+        <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>
+          <span className="search-hint">Press <kbd>/</kbd> to search</span>
+          <div className="search-wrap">
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="7" /><path d="m21 21-3.5-3.5" /></svg>
+            <input ref={searchRef} type="text" id="search" className="search-input" placeholder="Search ticker, member, channel, keyword…" autoComplete="off" spellCheck={false} />
+            <button ref={clearRef} className="search-clear" id="search-clear" aria-label="Clear search" title="Clear search (Esc)">&times;</button>
           </div>
         </div>
       </header>
 
-      {!user ? (
-        <div className="ca-status">
-          <div>Sign in to view Community Alpha.</div>
-          <button type="button" onClick={() => openLogin()}>Sign in</button>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="ca-status">Couldn't load Community Alpha: {error}</div>
       ) : !data ? (
         <div className="ca-status">Loading…</div>
@@ -102,6 +84,8 @@ export default function CommunityAlpha() {
           <div className="main-inner" id="main" ref={mainRef} />
         </main>
       </div>
+      </div>
     </div>
+    </AppShell>
   );
 }
