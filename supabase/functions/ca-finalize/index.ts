@@ -109,7 +109,7 @@ async function finalize(runId: string, forceArchive: boolean) {
     extract_credits: Math.round(caCredits(run.extract_input_tokens ?? 0, run.extract_output_tokens ?? 0) * 1000) / 1000,
     check_credits: Math.round(caCredits(run.check_input_tokens ?? 0, run.check_output_tokens ?? 0) * 1000) / 1000,
   };
-  const text = buildText(run, weeks);
+  const text = buildText(weeks);
   let dmSent = false;
   if (!run.dm_sent_at) { await sendSlack(text); dmSent = true; }
   const warnings = weeks.flatMap((w) => [
