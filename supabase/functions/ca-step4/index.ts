@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const ch = channelById(channelId)!;
   const w = windowForWeekDate(weekDate);
   const slack = Deno.env.get("CA_SLACK_BOT_TOKEN")!;
-  const priv = parsePrivateList(Deno.env.get("CA_PRIVATE_EXCLUDE_IDS"));
+  const priv = parsePrivateList(Deno.env.get("CA_PRIVATE_IDS"));
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   const { data: run, error: runErr } = await db.from("community_alpha_runs")
