@@ -11,3 +11,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.ca-worker]
 verify_jwt = false
+[functions.ca-finalize]
+verify_jwt = false

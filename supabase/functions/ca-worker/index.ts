@@ -10,7 +10,7 @@ import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
 import { validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "d7f90f6b6d1d72a63bdb01ad5b653fe51c2520d1f8c975c163a11d17e2e5f88b";
+const TOKEN_SHA256 = "2d47f76e5391f99af8b7b43b5ca007e3fd5742e350d9754a7a3bef3eebb37f1e";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
@@ -100,7 +100,7 @@ async function work(token: string, hops: number) {
   if ((count ?? 0) > 0 && hops < MAX_HOPS) await kick(token, hops + 1);
   else if ((count ?? 0) === 0) {
     await sb.from("community_alpha_runs").update({
-      status: "done", finished_at: new Date().toISOString(), summary: "worker chain complete; not finalized (step 5 test)",
+      status: "done", finished_at: new Date().toISOString(), summary: "worker chain complete; awaiting finalize",
     }).eq("id", task.run_id).eq("status", "processing");
   }
 }
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     anchors.forEach((a) => windowForWeekDate(a));
     const sb = db();
     const { data: run, error } = await sb.from("community_alpha_runs")
-      .insert({ mode: "staging", trigger: "manual", anchors, status: "processing" }).select().single();
+      .insert({ mode: "staging", trigger: "manual", is_manual: true, anchors, status: "processing" }).select().single();
     if (error) return new Response(error.message, { status: 500 });
     const only: { anchor: string; channel_id: string }[] | undefined = body.only;
     const rows = anchors.flatMap((a) => CA_CHANNELS.filter((c) => !only || only.some((o) => o.anchor === a && o.channel_id === c.id)).map((c) => ({
