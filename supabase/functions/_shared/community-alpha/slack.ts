@@ -1,9 +1,11 @@
 // Slack reader for Community Alpha. Uses the bot token (CA_SLACK_BOT_TOKEN) directly.
 // Returns raw messages for one channel + window; judging each reply by its own ts.
 import type { SlackMessage } from "./filters.ts";
-import { type CaWindow, isInWindow } from "./window.ts";
+import { type CaWindow, isInWindow, slackTsToMicros } from "./window.ts";
 
 const API = "https://slack.com/api";
+/** How far back we look for thread parents that may have replies inside the window. */
+export const PARENT_LOOKBACK_DAYS = 30;
 
 export class SlackError extends Error {
   constructor(public method: string, public slackError: string) {
@@ -38,12 +40,17 @@ export interface ChannelFetch {
   topLevel: SlackMessage[];
   /** Thread replies whose own ts is in the window (parent may be older). */
   replies: SlackMessage[];
+  /**
+   * Parents from BEFORE the window that have at least one in-window reply.
+   * Background only (context_only): never an idea source, never counted.
+   */
+  contextParents: SlackMessage[];
 }
 
 /**
- * Matches the old system: only threads whose PARENT is inside the window are read,
- * and each reply is then kept only if its own ts is inside the window.
- * Replies to older parents are not fetched (may be added after the parallel run).
+ * Top-level messages: ts inside the window. Threads: every parent (in the window, or up to
+ * PARENT_LOOKBACK_DAYS before it with a latest_reply at/after the window start) is read, and
+ * each reply is kept only if its own ts is inside the window.
  */
 export async function fetchChannelWindow(token: string, channelId: string, w: CaWindow): Promise<ChannelFetch> {
   const startSec = Number(w.startMicros / 1_000_000n);
@@ -53,7 +60,7 @@ export async function fetchChannelWindow(token: string, channelId: string, w: Ca
   do {
     const p: Record<string, string> = {
       channel: channelId,
-      oldest: String(startSec),
+      oldest: String(startSec - PARENT_LOOKBACK_DAYS * 86400),
       latest: String(endSec),
       inclusive: "true",
       limit: "200",
@@ -66,18 +73,24 @@ export async function fetchChannelWindow(token: string, channelId: string, w: Ca
 
   const topLevel = history.filter((m) => isInWindow(m.ts, w));
   const replies: SlackMessage[] = [];
-  const parents = topLevel.filter((m) => (m.reply_count ?? 0) > 0);
+  const contextParents: SlackMessage[] = [];
+  const parents = history.filter((m) =>
+    (m.reply_count ?? 0) > 0 &&
+    (isInWindow(m.ts, w) || (m.latest_reply != null && slackTsToMicros(m.latest_reply) > w.startMicros))
+  );
   for (const parent of parents) {
     let c = "";
+    let hadReply = false;
     do {
       const p: Record<string, string> = { channel: channelId, ts: parent.ts, limit: "200" };
       if (c) p.cursor = c;
       const b = await slackCall(token, "conversations.replies", p);
       for (const r of (b.messages ?? []) as RawMsg[]) {
-        if (r.ts !== r.thread_ts && isInWindow(r.ts, w)) replies.push(r);
+        if (r.ts !== r.thread_ts && isInWindow(r.ts, w)) { replies.push(r); hadReply = true; }
       }
       c = b.response_metadata?.next_cursor ?? "";
     } while (c);
+    if (hadReply && !isInWindow(parent.ts, w)) contextParents.push(parent);
   }
-  return { topLevel, replies };
+  return { topLevel, replies, contextParents };
 }
