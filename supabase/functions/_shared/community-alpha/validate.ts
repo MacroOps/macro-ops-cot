@@ -21,8 +21,6 @@ export interface RawIdea {
   label: string;
   one_liner: string;
   technical: boolean;
-  /** Verbatim phrase from the source, or "chart only". Review-only; never stored in weeks. */
-  direction_quote?: string;
 }
 
 /** Stored idea — identical field set to the imported archive. */
@@ -64,16 +62,15 @@ export type RejectReason =
   | "bad_label"
   | "bad_one_liner"
   | "bad_technical"
-  | "general_requires_ticker_direction"
-  | "direction_quote";
+  | "general_requires_ticker_direction";
 
 export interface ValidateResult {
   ideas: CaIdea[];
   rejected: { source_ts: string; reason: RejectReason; [k: string]: unknown }[];
   /** Internal-only warnings (e.g. long one-liner). Never shown to members. */
   warnings: { source_ts: string; warning: string }[];
-  /** Review-only, aligned with ideas[]: direction_quote per kept idea. Task row only. */
-  review: { source_ts: string; tickers: string; direction: string; direction_quote: string }[];
+  /** Aligned with ideas[]: source ts per kept idea (for the direction check). */
+  review: { source_ts: string; tickers: string; direction: string }[];
 }
 
 export function buildPermalink(channelId: string, msg: SlackMessage): string {
@@ -166,15 +163,13 @@ export function viewWords(text: string, tickers: string[]): string[] {
     .filter((w) => w && !tk.has(w.toLowerCase()) && !/^\d+$/.test(w));
 }
 
-/** Grounding: quote must appear verbatim in the source text, or "chart only" for a bare ticker + attachment. */
-export function checkDirectionQuote(quote: unknown, msg: SlackMessage, tickers: string[]): boolean {
-  if (typeof quote !== "string" || !quote.trim()) return false;
-  const q = normText(quote.replace(/^["'\u201c]+|["'\u201d]+$/g, ""));
-  if (q === "chart only") {
-    return summarizeAttachments(msg).length > 0 && viewWords(msg.text ?? "", tickers).length === 0;
-  }
-  if (wordCount(q) > 15) return false;
-  return normText(msg.text ?? "").includes(q);
+/** Loose quote check (log only): each "..."-separated part appears in the thread text, ignoring Slack formatting. */
+export function quoteFoundLoosely(quote: string, thread: SlackMessage[]): boolean {
+  const q = quote.trim().replace(/^["'\u201c]+|["'\u201d]+$/g, "");
+  if (normText(q) === "chart only") return thread.some((m) => summarizeAttachments(m).length > 0);
+  const hay = normText(thread.map((m) => m.text ?? "").join(" \n "));
+  const parts = q.split(/\.{3,}|\u2026/).map(normText).filter(Boolean);
+  return parts.length > 0 && parts.every((p) => hay.includes(p));
 }
 
 function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): RejectReason | CaIdea {
@@ -186,7 +181,6 @@ function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): R
   const fc = checkFields(raw, ctx.channel);
   if (!fc.ok) return fc.reason;
   const tickers = fc.tickers;
-  if (!checkDirectionQuote(raw.direction_quote, msg, tickers)) return "direction_quote";
   fc.warnings.forEach(warn);
 
   return {
@@ -205,7 +199,6 @@ function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): R
   };
 }
 
-export interface ReviewEntry { source_ts: string; tickers: string; direction: string; direction_quote: string }
 
 export function validateIdeas(raws: RawIdea[], ctx: ValidateContext): ValidateResult {
   const res: ValidateResult = { ideas: [], rejected: [], warnings: [], review: [] };
@@ -215,15 +208,8 @@ export function validateIdeas(raws: RawIdea[], ctx: ValidateContext): ValidateRe
       res.warnings.push({ source_ts: ts, warning });
       console.warn(`[community-alpha] idea ${ts}: ${warning}`);
     });
-    if (typeof r === "string") {
-      res.rejected.push({
-        source_ts: ts, reason: r,
-        ...(r === "direction_quote" ? { tickers: (raw.tickers ?? []).join(", "), direction: raw.direction, direction_quote: String(raw.direction_quote ?? "") } : {}),
-      });
-    } else {
-      res.ideas.push(r);
-      res.review.push({ source_ts: ts, tickers: r.tickers, direction: r.direction, direction_quote: String(raw.direction_quote).trim() });
-    }
+    if (typeof r === "string") res.rejected.push({ source_ts: ts, reason: r });
+    else { res.ideas.push(r); res.review.push({ source_ts: ts, tickers: r.tickers, direction: r.direction }); }
   }
   return res;
 }

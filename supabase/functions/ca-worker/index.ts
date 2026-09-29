@@ -7,10 +7,10 @@ import { CA_CHANNELS, CA_TEAM_IDS, channelById, parsePrivateList } from "../_sha
 import { filterMessages, type SlackMessage } from "../_shared/community-alpha/filters.ts";
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
-import { checkDirections, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
-import { validateIdeas } from "../_shared/community-alpha/validate.ts";
+import { checkDirections, decideDirection, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
+import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "67c28d5f6202644be0bfc3c4a12344c3941c77bb67c2cac96ec94e71e6f4176c";
+const TOKEN_SHA256 = "f014dc30488e72d8130b2441c3b0bdbb5b5cdaf977323eac13632af9cc0cca4f";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
@@ -69,19 +69,34 @@ async function processTask(task: any) {
     });
     rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
-    // Second pass: direction check. Keep only "yes".
+    // Second pass: model reports the author's view; code decides.
     if (v.ideas.length) {
+      const ctxMap = new Map(context.map((m) => [m.ts, m]));
+      const rootOf = (m: SlackMessage) => (m.thread_ts && m.thread_ts !== m.ts ? m.thread_ts : m.ts);
+      const threadFor = (src: SlackMessage) => {
+        const root = rootOf(src);
+        const all = [...(ctxMap.has(root) ? [ctxMap.get(root)!] : []), ...kept.filter((m) => rootOf(m) === root)];
+        return all.sort((a, b) => Number(a.ts) - Number(b.ts));
+      };
+      const threads = v.review.map((rv) => threadFor(fetched.get(rv.source_ts)!));
       const items = v.ideas.map((idea, i) => ({
         id: i, instrument: idea.tickers.split(",")[0].trim(), direction: idea.direction,
-        direction_quote: v.review[i].direction_quote, source_text: fetched.get(v.review[i].source_ts)?.text ?? "",
+        label: idea.label, one_liner: idea.one_liner,
+        source_text: fetched.get(v.review[i].source_ts)?.text ?? "",
+        thread: threads[i].filter((m) => m.ts !== v.review[i].source_ts)
+          .map((m) => ({ text: m.text ?? "", context_only: ctxMap.has(m.ts) })),
       }));
       const c = await checkDirections(apiKey, items);
       chkIn = c.input_tokens; chkOut = c.output_tokens;
       v.ideas.forEach((idea, i) => {
-        const a = c.answers.get(i) ?? { answer: "unclear", reason: "no answer" };
-        const rv = { ...v.review[i], check: a.answer, check_reason: a.reason };
-        if (a.answer === "yes") { ideas.push(idea); review.push(rv); }
-        else rejected.push({ ...rv, reason: "direction_check" });
+        const a = c.answers.get(i) ?? { reason: "no answer", author_view: "unclear", quote: "" };
+        const decision = decideDirection(idea.direction, a.author_view);
+        const quoteOk = quoteFoundLoosely(a.quote, threads[i]);
+        const rv = { ...v.review[i], label: idea.label, author_view: a.author_view, check_reason: a.reason, quote: a.quote, quote_found: quoteOk, decision };
+        if (!quoteOk) rejected.push({ source_ts: rv.source_ts, reason: "warning", warning: "quote_mismatch", quote: a.quote });
+        if (decision === "flip_prevented") { rejected.push({ ...rv, reason: "flip_prevented" }); return; }
+        if (decision === "unclear") rejected.push({ ...rv, reason: "warning", warning: "direction_unclear" });
+        ideas.push(idea); review.push(rv);
       });
     }
   }

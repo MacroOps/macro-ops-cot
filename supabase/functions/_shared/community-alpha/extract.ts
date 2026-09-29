@@ -26,7 +26,7 @@ In tickers, list every ticker, instrument, or theme the post names for that idea
 
 Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Buying a dip or a pullback is a price-action reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
-Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. For example, "dollar breaking out, bad for gold" is bullish, with the dollar listed first. For relative views ("prefer A over B", "long A, short B"), list the preferred instrument first; its direction is long or bullish. For options or volatility trades, the instrument is the underlying or its volatility, and the direction is the view on it (selling volatility is bearish on volatility). For each idea, set direction_quote to a short verbatim phrase (15 words or fewer) from the source message that shows the author's view on the first instrument, or "chart only" for a ticker-plus-chart post with no words about the view. If you can't tell the direction of an idea, drop that idea.
+Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. For example, "dollar breaking out, bad for gold" is bullish, with the dollar listed first. For relative views ("prefer A over B", "long A, short B"), list the preferred instrument first; its direction is long or bullish. For options or volatility trades, the instrument is the underlying or its volatility, and the direction is the view on it (selling volatility is bearish on volatility). If you can't tell the direction of an idea, drop that idea.
 
 Return ideas plus tactical_dropped = the number of pure position-management messages you dropped.`;
 }
@@ -41,7 +41,7 @@ export const OUTPUT_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["message_ts", "author_id", "author_name", "idea_type", "tickers", "direction", "label", "one_liner", "technical", "direction_quote"],
+        required: ["message_ts", "author_id", "author_name", "idea_type", "tickers", "direction", "label", "one_liner", "technical"],
         properties: {
           message_ts: { type: "string" },
           author_id: { type: "string" },
@@ -52,7 +52,6 @@ export const OUTPUT_SCHEMA = {
           label: { type: "string", description: "<= 8 words" },
           one_liner: { type: "string", description: "<= 25 words" },
           technical: { type: "boolean" },
-          direction_quote: { type: "string", description: "verbatim phrase <= 15 words from the source message, or \"chart only\"" },
         },
       },
     },
@@ -63,7 +62,6 @@ export const OUTPUT_SCHEMA = {
 export interface AiIdea {
   message_ts: string; author_id: string; author_name: string; idea_type: string;
   tickers: string; direction: string; label: string; one_liner: string; technical: boolean;
-  direction_quote: string;
 }
 export interface ExtractResult {
   ideas: AiIdea[];
@@ -128,13 +126,12 @@ export function toRawIdea(a: AiIdea): RawIdea {
     label: a.label,
     one_liner: a.one_liner,
     technical: a.technical,
-    direction_quote: a.direction_quote,
   };
 }
 
-// ---------- Second pass: direction check ----------
+// ---------- Second pass: direction check (model reports the view; code decides) ----------
 const CHECK_TOOL = "record_checks";
-const CHECK_PROMPT = `You check trade ideas extracted from Slack posts. For each item you get an id, the first instrument, the extracted direction (long, short, bullish, bearish or buy; long, bullish and buy all mean the author expects the instrument to rise), a quoted phrase, and the full source message text. Answer one question per item: does the author's view on the first instrument match this direction? Answer "yes", "no", or "unclear". Judge the author's view on that instrument only, not on other instruments in the post. A ticker-plus-chart post with no words about the view counts as bullish. Give a short reason (<= 15 words).`;
+const CHECK_PROMPT = `You check trade ideas extracted from Slack posts. For each item you get an id, the first instrument, the extracted direction, the label, the one-liner, the source message text, and the rest of its thread (posts marked context_only are background from before the week). For each item, report what the author of the source message thinks about the first instrument. Fill the fields in this order: reason (one short sentence on what the author thinks about the first instrument), author_view ("positive" if they expect it to rise or would buy or be long it, "negative" if they expect it to fall or would short or avoid it, "unclear" otherwise; for volatility instruments, the view is on volatility itself), quote (a short phrase from the source message or its thread that supports the view; "..." is allowed between parts; or "chart only" for a ticker-plus-chart post with no words about the view).`;
 const CHECK_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -145,24 +142,38 @@ const CHECK_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "answer", "reason"],
+        required: ["id", "reason", "author_view", "quote"],
         properties: {
           id: { type: "integer" },
-          answer: { type: "string", enum: ["yes", "no", "unclear"] },
           reason: { type: "string" },
+          author_view: { type: "string", enum: ["positive", "negative", "unclear"] },
+          quote: { type: "string" },
         },
       },
     },
   },
 };
-export interface CheckItem { id: number; instrument: string; direction: string; direction_quote: string; source_text: string }
-export interface CheckResult { answers: Map<number, { answer: string; reason: string }>; input_tokens: number; output_tokens: number }
+export interface CheckItem {
+  id: number; instrument: string; direction: string; label: string; one_liner: string;
+  source_text: string; thread: { text: string; context_only: boolean }[];
+}
+export interface CheckAnswer { reason: string; author_view: string; quote: string }
+export interface CheckResult { answers: Map<number, CheckAnswer>; input_tokens: number; output_tokens: number }
 
 export async function checkDirections(apiKey: string, items: CheckItem[], model: string = CA_MODEL): Promise<CheckResult> {
-  const r = await callForcedTool(apiKey, model, CHECK_PROMPT, JSON.stringify(items), CHECK_TOOL, "Record the direction checks.", CHECK_SCHEMA, 4000);
-  const answers = new Map<number, { answer: string; reason: string }>();
-  for (const c of r.parsed.checks ?? []) answers.set(Number(c.id), { answer: String(c.answer), reason: String(c.reason ?? "") });
+  const r = await callForcedTool(apiKey, model, CHECK_PROMPT, JSON.stringify(items), CHECK_TOOL, "Record the direction checks.", CHECK_SCHEMA, 6000);
+  const answers = new Map<number, CheckAnswer>();
+  for (const c of r.parsed.checks ?? []) {
+    answers.set(Number(c.id), { reason: String(c.reason ?? ""), author_view: String(c.author_view ?? "unclear"), quote: String(c.quote ?? "") });
+  }
   return { answers, input_tokens: r.inTok, output_tokens: r.outTok };
+}
+
+/** Code decides: opposite side -> flip_prevented (drop); unclear -> keep + warn; match -> keep. */
+export function decideDirection(direction: string, authorView: string): "keep" | "flip_prevented" | "unclear" {
+  const side = ["long", "bullish", "buy"].includes(direction) ? "positive" : "negative";
+  if (authorView === "unclear" || (authorView !== "positive" && authorView !== "negative")) return "unclear";
+  return authorView === side ? "keep" : "flip_prevented";
 }
 
 async function callForcedTool(
