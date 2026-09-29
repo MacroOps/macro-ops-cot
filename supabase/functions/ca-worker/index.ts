@@ -3,14 +3,14 @@
 // POST {action:"work", hops} -> claims one task, processes it, kicks the next hop while tasks remain.
 // Never finalizes, never posts to Slack, never moves state.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { CA_CHANNELS, CA_TEAM_IDS, channelById, parsePrivateList } from "../_shared/community-alpha/config.ts";
-import { filterMessages, type SlackMessage } from "../_shared/community-alpha/filters.ts";
+import { CA_CHANNELS, CA_CREDIT_CAP_PER_RUN, CA_TEAM_IDS, caCredits, channelById, parsePrivateList } from "../_shared/community-alpha/config.ts";
+import { filterMessages, type SlackMessage, summarizeAttachments } from "../_shared/community-alpha/filters.ts";
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
-import { checkDirections, decideDirection, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
+import { checkDirections, decideDirection, extractIdeas, toRawIdea, type UsageHook } from "../_shared/community-alpha/extract.ts";
 import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "f014dc30488e72d8130b2441c3b0bdbb5b5cdaf977323eac13632af9cc0cca4f";
+const TOKEN_SHA256 = "9170a376079ead9d48178afb51aa234599aa5ea7cab56f9f0b7e0fb2978153eb";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
@@ -42,7 +42,7 @@ async function resolveNames(token: string, ids: string[]): Promise<Map<string, s
   return m;
 }
 
-async function processTask(task: any) {
+async function processTask(task: any, guard: { beforeCall: () => Promise<void>; onUsage: UsageHook }) {
   const slackToken = Deno.env.get("CA_SLACK_BOT_TOKEN")!;
   const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
   const privateIds = parsePrivateList(Deno.env.get("CA_PRIVATE_IDS"));
@@ -61,7 +61,8 @@ async function processTask(task: any) {
   let ideas: unknown[] = [], rejected: unknown[] = [], review: unknown[] = [];
   let tacticalDropped = 0, inTok = 0, outTok = 0, chkIn = 0, chkOut = 0;
   if (kept.length) {
-    const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context);
+    await guard.beforeCall();
+    const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context, guard.onUsage);
     const excluded = new Set([...CA_TEAM_IDS, ...privateIds]);
     const fetched = new Map(kept.map((m: SlackMessage) => [m.ts, m]));
     const v = validateIdeas(r.ideas.map(toRawIdea), {
@@ -79,14 +80,18 @@ async function processTask(task: any) {
         return all.sort((a, b) => Number(a.ts) - Number(b.ts));
       };
       const threads = v.review.map((rv) => threadFor(fetched.get(rv.source_ts)!));
-      const items = v.ideas.map((idea, i) => ({
-        id: i, instrument: idea.tickers.split(",")[0].trim(), direction: idea.direction,
-        label: idea.label, one_liner: idea.one_liner,
-        source_text: fetched.get(v.review[i].source_ts)?.text ?? "",
-        thread: threads[i].filter((m) => m.ts !== v.review[i].source_ts)
-          .map((m) => ({ text: m.text ?? "", context_only: ctxMap.has(m.ts) })),
-      }));
-      const c = await checkDirections(apiKey, items);
+      const items = v.ideas.map((idea, i) => {
+        const src = fetched.get(v.review[i].source_ts)!;
+        return {
+          id: i, instrument: idea.tickers.split(",")[0].trim(), direction: idea.direction,
+          label: idea.label, one_liner: idea.one_liner,
+          source_text: src.text ?? "", source_attachments: summarizeAttachments(src),
+          thread: threads[i].filter((m) => m.ts !== src.ts)
+            .map((m) => ({ text: m.text ?? "", attachments: summarizeAttachments(m), context_only: ctxMap.has(m.ts) })),
+        };
+      });
+      await guard.beforeCall();
+      const c = await checkDirections(apiKey, channel, items, guard.onUsage);
       chkIn = c.input_tokens; chkOut = c.output_tokens;
       v.ideas.forEach((idea, i) => {
         const a = c.answers.get(i) ?? { reason: "no answer", author_view: "unclear", quote: "" };
@@ -109,6 +114,22 @@ async function processTask(task: any) {
   };
 }
 
+class CreditCapError extends Error {}
+
+/** Per-run credit guard: checked before every AI call; every call's usage is recorded, even on failure. */
+function creditGuard(sb: ReturnType<typeof db>, runId: string) {
+  return {
+    async beforeCall() {
+      const { data } = await sb.from("community_alpha_runs").select("ai_credits").eq("id", runId).single();
+      if (Number(data?.ai_credits ?? 0) >= CA_CREDIT_CAP_PER_RUN) throw new CreditCapError("credit_cap");
+    },
+    onUsage: (async (kind, i, o) => {
+      const { error } = await sb.rpc("ca_add_usage", { _run_id: runId, _kind: kind, _in: i, _out: o, _credits: caCredits(i, o) });
+      if (error) console.error("[ca-worker] usage", error.message);
+    }) as UsageHook,
+  };
+}
+
 async function work(token: string, hops: number) {
   const sb = db();
   const { data, error } = await sb.rpc("ca_claim_task");
@@ -116,17 +137,25 @@ async function work(token: string, hops: number) {
   const task = (data ?? [])[0];
   if (!task) return;
   try {
-    const upd = await processTask(task);
+    const upd = await processTask(task, creditGuard(sb, task.run_id));
     await sb.from("community_alpha_tasks").update(upd).eq("id", task.id);
     console.log(`[ca-worker] task ${task.id} done`);
   } catch (e) {
-    const msg = String((e as Error)?.message ?? e).slice(0, 500);
-    const final = task.attempts >= MAX_ATTEMPTS;
-    await sb.from("community_alpha_tasks").update({
-      status: final ? "failed" : "pending", error: msg, started_at: null,
-      finished_at: final ? new Date().toISOString() : null,
-    }).eq("id", task.id);
-    console.error(`[ca-worker] task ${task.id} attempt ${task.attempts} failed: ${msg}`);
+    if (e instanceof CreditCapError) {
+      // Cap reached: this task and every remaining pending task fail with reason credit_cap. No retries.
+      const now = new Date().toISOString();
+      await sb.from("community_alpha_tasks").update({ status: "failed", error: "credit_cap", started_at: null, finished_at: now })
+        .eq("run_id", task.run_id).or(`id.eq.${task.id},status.eq.pending`);
+      console.error(`[ca-worker] run ${task.run_id} reached the credit cap`);
+    } else {
+      const msg = String((e as Error)?.message ?? e).slice(0, 500);
+      const final = task.attempts >= MAX_ATTEMPTS;
+      await sb.from("community_alpha_tasks").update({
+        status: final ? "failed" : "pending", error: msg, started_at: null,
+        finished_at: final ? new Date().toISOString() : null,
+      }).eq("id", task.id);
+      console.error(`[ca-worker] task ${task.id} attempt ${task.attempts} failed: ${msg}`);
+    }
   }
   const { count } = await sb.from("community_alpha_tasks").select("id", { count: "exact", head: true })
     .eq("run_id", task.run_id).in("status", ["pending", "running"]);

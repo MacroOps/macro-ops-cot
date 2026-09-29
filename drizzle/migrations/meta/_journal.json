@@ -64,6 +64,27 @@
       "when": 1790708830770,
       "tag": "0008_revoke_tmp_ca_read_2",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790709211177,
+      "tag": "0009_ca_run_usage_counters",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790709303264,
+      "tag": "0010_tmp_grant_ca_read_3",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790709414788,
+      "tag": "0011_revoke_tmp_ca_read_3",
+      "breakpoints": true
     }
   ]
 }

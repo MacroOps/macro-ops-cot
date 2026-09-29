@@ -153,10 +153,16 @@ export type Database = {
       }
       community_alpha_runs: {
         Row: {
+          ai_calls: number
+          ai_credits: number
           anchors: string[]
+          check_input_tokens: number
+          check_output_tokens: number
           credits_used: number | null
           dm_sent_at: string | null
           dm_text: string | null
+          extract_input_tokens: number
+          extract_output_tokens: number
           finalized_at: string | null
           finished_at: string | null
           id: string
@@ -170,10 +176,16 @@ export type Database = {
           warnings: Json | null
         }
         Insert: {
+          ai_calls?: number
+          ai_credits?: number
           anchors?: string[]
+          check_input_tokens?: number
+          check_output_tokens?: number
           credits_used?: number | null
           dm_sent_at?: string | null
           dm_text?: string | null
+          extract_input_tokens?: number
+          extract_output_tokens?: number
           finalized_at?: string | null
           finished_at?: string | null
           id?: string
@@ -187,10 +199,16 @@ export type Database = {
           warnings?: Json | null
         }
         Update: {
+          ai_calls?: number
+          ai_credits?: number
           anchors?: string[]
+          check_input_tokens?: number
+          check_output_tokens?: number
           credits_used?: number | null
           dm_sent_at?: string | null
           dm_text?: string | null
+          extract_input_tokens?: number
+          extract_output_tokens?: number
           finalized_at?: string | null
           finished_at?: string | null
           id?: string
@@ -796,6 +814,16 @@ export type Database = {
       }
     }
     Functions: {
+      ca_add_usage: {
+        Args: {
+          _credits: number
+          _in: number
+          _kind: string
+          _out: number
+          _run_id: string
+        }
+        Returns: number
+      }
       ca_claim_task: {
         Args: never
         Returns: {
