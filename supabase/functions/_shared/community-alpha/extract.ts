@@ -72,6 +72,9 @@ export interface ExtractResult {
   runId?: string;
 }
 
+/** Called after every AI call (success or failure) with the tokens seen, so run totals are complete. */
+export type UsageHook = (kind: "extract" | "check", inTok: number, outTok: number) => Promise<void>;
+
 export class AiError extends Error {
   constructor(public status: number, msg: string) { super(msg); }
 }
@@ -131,7 +134,9 @@ export function toRawIdea(a: AiIdea): RawIdea {
 
 // ---------- Second pass: direction check (model reports the view; code decides) ----------
 const CHECK_TOOL = "record_checks";
-const CHECK_PROMPT = `You check trade ideas extracted from Slack posts. For each item you get an id, the first instrument, the extracted direction, the label, the one-liner, the source message text, and the rest of its thread (posts marked context_only are background from before the week). For each item, report what the author of the source message thinks about the first instrument. Fill the fields in this order: reason (one short sentence on what the author thinks about the first instrument), author_view ("positive" if they expect it to rise or would buy or be long it, "negative" if they expect it to fall or would short or avoid it, "unclear" otherwise; for volatility instruments, the view is on volatility itself), quote (a short phrase from the source message or its thread that supports the view; "..." is allowed between parts; or "chart only" for a ticker-plus-chart post with no words about the view).`;
+const CHECK_PROMPT = `You check trade ideas extracted from Slack posts in the channel named in the input. For each item you get an id, the first instrument, the extracted direction, the label, the one-liner, the source message text, and the rest of its thread (posts marked context_only are background from before the week). For each item, report what the author of the source message thinks about the first instrument. Fill the fields in this order: reason (one short sentence on what the author thinks about the first instrument), author_view ("positive" if they expect it to rise or would buy or be long it, "negative" if they expect it to fall or would short or avoid it, "unclear" otherwise; for volatility instruments, the view is on volatility itself), quote (a short phrase from the source message or its thread that supports the view; "..." is allowed between parts; or "chart only" for a ticker-plus-chart post with no words about the view).
+
+Judge the author's view on the first instrument using these rules. For relative views ("prefer A over B", "long A, short B"), the preferred instrument is positive. For options or volatility trades, judge the view on the underlying or its volatility (selling volatility is negative on volatility). Outside #general, a post that is only a ticker and an attached chart, with no words about the view, is positive. It's negative only when the author says the price is likely to fall or that they'd avoid or short it (for example "lower highs", "rolling over", "breaking down", "I'd stay away"). Doubts or questions about a news item are not a negative view. Buying a dip or a pullback is positive.`;
 const CHECK_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -160,8 +165,13 @@ export interface CheckItem {
 export interface CheckAnswer { reason: string; author_view: string; quote: string }
 export interface CheckResult { answers: Map<number, CheckAnswer>; input_tokens: number; output_tokens: number }
 
-export async function checkDirections(apiKey: string, items: CheckItem[], model: string = CA_MODEL): Promise<CheckResult> {
-  const r = await callForcedTool(apiKey, model, CHECK_PROMPT, JSON.stringify(items), CHECK_TOOL, "Record the direction checks.", CHECK_SCHEMA, 6000);
+export async function checkDirections(
+  apiKey: string, channel: CaChannel, items: CheckItem[], onUsage?: UsageHook, model: string = CA_MODEL,
+): Promise<CheckResult> {
+  const r = await callForcedTool(
+    apiKey, model, CHECK_PROMPT, JSON.stringify({ channel: channel.name, items }), CHECK_TOOL,
+    "Record the direction checks.", CHECK_SCHEMA, 6000, (i, o) => onUsage?.("check", i, o) ?? Promise.resolve(),
+  );
   const answers = new Map<number, CheckAnswer>();
   for (const c of r.parsed.checks ?? []) {
     answers.set(Number(c.id), { reason: String(c.reason ?? ""), author_view: String(c.author_view ?? "unclear"), quote: String(c.quote ?? "") });
@@ -179,6 +189,7 @@ export function decideDirection(direction: string, authorView: string): "keep" |
 async function callForcedTool(
   apiKey: string, model: string, system: string, user: string,
   tool: string, desc: string, schema: unknown, maxTokens: number,
+  onUsage?: (inTok: number, outTok: number) => Promise<void>,
 ) {
   const res = await fetch(URL, {
     method: "POST",
@@ -192,12 +203,14 @@ async function callForcedTool(
   });
   if (!res.ok) throw new AiError(res.status, (await res.text()).slice(0, 500));
   let json = "", inTok = 0, outTok = 0, stop = "";
-  await readSse(res, (ev) => {
-    if (ev.type === "message_start") inTok = ev.message?.usage?.input_tokens ?? 0;
-    if (ev.type === "content_block_delta" && ev.delta?.type === "input_json_delta") json += ev.delta.partial_json;
-    if (ev.type === "message_delta") { outTok = ev.usage?.output_tokens ?? outTok; stop = ev.delta?.stop_reason ?? stop; }
-    if (ev.type === "error") throw new AiError(500, JSON.stringify(ev.error).slice(0, 300));
-  });
+  try {
+    await readSse(res, (ev) => {
+      if (ev.type === "message_start") inTok = ev.message?.usage?.input_tokens ?? 0;
+      if (ev.type === "content_block_delta" && ev.delta?.type === "input_json_delta") json += ev.delta.partial_json;
+      if (ev.type === "message_delta") { outTok = ev.usage?.output_tokens ?? outTok; stop = ev.delta?.stop_reason ?? stop; }
+      if (ev.type === "error") throw new AiError(500, JSON.stringify(ev.error).slice(0, 300));
+    });
+  } finally { if (onUsage) await onUsage(inTok, outTok); }
   if (!json) throw new AiError(502, `empty output (stop_reason=${stop})`);
   return { parsed: JSON.parse(json), inTok, outTok };
 }
@@ -230,6 +243,7 @@ export async function extractIdeas(
   method: "forced_tool" | "json_schema" = "forced_tool",
   model: string = CA_MODEL,
   contextParents: SlackMessage[] = [],
+  onUsage?: UsageHook,
 ): Promise<ExtractResult> {
   const body: Record<string, unknown> = {
     model,
@@ -260,7 +274,7 @@ export async function extractIdeas(
     throw new AiError(res.status, t.slice(0, 500));
   }
   let json = "", text = "", inTok = 0, outTok = 0, stop = "";
-  await readSse(res, (ev) => {
+  try { await readSse(res, (ev) => {
     if (ev.type === "message_start") inTok = ev.message?.usage?.input_tokens ?? 0;
     if (ev.type === "content_block_delta") {
       if (ev.delta?.type === "input_json_delta") json += ev.delta.partial_json;
@@ -268,7 +282,7 @@ export async function extractIdeas(
     }
     if (ev.type === "message_delta") { outTok = ev.usage?.output_tokens ?? outTok; stop = ev.delta?.stop_reason ?? stop; }
     if (ev.type === "error") throw new AiError(500, JSON.stringify(ev.error).slice(0, 300));
-  });
+  }); } finally { if (onUsage) await onUsage("extract", inTok, outTok); }
   const raw = method === "forced_tool" ? json : text;
   if (!raw) throw new AiError(502, `empty output (stop_reason=${stop})`);
   const parsed = JSON.parse(raw);

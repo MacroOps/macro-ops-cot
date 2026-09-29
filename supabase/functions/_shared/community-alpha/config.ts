@@ -45,3 +45,9 @@ export function channelById(id: string): CaChannel | undefined {
 export function parsePrivateList(raw: string | undefined | null): ReadonlySet<string> {
   return new Set((raw ?? "").split(/[\s,]+/).map((s) => s.trim()).filter(Boolean));
 }
+
+/** Credit estimate for anthropic/claude-sonnet-5, calibrated on earlier runs' measured cost. */
+export const CA_CREDITS_PER_INPUT_TOKEN = 7.9e-6;
+export const CA_CREDITS_PER_OUTPUT_TOKEN = 4.1e-5;
+export const CA_CREDIT_CAP_PER_RUN = 3;
+export const caCredits = (inTok: number, outTok: number) => inTok * CA_CREDITS_PER_INPUT_TOKEN + outTok * CA_CREDITS_PER_OUTPUT_TOKEN;
