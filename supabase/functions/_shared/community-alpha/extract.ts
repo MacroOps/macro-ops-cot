@@ -11,12 +11,12 @@ const TOOL = "record_ideas";
 
 export function buildPrompt(channel: CaChannel): string {
   const general = channel.strict ? "\nIn this channel, keep ONLY clear ticker + direction calls." : "";
-  return `You extract long-term trade ideas from one week of Macro Ops community Slack messages in channel ${channel.name}. Messages are given as JSON with message_ts, thread_ts, author_id, author_name, posted_at_iso, text, and attachments (a short list of attached files and link previews, for example "image: chart.png" or "link: <page title>").
+  return `You extract long-term trade ideas from one week of Macro Ops community Slack messages in channel ${channel.name}. Messages are given as JSON with message_ts, thread_ts, author_id, author_name, posted_at_iso, text, and attachments (a short list of attached files and link previews, for example "image: chart.png" or "link: <page title>"). Thread replies are grouped under the post they answer. Messages marked context_only are there only as background for a thread (for example a thread's first post from before this week); never use them as the source of an idea.
 
 A trade idea is either:
 - Ticker + direction: a named instrument (equity, ETF, index, future, FX pair, commodity, country, crypto) plus a direction (long, short, buy, bullish, bearish, calls, puts, adding), or
 - A thesis post: a substantive argument for a position, even without price levels.
-Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them. Outside #general, a post that is only a ticker and an attached chart, with no words about the view, is a bullish technical idea. If the text gives any view, follow the text: cautious, skeptical, or negative wording (for example "lower highs", "rolling over", "breaking down", "cautious") means bearish.${general}
+Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them. Outside #general, a post that is only a ticker and an attached chart, with no words about the view, is a bullish technical idea. If the text gives any view, follow the text. It's bearish only when the author says the price is likely to fall or that they'd avoid or short it (for example "lower highs", "rolling over", "breaking down", "I'd stay away"). Doubts or questions about a news item are not a bearish call.${general}
 
 Drop pure tactical position-management updates with no new directional thesis: trims, partial or full profit-taking, stop-outs, "out of all my trades", and any pure exit, cover, or close. Keep substantive bearish-thesis posts even if they mention trimming. Also ignore emoji-only messages, GIFs or images with no text, bare links without commentary, questions without a thesis, and generic chatter.
 
@@ -26,7 +26,7 @@ In tickers, list every ticker, instrument, or theme the post names for that idea
 
 Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Buying a dip or a pullback is a price-action reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
-Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. If you can't tell the direction of an idea, drop that idea.
+Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. For example, "dollar breaking out, bad for gold" is bullish, with the dollar listed first. If you can't tell the direction of an idea, drop that idea.
 
 Return ideas plus tactical_dropped = the number of pure position-management messages you dropped.`;
 }
@@ -76,8 +76,26 @@ export class AiError extends Error {
   constructor(public status: number, msg: string) { super(msg); }
 }
 
-export function messagesPayload(msgs: SlackMessage[], names: Map<string, string>): string {
-  return JSON.stringify(msgs.map((m) => ({
+/**
+ * Thread-grouped payload: each thread is sent as a unit (parent, then its replies in order),
+ * threads ordered by their first message. A parent from before the window is included once,
+ * marked context_only: true, only as background.
+ */
+export function messagesPayload(
+  msgs: SlackMessage[],
+  names: Map<string, string>,
+  contextParents: SlackMessage[] = [],
+): string {
+  const byTs = new Map(msgs.map((m) => [m.ts, m]));
+  const ctx = new Map(contextParents.map((m) => [m.ts, m]));
+  const rootOf = (m: SlackMessage) => (m.thread_ts && m.thread_ts !== m.ts ? m.thread_ts : m.ts);
+  const groups = new Map<string, SlackMessage[]>();
+  for (const m of [...msgs].sort((a, b) => Number(a.ts) - Number(b.ts))) {
+    const r = rootOf(m);
+    if (!groups.has(r)) groups.set(r, []);
+    if (r !== m.ts) groups.get(r)!.push(m);
+  }
+  const row = (m: SlackMessage, contextOnly: boolean) => ({
     message_ts: m.ts,
     thread_ts: m.thread_ts ?? null,
     author_id: m.user,
@@ -85,7 +103,16 @@ export function messagesPayload(msgs: SlackMessage[], names: Map<string, string>
     posted_at_iso: tsToPtIso(m.ts),
     text: m.text ?? "",
     attachments: summarizeAttachments(m),
-  })));
+    context_only: contextOnly,
+  });
+  const out: ReturnType<typeof row>[] = [];
+  for (const [root, replies] of groups) {
+    const parent = byTs.get(root);
+    if (parent) out.push(row(parent, false));
+    else if (ctx.has(root)) out.push(row(ctx.get(root)!, true));
+    for (const r of replies) out.push(row(r, false));
+  }
+  return JSON.stringify(out);
 }
 
 /** Map AI output to the validator's RawIdea shape. */
@@ -129,13 +156,14 @@ export async function extractIdeas(
   names: Map<string, string>,
   method: "forced_tool" | "json_schema" = "forced_tool",
   model: string = CA_MODEL,
+  contextParents: SlackMessage[] = [],
 ): Promise<ExtractResult> {
   const body: Record<string, unknown> = {
     model,
     max_tokens: 16000,
     stream: true,
     system: buildPrompt(channel),
-    messages: [{ role: "user", content: messagesPayload(msgs, names) }],
+    messages: [{ role: "user", content: messagesPayload(msgs, names, contextParents) }],
   };
   if (method === "forced_tool") {
     body.tools = [{ name: TOOL, description: "Record the extracted ideas.", input_schema: OUTPUT_SCHEMA }];

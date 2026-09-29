@@ -235,3 +235,9 @@ Deno.test("merge: thread link and plain archive link match on base link + ticker
   const thread = base + "?thread_ts=1786000000.000050&cid=C6Q4C2WR1";
   assertEquals(ideaKey({ permalink: thread, tickers: "NVDA" }), ideaKey({ permalink: base, tickers: "nvda" }));
 });
+
+Deno.test("an idea sourced from a context_only message is rejected", () => {
+  const r = validateIdeas([raw()], { ...ctx(), contextTs: new Set([raw().source_ts]) });
+  assertEquals(r.ideas.length, 0);
+  assertEquals(r.rejected[0].reason, "context_only_source");
+});

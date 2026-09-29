@@ -10,7 +10,7 @@ import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
 import { validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "d35fc8b23439729597bf6b3a36e2c8aae4b2ae0c3021c0780b9e3d3a169420c2";
+const TOKEN_SHA256 = "d7f90f6b6d1d72a63bdb01ad5b653fe51c2520d1f8c975c163a11d17e2e5f88b";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
@@ -52,13 +52,18 @@ async function processTask(task: any) {
   const all = [...f.topLevel, ...f.replies];
   const fr = filterMessages(all, CA_TEAM_IDS, privateIds);
   const kept = [...fr.kept].sort((a, b) => Number(a.ts) - Number(b.ts));
-  const names = await resolveNames(slackToken, [...new Set(kept.map((m) => m.user!))]);
+  // Pre-window thread parents: background only. Drop bot/system and private-list authors; never counted.
+  const keptRoots = new Set(kept.map((m) => m.thread_ts).filter(Boolean));
+  const context = f.contextParents.filter((m) =>
+    keptRoots.has(m.ts) && m.user && !m.bot_id && !privateIds.has(m.user)
+  );
+  const names = await resolveNames(slackToken, [...new Set([...kept, ...context].map((m) => m.user!))]);
   let ideas: unknown[] = [], rejected: unknown[] = [], tacticalDropped = 0, inTok = 0, outTok = 0;
   if (kept.length) {
-    const r = await extractIdeas(apiKey, channel, kept, names);
+    const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context);
     const excluded = new Set([...CA_TEAM_IDS, ...privateIds]);
     const v = validateIdeas(r.ideas.map(toRawIdea), {
-      channel, fetched: new Map(kept.map((m: SlackMessage) => [m.ts, m])), excludedIds: excluded, names,
+      channel, fetched: new Map(kept.map((m: SlackMessage) => [m.ts, m])), excludedIds: excluded, names, contextTs: new Set(context.map((m) => m.ts)),
     });
     ideas = v.ideas; rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
