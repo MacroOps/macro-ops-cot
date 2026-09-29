@@ -64,6 +64,8 @@ export type RejectReason =
 export interface ValidateResult {
   ideas: CaIdea[];
   rejected: { source_ts: string; reason: RejectReason }[];
+  /** Internal-only warnings (e.g. long one-liner). Never shown to members. */
+  warnings: { source_ts: string; warning: string }[];
 }
 
 export function buildPermalink(channelId: string, msg: SlackMessage): string {
@@ -80,41 +82,65 @@ export function tsToPtIso(ts: string): string {
   return DateTime.fromMillis(Math.floor(ms / 1000) * 1000, { zone: CA_ZONE }).toISO({ suppressMilliseconds: true })!;
 }
 
-const TICKER_RE = /^[A-Z0-9][A-Z0-9.\-=/^!]{0,19}$/;
-
+/** Tickers may be symbols OR names/themes ("Copper", "EU banks"). Only non-empty strings. */
 export function normalizeTickers(t: unknown): string[] | null {
   if (!Array.isArray(t)) return null;
   const out: string[] = [];
+  const seen = new Set<string>();
   for (const x of t) {
     if (typeof x !== "string") return null;
-    const v = x.trim().replace(/^\$/, "").toUpperCase();
-    if (!TICKER_RE.test(v)) return null;
-    if (!out.includes(v)) out.push(v);
+    const v = x.trim().replace(/^\$(?=[A-Za-z])/, "");
+    if (!v) return null;
+    const k = v.toUpperCase();
+    if (!seen.has(k)) { seen.add(k); out.push(v); }
   }
   return out;
 }
 
-const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+export const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
-function check(raw: RawIdea, ctx: ValidateContext): RejectReason | CaIdea {
+export interface IdeaFields {
+  idea_type: unknown;
+  direction: unknown;
+  tickers: unknown; // string[]
+  label: unknown;
+  one_liner: unknown;
+  technical: unknown;
+}
+
+export type FieldCheck =
+  | { ok: false; reason: RejectReason }
+  | { ok: true; tickers: string[]; warnings: string[] };
+
+/** Field/value rules only (no Slack message needed). Shared by the worker and the archive regression test. */
+export function checkFields(f: IdeaFields, channel: CaChannel): FieldCheck {
+  const bad = (reason: RejectReason): FieldCheck => ({ ok: false, reason });
+  if (!(CA_IDEA_TYPES as readonly string[]).includes(f.idea_type as string)) return bad("bad_idea_type");
+  if (!(CA_DIRECTIONS as readonly string[]).includes(f.direction as string)) return bad("bad_direction");
+  const tickers = normalizeTickers(f.tickers);
+  if (!tickers) return bad("bad_tickers");
+  if (f.idea_type === "ticker+direction" && tickers.length === 0) return bad("bad_tickers");
+  if (channel.strict && (f.idea_type !== "ticker+direction" || tickers.length === 0)) {
+    return bad("general_requires_ticker_direction");
+  }
+  if (typeof f.label !== "string" || !f.label.trim()) return bad("bad_label");
+  if (typeof f.one_liner !== "string" || !f.one_liner.trim()) return bad("bad_one_liner");
+  if (typeof f.technical !== "boolean") return bad("bad_technical");
+  const warnings: string[] = [];
+  const wc = wordCount(f.one_liner);
+  if (wc > CA_ONE_LINER_MAX_WORDS) warnings.push(`one_liner_long:${wc}_words`);
+  return { ok: true, tickers, warnings };
+}
+
+function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): RejectReason | CaIdea {
   const msg = ctx.fetched.get(raw.source_ts);
   if (!msg) return "unknown_source";
   if (!msg.user || raw.author_id !== msg.user) return "author_mismatch";
   if (ctx.excludedIds.has(msg.user)) return "excluded_author";
-  if (!(CA_IDEA_TYPES as readonly string[]).includes(raw.idea_type)) return "bad_idea_type";
-  if (!(CA_DIRECTIONS as readonly string[]).includes(raw.direction)) return "bad_direction";
-  const tickers = normalizeTickers(raw.tickers);
-  if (!tickers) return "bad_tickers";
-  if (raw.idea_type === "ticker+direction" && tickers.length === 0) return "bad_tickers";
-  if (ctx.channel.strict && (raw.idea_type !== "ticker+direction" || tickers.length === 0)) {
-    return "general_requires_ticker_direction";
-  }
-  if (typeof raw.label !== "string" || !raw.label.trim() || raw.label.length > 80) return "bad_label";
-  if (
-    typeof raw.one_liner !== "string" || !raw.one_liner.trim() ||
-    wordCount(raw.one_liner) > CA_ONE_LINER_MAX_WORDS
-  ) return "bad_one_liner";
-  if (typeof raw.technical !== "boolean") return "bad_technical";
+  const fc = checkFields(raw, ctx.channel);
+  if (!fc.ok) return fc.reason;
+  fc.warnings.forEach(warn);
+  const tickers = fc.tickers;
 
   return {
     author_id: msg.user,
@@ -133,9 +159,13 @@ function check(raw: RawIdea, ctx: ValidateContext): RejectReason | CaIdea {
 }
 
 export function validateIdeas(raws: RawIdea[], ctx: ValidateContext): ValidateResult {
-  const res: ValidateResult = { ideas: [], rejected: [] };
+  const res: ValidateResult = { ideas: [], rejected: [], warnings: [] };
   for (const raw of raws) {
-    const r = check(raw, ctx);
+    const ts = String(raw?.source_ts ?? "");
+    const r = check(raw, ctx, (warning) => {
+      res.warnings.push({ source_ts: ts, warning });
+      console.warn(`[community-alpha] idea ${ts}: ${warning}`);
+    });
     if (typeof r === "string") res.rejected.push({ source_ts: String(raw?.source_ts ?? ""), reason: r });
     else res.ideas.push(r);
   }
