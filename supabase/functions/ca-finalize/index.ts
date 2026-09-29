@@ -11,7 +11,7 @@ import type { CaIdea } from "../_shared/community-alpha/validate.ts";
 import { CA_ZONE, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { slackCall } from "../_shared/community-alpha/slack.ts";
 
-const TOKEN_SHA256 = "2d47f76e5391f99af8b7b43b5ca007e3fd5742e350d9754a7a3bef3eebb37f1e";
+const TOKEN_SHA256 = "67c28d5f6202644be0bfc3c4a12344c3941c77bb67c2cac96ec94e71e6f4176c";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
 const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
 // Credit estimate for anthropic/claude-sonnet-5, calibrated on earlier runs' measured cost.
