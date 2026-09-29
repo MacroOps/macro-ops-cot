@@ -16,17 +16,17 @@ export function buildPrompt(channel: CaChannel): string {
 A trade idea is either:
 - Ticker + direction: a named instrument (equity, ETF, index, future, FX pair, commodity, country, crypto) plus a direction (long, short, buy, bullish, bearish, calls, puts, adding), or
 - A thesis post: a substantive argument for a position, even without price levels.
-Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them. Outside #general, a post that names a ticker and attaches a chart, with no direction stated, is a bullish technical idea unless the post says otherwise.${general}
+Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them. Outside #general, a post that is only a ticker and an attached chart, with no words about the view, is a bullish technical idea. If the text gives any view, follow the text: cautious, skeptical, or negative wording (for example "lower highs", "rolling over", "breaking down", "cautious") means bearish.${general}
 
 Drop pure tactical position-management updates with no new directional thesis: trims, partial or full profit-taking, stop-outs, "out of all my trades", and any pure exit, cover, or close. Keep substantive bearish-thesis posts even if they mention trimming. Also ignore emoji-only messages, GIFs or images with no text, bare links without commentary, questions without a thesis, and generic chatter.
 
 If one author's idea spans several messages, return ONE idea. If the latest state of that chain is a trim or exit only, return nothing for it. Set message_ts to the message where the ticker or company in the idea is named most explicitly; if several name it, use the earliest. Never pick a message that doesn't mention the ticker or company. message_ts must be one of the message_ts values provided.
 
-In tickers, list every ticker, instrument, or theme the post names for that idea, not only the main one. A post that lists several new positions or adds (for example a weekly trades update) is one idea with all of them in tickers.
+In tickers, list every ticker, instrument, or theme the post names for that idea, not only the main one. A post that lists several new positions or adds (for example a weekly trades update) is one idea with all of them in tickers. Instruments that share the same view in one post (for example corn, soybeans, soybean meal and soybean oil) are one idea, not several.
 
 Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Buying a dip or a pullback is a price-action reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
-Direction precision is critical: never flip long/short, and never label a trim as an entry. If you can't tell the direction of an idea, drop that idea.
+Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. If you can't tell the direction of an idea, drop that idea.
 
 Return ideas plus tactical_dropped = the number of pure position-management messages you dropped.`;
 }

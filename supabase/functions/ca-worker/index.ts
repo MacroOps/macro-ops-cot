@@ -112,7 +112,8 @@ Deno.serve(async (req) => {
     const { data: run, error } = await sb.from("community_alpha_runs")
       .insert({ mode: "staging", trigger: "manual", anchors, status: "processing" }).select().single();
     if (error) return new Response(error.message, { status: 500 });
-    const rows = anchors.flatMap((a) => CA_CHANNELS.map((c) => ({
+    const only: { anchor: string; channel_id: string }[] | undefined = body.only;
+    const rows = anchors.flatMap((a) => CA_CHANNELS.filter((c) => !only || only.some((o) => o.anchor === a && o.channel_id === c.id)).map((c) => ({
       run_id: run.id, anchor_date: a, channel_id: c.id, channel_name: c.name, tighter_filter: c.strict,
     })));
     const ins = await sb.from("community_alpha_tasks").insert(rows);
