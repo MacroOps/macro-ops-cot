@@ -1,5 +1,7 @@
 # Community Alpha — Finishing Plan (revised)
 
+**Execution scope:** approving this plan authorizes **step 1 only** (window logic + tests). After step 1 I stop and show you the test results. Every later step needs its own separate approval.
+
 Goal: move the weekly Slack digest off the laptop into Terminus. It runs by itself after each Friday 2:00 PM PT close, writes to staging for now, posts a Slack summary, and members read it on a protected /community-alpha page.
 
 ---
@@ -11,7 +13,8 @@ pg_cron (5 past each hour, Fri 21:05 UTC -> Sat, covers PDT and PST)
    │  POST + internal token (from Vault)
    ▼
 ca-scheduler ──► computes closed windows after state row ──► 1 run + tasks (week x channel)
-   │               (nothing due -> "already up to date through Fri {date}", once per Friday)
+   │               (nothing due: scheduled check = silent;
+   │                manual run = "already up to date through Fri {date}")
    ▼ kicks
 ca-worker (one task per call)
    ca_claim_task() → fetch 1 channel / 1 week (messages + thread replies)
@@ -26,7 +29,7 @@ community-alpha-read (Outseta-verified, live table only) ◄── /community-al
 ```
 
 **Functions (4 new; copilot-agent and Daily Briefing untouched):**
-- `ca-scheduler` — decides which weeks are due, queues work, or reports "up to date".
+- `ca-scheduler` — decides which weeks are due and queues work. Scheduled checks stay silent when nothing is due; only manual runs post "already up to date through Fri {date}".
 - `ca-worker` — one (week, channel) task per call.
 - `ca-finalize` — merges, advances state, sends the Slack message. Wrapped so a crash still posts a warning.
 - `community-alpha-read` — serves live digest data to logged-in members.
@@ -51,7 +54,7 @@ community-alpha-read (Outseta-verified, live table only) ◄── /community-al
 - `community_alpha_runs`: add `hops_remaining`, `credits_used`, `last_kick_at`, `is_manual` (manual runs never move state).
 - `community_alpha_tasks`: add `anchor_at` (exact window end) and `chunk_count`.
 - Partial unique index: one active run per mode (single-flight lock).
-- Weeks tables unchanged.
+- Both weeks tables (live and staging): add a `source` field — `'archive'` for weeks imported from the old system, `'job'` for weeks the new system writes (default `'job'`). The existing 22 live weeks are marked `'archive'`; weeks imported at go-live are also marked `'archive'`.
 
 ## 2. Handling time limits
 
@@ -67,11 +70,11 @@ community-alpha-read (Outseta-verified, live table only) ◄── /community-al
 - Window: Friday 2:00 PM PT → next Friday 2:00 PM PT, exclusive start / inclusive end, via Luxon `America/Los_Angeles`. Thread replies judged by their own timestamp.
 - Pre-AI filters: team IDs, private list (secret), bots/system, empty/emoji-only.
 - Validator: source message must be fetched, author matches and not excluded, values in allowed sets, #general only ticker+direction, permalink/timestamp built by code.
-- Cap: 50 ideas per week.
+- Cap: 50 ideas per week — keep non-#general ideas first, then newest; a warning line reports how many were dropped.
 - State advances to the latest processed Friday even with zero ideas — scheduled runs only.
 
 **Re-runs (replace per week) with safeguards:**
-- Live weeks up to 2026-09-25 (imported archive) are never reprocessed unless explicitly requested (hard check in finalize).
+- Any week with `source = 'archive'` is never reprocessed unless you explicitly ask (checked in both scheduler and finalize; no fixed date).
 - If a channel fails on a re-run, that channel's previous ideas are kept (ideas are grouped by channel for the swap).
 
 ## 4. Security
@@ -83,10 +86,10 @@ community-alpha-read (Outseta-verified, live table only) ◄── /community-al
 
 ## 5. Build order (small, testable steps)
 
-1. **Window logic + tests.** Fri 1:59 PM vs 2:01 PM PT; exactly 2:00:00 (end-inclusive, start-exclusive); DST start and end weeks both anchor at 2:00 PM PT; multi-week catch-up gives distinct windows; result independent of run time.
-2. **Filters, validator, merge + tests.** Includes #general rule, 50 cap, archive-week protection, failed-channel keeps prior ideas, re-run idempotence.
+1. **Window logic + tests.** A check on Friday at 1:05 PM PT does not process that Friday's window; message at Fri 1:59 PM vs 2:01 PM PT; exactly 2:00:00 (end-inclusive, start-exclusive); DST start and end weeks both anchor at 2:00 PM PT; multi-week catch-up gives distinct windows; result independent of run time.
+2. **Filters, validator, merge + tests.** Includes #general rule, 50 cap, `'archive'`-week protection, failed-channel keeps prior ideas, re-run idempotence.
 3. **Slack reader dry run** — 2026-09-18 and 2026-09-25, counts only, nothing saved. (Bot token form sent here; private list form too.)
-4. **Extraction** — your exact instructions, one channel for 2026-09-25, results on the task row.
+4. **Extraction** — your exact instructions, one channel for 2026-09-25, results on the task row. Test: confirm forced-tool structured output works with `anthropic/claude-sonnet-5` through the gateway; if it doesn't, fall back to the gateway's JSON-schema output and report which one was used.
 5. **Queue + worker chain** — manual run for both weeks into staging; state row 2 stays at Sep 18.
 6. **Finalize + staging DMs** — merge into staging, token/credit usage recorded, `[STAGING]` DM to both recipients; re-run to prove no duplicates; state still untouched.
 7. **Schedule** — enable cron; the first real run after Oct 2 closes catches up Sep 25 + Oct 2 and moves row 2 to Oct 2.
@@ -101,10 +104,8 @@ community-alpha-read (Outseta-verified, live table only) ◄── /community-al
 
 ## Where I disagree or see risk
 
-- **"Already up to date" message:** the cron checks hourly, so posting it on every check would spam ~30 DMs a week. I'll post it only once per Friday (first check after close) and on manual runs. Tell me if you want otherwise.
-- **50-idea cap:** needs a rule for what gets cut. Proposal: keep non-#general channels first, then newest; report "N ideas over cap dropped" in the warning line so it's never silent.
 - **Replace per week vs. identity:** within a week, ideas are still de-duplicated by permalink + tickers, but a changed AI answer on re-run replaces the old version rather than adding a near-duplicate — intended.
-- **Step 7 compares Sep 25 twice** (manual test in step 5–6, then the real catch-up overwrites staging Sep 25). Fine for staging; just noting the manual result gets replaced.
+- Staging's manual Sep 25 result will be replaced by the real catch-up (agreed).
 - **Slack history limits** on long catch-ups, and **#general size** (may need several chunks, raising AI cost for that channel).
 - **DMs via user ID** work with `chat:write` for bot tokens in practice; if Slack returns `channel_not_found`, `im:write` would be the fix (reinstall).
 
