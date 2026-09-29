@@ -8,7 +8,7 @@ import {
   type CaChannel,
   SLACK_WORKSPACE_HOST,
 } from "./config.ts";
-import type { SlackMessage } from "./filters.ts";
+import { type SlackMessage, summarizeAttachments } from "./filters.ts";
 import { CA_ZONE, slackTsToMicros } from "./window.ts";
 
 /** Shape the AI returns (structured output). */
@@ -21,6 +21,8 @@ export interface RawIdea {
   label: string;
   one_liner: string;
   technical: boolean;
+  /** Verbatim phrase from the source, or "chart only". Review-only; never stored in weeks. */
+  direction_quote?: string;
 }
 
 /** Stored idea — identical field set to the imported archive. */
@@ -62,13 +64,16 @@ export type RejectReason =
   | "bad_label"
   | "bad_one_liner"
   | "bad_technical"
-  | "general_requires_ticker_direction";
+  | "general_requires_ticker_direction"
+  | "direction_quote";
 
 export interface ValidateResult {
   ideas: CaIdea[];
-  rejected: { source_ts: string; reason: RejectReason }[];
+  rejected: { source_ts: string; reason: RejectReason; [k: string]: unknown }[];
   /** Internal-only warnings (e.g. long one-liner). Never shown to members. */
   warnings: { source_ts: string; warning: string }[];
+  /** Review-only, aligned with ideas[]: direction_quote per kept idea. Task row only. */
+  review: { source_ts: string; tickers: string; direction: string; direction_quote: string }[];
 }
 
 export function buildPermalink(channelId: string, msg: SlackMessage): string {
@@ -137,6 +142,32 @@ export function checkFields(f: IdeaFields, channel: CaChannel): FieldCheck {
   return { ok: true, tickers, warnings };
 }
 
+const normText = (s: string) => s.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+
+/** Words in the text beyond tickers, cashtags, links, mentions and emoji codes. */
+export function viewWords(text: string, tickers: string[]): string[] {
+  const tk = new Set(tickers.map((t) => t.toLowerCase()));
+  return text
+    .replace(/<[^>]*>/g, " ")          // links, mentions
+    .replace(/:[a-z0-9_+\-]+:/gi, " ")  // emoji codes
+    .replace(/\$[A-Za-z][\w.]*/g, " ")  // cashtags
+    .replace(/[^\p{L}\p{N}.\s]/gu, " ")
+    .split(/\s+/)
+    .map((w) => w.replace(/^\.+|\.+$/g, ""))
+    .filter((w) => w && !tk.has(w.toLowerCase()) && !/^\d+$/.test(w));
+}
+
+/** Grounding: quote must appear verbatim in the source text, or "chart only" for a bare ticker + attachment. */
+export function checkDirectionQuote(quote: unknown, msg: SlackMessage, tickers: string[]): boolean {
+  if (typeof quote !== "string" || !quote.trim()) return false;
+  const q = normText(quote.replace(/^["'\u201c]+|["'\u201d]+$/g, ""));
+  if (q === "chart only") {
+    return summarizeAttachments(msg).length > 0 && viewWords(msg.text ?? "", tickers).length === 0;
+  }
+  if (wordCount(q) > 15) return false;
+  return normText(msg.text ?? "").includes(q);
+}
+
 function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): RejectReason | CaIdea {
   if (ctx.contextTs?.has(raw.source_ts)) return "context_only_source";
   const msg = ctx.fetched.get(raw.source_ts);
@@ -145,8 +176,9 @@ function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): R
   if (ctx.excludedIds.has(msg.user)) return "excluded_author";
   const fc = checkFields(raw, ctx.channel);
   if (!fc.ok) return fc.reason;
-  fc.warnings.forEach(warn);
   const tickers = fc.tickers;
+  if (!checkDirectionQuote(raw.direction_quote, msg, tickers)) return "direction_quote";
+  fc.warnings.forEach(warn);
 
   return {
     author_id: msg.user,
@@ -164,16 +196,25 @@ function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): R
   };
 }
 
+export interface ReviewEntry { source_ts: string; tickers: string; direction: string; direction_quote: string }
+
 export function validateIdeas(raws: RawIdea[], ctx: ValidateContext): ValidateResult {
-  const res: ValidateResult = { ideas: [], rejected: [], warnings: [] };
+  const res: ValidateResult = { ideas: [], rejected: [], warnings: [], review: [] };
   for (const raw of raws) {
     const ts = String(raw?.source_ts ?? "");
     const r = check(raw, ctx, (warning) => {
       res.warnings.push({ source_ts: ts, warning });
       console.warn(`[community-alpha] idea ${ts}: ${warning}`);
     });
-    if (typeof r === "string") res.rejected.push({ source_ts: String(raw?.source_ts ?? ""), reason: r });
-    else res.ideas.push(r);
+    if (typeof r === "string") {
+      res.rejected.push({
+        source_ts: ts, reason: r,
+        ...(r === "direction_quote" ? { tickers: (raw.tickers ?? []).join(", "), direction: raw.direction, direction_quote: String(raw.direction_quote ?? "") } : {}),
+      });
+    } else {
+      res.ideas.push(r);
+      res.review.push({ source_ts: ts, tickers: r.tickers, direction: r.direction, direction_quote: String(raw.direction_quote).trim() });
+    }
   }
   return res;
 }
