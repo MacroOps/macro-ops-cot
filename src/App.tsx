@@ -47,6 +47,7 @@ import TpSectorTrends from "./pages/tp/TpSectorTrends.tsx";
 import SignalExplorer from "./pages/mops/SignalExplorer.tsx";
 import Scanner from "./pages/mops/Scanner.tsx";
 import Rankings from "./pages/mops/Rankings.tsx";
+import CommunityAlpha from "./pages/CommunityAlpha.tsx";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,7 @@ const App = () => (
             <Route path="/signals/explorer" element={<SignalExplorer />} />
             <Route path="/signals/scanner" element={<Scanner />} />
             <Route path="/signals/rankings" element={<Rankings />} />
+            <Route path="/community-alpha" element={<CommunityAlpha />} />
             <Route path="/auth" element={<Navigate to="/" replace />} />
             <Route path="/workspace" element={<WorkspacePage />} />
             <Route path="/workspace/:id" element={<WorkspacePage />} />
