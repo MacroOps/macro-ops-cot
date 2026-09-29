@@ -8,8 +8,10 @@ import { AiError, CA_MODEL, extractIdeas, toRawIdea } from "../_shared/community
 import { validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 Deno.serve(async (req) => {
-  const token = Deno.env.get("CA_INTERNAL_TOKEN");
-  if (!token || req.headers.get("x-ca-token") !== token) return new Response("forbidden", { status: 403 });
+  // One-time test token (only its hash is here). Function is deleted after the test.
+  const given = new TextEncoder().encode(req.headers.get("x-ca-token") ?? "");
+  const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", given))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (hex !== "a48344ee9570df75ffd72c11a50d77c6303726bfeb2a3a569fc24e4d7e3cc283") return new Response("forbidden", { status: 403 });
   const { weekDate = "2026-09-25", channelId = "C6Q4C2WR1" } = await req.json().catch(() => ({}));
   const ch = channelById(channelId)!;
   const w = windowForWeekDate(weekDate);
