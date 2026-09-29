@@ -58,6 +58,7 @@ const raw = (o: Partial<RawIdea> = {}): RawIdea => ({
   label: "Bullish PRLB",
   one_liner: "Flags PRLB with a chart; constructive setup.",
   technical: true,
+  direction_quote: "PRLB chart",
   ...o,
 });
 
