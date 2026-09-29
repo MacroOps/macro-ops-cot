@@ -39,3 +39,10 @@ Deno.test("validator: bad quote rejected with reason direction_quote; review kep
   assertEquals(r.review[0].direction_quote, "Long copper");
   assert(!("direction_quote" in r.ideas[0]));
 });
+
+Deno.test("direction_quote: tolerant of Slack formatting, not of changed words", () => {
+  const m: SlackMessage = { ts: "1", user: "U", text: "META — taking a step back, *lower highs* &amp; <https://x.com|rolling over>…" };
+  assert(checkDirectionQuote("taking a step back, lower highs", m, ["META"]));
+  assert(checkDirectionQuote("lower highs & rolling over", m, ["META"]));
+  assert(!checkDirectionQuote("taking a step back ... rolling over", m, ["META"]));
+});

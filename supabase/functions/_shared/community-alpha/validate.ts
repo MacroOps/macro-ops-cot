@@ -142,7 +142,16 @@ export function checkFields(f: IdeaFields, channel: CaChannel): FieldCheck {
   return { ok: true, tickers, warnings };
 }
 
-const normText = (s: string) => s.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+/** Slack mrkdwn -> plain words: decodes entities, keeps link labels, drops formatting and punctuation. Words must still match in order. */
+export const normText = (s: string) => s
+  .replace(/<([^>|]*)\|([^>]*)>/g, "$2")
+  .replace(/<([^>]*)>/g, "$1")
+  .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+  .toLowerCase()
+  .replace(/[\u2018\u2019\u02bc`]/g, "'")
+  .replace(/[^\p{L}\p{N}'$%.]+/gu, " ")
+  .replace(/(^|\s)[.']+|[.']+(?=\s|$)/g, " ")
+  .replace(/\s+/g, " ").trim();
 
 /** Words in the text beyond tickers, cashtags, links, mentions and emoji codes. */
 export function viewWords(text: string, tickers: string[]): string[] {
