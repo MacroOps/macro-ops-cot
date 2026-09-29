@@ -7,8 +7,8 @@ import { CA_CHANNELS, CA_TEAM_IDS, channelById, parsePrivateList } from "../_sha
 import { filterMessages, type SlackMessage } from "../_shared/community-alpha/filters.ts";
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
-import { checkDirections, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
-import { validateIdeas } from "../_shared/community-alpha/validate.ts";
+import { checkDirections, decideDirection, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
+import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 const TOKEN_SHA256 = "f014dc30488e72d8130b2441c3b0bdbb5b5cdaf977323eac13632af9cc0cca4f";
 const MAX_ATTEMPTS = 3;
