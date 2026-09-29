@@ -138,7 +138,7 @@ export async function extractIdeas(
     body.tools = [{ name: TOOL, description: "Record the extracted ideas.", input_schema: OUTPUT_SCHEMA }];
     body.tool_choice = { type: "tool", name: TOOL };
   } else {
-    body.output_format = { type: "json_schema", schema: OUTPUT_SCHEMA };
+    body.output_config = { format: { type: "json_schema", schema: OUTPUT_SCHEMA } };
   }
   const res = await fetch(URL, {
     method: "POST",
