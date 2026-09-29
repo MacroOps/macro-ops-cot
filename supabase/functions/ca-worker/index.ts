@@ -52,13 +52,18 @@ async function processTask(task: any) {
   const all = [...f.topLevel, ...f.replies];
   const fr = filterMessages(all, CA_TEAM_IDS, privateIds);
   const kept = [...fr.kept].sort((a, b) => Number(a.ts) - Number(b.ts));
-  const names = await resolveNames(slackToken, [...new Set(kept.map((m) => m.user!))]);
+  // Pre-window thread parents: background only. Drop bot/system and private-list authors; never counted.
+  const keptRoots = new Set(kept.map((m) => m.thread_ts).filter(Boolean));
+  const context = f.contextParents.filter((m) =>
+    keptRoots.has(m.ts) && m.user && !m.bot_id && !privateIds.has(m.user)
+  );
+  const names = await resolveNames(slackToken, [...new Set([...kept, ...context].map((m) => m.user!))]);
   let ideas: unknown[] = [], rejected: unknown[] = [], tacticalDropped = 0, inTok = 0, outTok = 0;
   if (kept.length) {
-    const r = await extractIdeas(apiKey, channel, kept, names);
+    const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context);
     const excluded = new Set([...CA_TEAM_IDS, ...privateIds]);
     const v = validateIdeas(r.ideas.map(toRawIdea), {
-      channel, fetched: new Map(kept.map((m: SlackMessage) => [m.ts, m])), excludedIds: excluded, names,
+      channel, fetched: new Map(kept.map((m: SlackMessage) => [m.ts, m])), excludedIds: excluded, names, contextTs: new Set(context.map((m) => m.ts)),
     });
     ideas = v.ideas; rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;

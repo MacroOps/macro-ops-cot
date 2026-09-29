@@ -47,10 +47,13 @@ export interface ValidateContext {
   excludedIds: ReadonlySet<string>;
   /** author_id -> display name (from users.info). */
   names: Map<string, string>;
+  /** ts of context_only messages (pre-window thread parents). Never a valid source. */
+  contextTs?: ReadonlySet<string>;
 }
 
 export type RejectReason =
   | "unknown_source"
+  | "context_only_source"
   | "author_mismatch"
   | "excluded_author"
   | "bad_idea_type"
@@ -135,6 +138,7 @@ export function checkFields(f: IdeaFields, channel: CaChannel): FieldCheck {
 }
 
 function check(raw: RawIdea, ctx: ValidateContext, warn: (w: string) => void): RejectReason | CaIdea {
+  if (ctx.contextTs?.has(raw.source_ts)) return "context_only_source";
   const msg = ctx.fetched.get(raw.source_ts);
   if (!msg) return "unknown_source";
   if (!msg.user || raw.author_id !== msg.user) return "author_mismatch";
