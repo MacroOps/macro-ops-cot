@@ -58,7 +58,6 @@ const raw = (o: Partial<RawIdea> = {}): RawIdea => ({
   label: "Bullish PRLB",
   one_liner: "Flags PRLB with a chart; constructive setup.",
   technical: true,
-  direction_quote: "PRLB chart",
   ...o,
 });
 
@@ -82,7 +81,7 @@ Deno.test("validator: valid idea gets code-built permalink, PT timestamp, archiv
 });
 
 Deno.test("validator: thread reply permalink includes thread_ts", () => {
-  const { ideas } = validateIdeas([raw({ source_ts: "1790267700.000100", author_id: "UDRJF2Y68", direction_quote: "reply" })], ctx());
+  const { ideas } = validateIdeas([raw({ source_ts: "1790267700.000100", author_id: "UDRJF2Y68" })], ctx());
   assertEquals(
     ideas[0].permalink,
     "https://comm-center.slack.com/archives/C6Q4C2WR1/p1790267700000100?thread_ts=1790267660.344059&cid=C6Q4C2WR1",
