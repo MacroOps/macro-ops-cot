@@ -7,7 +7,7 @@ import { CA_CHANNELS, CA_TEAM_IDS, channelById, parsePrivateList } from "../_sha
 import { filterMessages, type SlackMessage } from "../_shared/community-alpha/filters.ts";
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
-import { extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
+import { checkDirections, extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
 import { validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 const TOKEN_SHA256 = "2d47f76e5391f99af8b7b43b5ca007e3fd5742e350d9754a7a3bef3eebb37f1e";
@@ -58,21 +58,39 @@ async function processTask(task: any) {
     keptRoots.has(m.ts) && m.user && !m.bot_id && !privateIds.has(m.user)
   );
   const names = await resolveNames(slackToken, [...new Set([...kept, ...context].map((m) => m.user!))]);
-  let ideas: unknown[] = [], rejected: unknown[] = [], tacticalDropped = 0, inTok = 0, outTok = 0;
+  let ideas: unknown[] = [], rejected: unknown[] = [], review: unknown[] = [];
+  let tacticalDropped = 0, inTok = 0, outTok = 0, chkIn = 0, chkOut = 0;
   if (kept.length) {
     const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context);
     const excluded = new Set([...CA_TEAM_IDS, ...privateIds]);
+    const fetched = new Map(kept.map((m: SlackMessage) => [m.ts, m]));
     const v = validateIdeas(r.ideas.map(toRawIdea), {
-      channel, fetched: new Map(kept.map((m: SlackMessage) => [m.ts, m])), excludedIds: excluded, names, contextTs: new Set(context.map((m) => m.ts)),
+      channel, fetched, excludedIds: excluded, names, contextTs: new Set(context.map((m) => m.ts)),
     });
-    ideas = v.ideas; rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
+    rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
+    // Second pass: direction check. Keep only "yes".
+    if (v.ideas.length) {
+      const items = v.ideas.map((idea, i) => ({
+        id: i, instrument: idea.tickers.split(",")[0].trim(), direction: idea.direction,
+        direction_quote: v.review[i].direction_quote, source_text: fetched.get(v.review[i].source_ts)?.text ?? "",
+      }));
+      const c = await checkDirections(apiKey, items);
+      chkIn = c.input_tokens; chkOut = c.output_tokens;
+      v.ideas.forEach((idea, i) => {
+        const a = c.answers.get(i) ?? { answer: "unclear", reason: "no answer" };
+        const rv = { ...v.review[i], check: a.answer, check_reason: a.reason };
+        if (a.answer === "yes") { ideas.push(idea); review.push(rv); }
+        else rejected.push({ ...rv, reason: "direction_check" });
+      });
+    }
   }
   return {
     status: "done", error: null, finished_at: new Date().toISOString(),
     messages_fetched: all.length - fr.duplicates, team_excluded: fr.teamExcluded,
     tactical_author_excluded: fr.privateExcluded, tactical_dropped: tacticalDropped,
-    ideas, rejected, input_tokens: inTok, output_tokens: outTok,
+    ideas, rejected, review, input_tokens: inTok, output_tokens: outTok,
+    check_input_tokens: chkIn, check_output_tokens: chkOut,
   };
 }
 
