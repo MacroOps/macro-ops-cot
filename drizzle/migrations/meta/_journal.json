@@ -43,6 +43,13 @@
       "when": 1790708082775,
       "tag": "0005_tmp_grant_ca_read",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790708262455,
+      "tag": "0006_revoke_tmp_ca_read",
+      "breakpoints": true
     }
   ]
 }
