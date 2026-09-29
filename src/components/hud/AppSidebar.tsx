@@ -26,6 +26,7 @@ import {
   Bell,
   Telescope,
   Flame,
+  Users,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
@@ -58,6 +59,7 @@ const NAV: Group[] = [
   { title: "Heatmap", icon: Flame, url: "/heatmap" },
   { title: "Analogs", icon: Telescope, url: "/analogs" },
   { title: "Alerts", icon: Bell, url: "/alerts" },
+  { title: "Community Alpha", icon: Users, url: "/community-alpha" },
   { title: "Backtests Lab", icon: FlaskConical, url: "/backtests" },
   { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility" },
   { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle" },

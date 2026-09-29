@@ -13,3 +13,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.ca-finalize]
 verify_jwt = false
+[functions.community-alpha-read]
+verify_jwt = false
