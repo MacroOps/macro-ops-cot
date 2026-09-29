@@ -29,6 +29,27 @@
       "when": 1790702861362,
       "tag": "0003_community_alpha_finalize",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790707937230,
+      "tag": "0004_ca_tasks_direction_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790708082775,
+      "tag": "0005_tmp_grant_ca_read",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790708262455,
+      "tag": "0006_revoke_tmp_ca_read",
+      "breakpoints": true
     }
   ]
 }

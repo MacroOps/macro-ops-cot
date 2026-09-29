@@ -26,7 +26,7 @@ In tickers, list every ticker, instrument, or theme the post names for that idea
 
 Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Buying a dip or a pullback is a price-action reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
-Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. For example, "dollar breaking out, bad for gold" is bullish, with the dollar listed first. If you can't tell the direction of an idea, drop that idea.
+Direction precision is critical: never flip long/short, and never label a trim as an entry. Direction always refers to the first instrument in tickers, so list the instrument the post is mainly about first, and describe views on the other instruments in the one-liner. For example, "dollar breaking out, bad for gold" is bullish, with the dollar listed first. For relative views ("prefer A over B", "long A, short B"), list the preferred instrument first; its direction is long or bullish. For options or volatility trades, the instrument is the underlying or its volatility, and the direction is the view on it (selling volatility is bearish on volatility). For each idea, set direction_quote to a short verbatim phrase (15 words or fewer) from the source message that shows the author's view on the first instrument, or "chart only" for a ticker-plus-chart post with no words about the view. If you can't tell the direction of an idea, drop that idea.
 
 Return ideas plus tactical_dropped = the number of pure position-management messages you dropped.`;
 }
@@ -41,7 +41,7 @@ export const OUTPUT_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["message_ts", "author_id", "author_name", "idea_type", "tickers", "direction", "label", "one_liner", "technical"],
+        required: ["message_ts", "author_id", "author_name", "idea_type", "tickers", "direction", "label", "one_liner", "technical", "direction_quote"],
         properties: {
           message_ts: { type: "string" },
           author_id: { type: "string" },
@@ -52,6 +52,7 @@ export const OUTPUT_SCHEMA = {
           label: { type: "string", description: "<= 8 words" },
           one_liner: { type: "string", description: "<= 25 words" },
           technical: { type: "boolean" },
+          direction_quote: { type: "string", description: "verbatim phrase <= 15 words from the source message, or \"chart only\"" },
         },
       },
     },
@@ -62,6 +63,7 @@ export const OUTPUT_SCHEMA = {
 export interface AiIdea {
   message_ts: string; author_id: string; author_name: string; idea_type: string;
   tickers: string; direction: string; label: string; one_liner: string; technical: boolean;
+  direction_quote: string;
 }
 export interface ExtractResult {
   ideas: AiIdea[];
@@ -126,7 +128,67 @@ export function toRawIdea(a: AiIdea): RawIdea {
     label: a.label,
     one_liner: a.one_liner,
     technical: a.technical,
+    direction_quote: a.direction_quote,
   };
+}
+
+// ---------- Second pass: direction check ----------
+const CHECK_TOOL = "record_checks";
+const CHECK_PROMPT = `You check trade ideas extracted from Slack posts. For each item you get an id, the first instrument, the extracted direction (long, short, bullish, bearish or buy; long, bullish and buy all mean the author expects the instrument to rise), a quoted phrase, and the full source message text. Answer one question per item: does the author's view on the first instrument match this direction? Answer "yes", "no", or "unclear". Judge the author's view on that instrument only, not on other instruments in the post. A ticker-plus-chart post with no words about the view counts as bullish. Give a short reason (<= 15 words).`;
+const CHECK_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["checks"],
+  properties: {
+    checks: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "answer", "reason"],
+        properties: {
+          id: { type: "integer" },
+          answer: { type: "string", enum: ["yes", "no", "unclear"] },
+          reason: { type: "string" },
+        },
+      },
+    },
+  },
+};
+export interface CheckItem { id: number; instrument: string; direction: string; direction_quote: string; source_text: string }
+export interface CheckResult { answers: Map<number, { answer: string; reason: string }>; input_tokens: number; output_tokens: number }
+
+export async function checkDirections(apiKey: string, items: CheckItem[], model: string = CA_MODEL): Promise<CheckResult> {
+  const r = await callForcedTool(apiKey, model, CHECK_PROMPT, JSON.stringify(items), CHECK_TOOL, "Record the direction checks.", CHECK_SCHEMA, 4000);
+  const answers = new Map<number, { answer: string; reason: string }>();
+  for (const c of r.parsed.checks ?? []) answers.set(Number(c.id), { answer: String(c.answer), reason: String(c.reason ?? "") });
+  return { answers, input_tokens: r.inTok, output_tokens: r.outTok };
+}
+
+async function callForcedTool(
+  apiKey: string, model: string, system: string, user: string,
+  tool: string, desc: string, schema: unknown, maxTokens: number,
+) {
+  const res = await fetch(URL, {
+    method: "POST",
+    headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json", "anthropic-version": "2023-06-01", "X-Lovable-AIG-SDK": "fetch" },
+    body: JSON.stringify({
+      model, max_tokens: maxTokens, stream: true, system,
+      messages: [{ role: "user", content: user }],
+      tools: [{ name: tool, description: desc, input_schema: schema }],
+      tool_choice: { type: "tool", name: tool },
+    }),
+  });
+  if (!res.ok) throw new AiError(res.status, (await res.text()).slice(0, 500));
+  let json = "", inTok = 0, outTok = 0, stop = "";
+  await readSse(res, (ev) => {
+    if (ev.type === "message_start") inTok = ev.message?.usage?.input_tokens ?? 0;
+    if (ev.type === "content_block_delta" && ev.delta?.type === "input_json_delta") json += ev.delta.partial_json;
+    if (ev.type === "message_delta") { outTok = ev.usage?.output_tokens ?? outTok; stop = ev.delta?.stop_reason ?? stop; }
+    if (ev.type === "error") throw new AiError(500, JSON.stringify(ev.error).slice(0, 300));
+  });
+  if (!json) throw new AiError(502, `empty output (stop_reason=${stop})`);
+  return { parsed: JSON.parse(json), inTok, outTok };
 }
 
 async function readSse(res: Response, onEvent: (ev: any) => void) {

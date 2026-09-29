@@ -11,7 +11,7 @@ import type { CaIdea } from "../_shared/community-alpha/validate.ts";
 import { CA_ZONE, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { slackCall } from "../_shared/community-alpha/slack.ts";
 
-const TOKEN_SHA256 = "2d47f76e5391f99af8b7b43b5ca007e3fd5742e350d9754a7a3bef3eebb37f1e";
+const TOKEN_SHA256 = "67c28d5f6202644be0bfc3c4a12344c3941c77bb67c2cac96ec94e71e6f4176c";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
 const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
 // Credit estimate for anthropic/claude-sonnet-5, calibrated on earlier runs' measured cost.
@@ -24,8 +24,10 @@ async function sha256(s: string) {
 }
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const mode = () => (Deno.env.get("CA_MODE") === "live" ? "live" : "staging");
-const fmtDay = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE).toFormat("LLL d");
-const fmtWin = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE).toFormat("LLL d h:mm a");
+const pt = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE);
+const fmtDay = (iso: string) => pt(iso).toFormat("ccc LLL d");          // Fri Sep 25
+const fmtDayYear = (iso: string) => pt(iso).toFormat("ccc LLL d, yyyy"); // Fri Sep 25, 2026
+const fmtWin = (iso: string) => pt(iso).toFormat("ccc LLL d, h:mm a");  // Fri Sep 18, 2:00 PM
 
 interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; skipped?: string; start: string; end: string }
 
@@ -35,14 +37,25 @@ async function sendSlack(text: string) {
   for (const u of STAGING_RECIPIENTS) await slackCall(token, "chat.postMessage", { channel: u, text });
 }
 
-function buildText(run: any, weeks: WeekOut[]): string {
-  const prefix = mode() === "staging" ? "[STAGING] " : "";
-  const lines = [`${prefix}Community Alpha${run.is_manual ? " (manual run)" : ""}: <${PAGE_URL}|open the page>`];
+/** Old system's format, exactly (with [STAGING] prefix in staging). */
+export function buildText(weeks: WeekOut[], staging = mode() === "staging"): string {
+  const prefix = staging ? "[STAGING] " : "";
+  const lines: string[] = [];
+  if (weeks.length === 1) {
+    const w = weeks[0];
+    lines.push(`${prefix}*<${PAGE_URL}|MO Community Alpha — Week ending ${fmtDayYear(w.end)}>*`);
+    lines.push(w.skipped
+      ? `_Skipped: ${w.skipped}_`
+      : `_Window: ${fmtWin(w.start)} → ${fmtWin(w.end)} PT - ${w.channels} channels scanned - ${w.ideas} member ideas_`);
+  } else {
+    const last = weeks[weeks.length - 1];
+    lines.push(`${prefix}*<${PAGE_URL}|MO Community Alpha — Catching up: ${weeks.length} weekly digests>*`);
+    lines.push(`_Now caught up through ${fmtDayYear(last.end)}._`);
+    for (const w of weeks) lines.push(`• *${fmtDay(w.end)}* - ${w.skipped ? `skipped (${w.skipped})` : `${w.ideas} ideas`}`);
+  }
   for (const w of weeks) {
-    if (w.skipped) { lines.push(`Fri ${fmtDay(w.end)}: skipped (${w.skipped})`); continue; }
-    lines.push(`Week ending Fri ${fmtDay(w.end)} (${fmtWin(w.start)} to ${fmtWin(w.end)} PT): ${w.channels} of ${CA_CHANNELS.length} channels scanned, ${w.ideas} ideas found.`);
-    if (w.failed.length) lines.push(`:warning: Fri ${fmtDay(w.end)}: ${w.failed.join(", ")} failed; previous ideas kept for those channels.`);
-    if (w.capDropped) lines.push(`:warning: Fri ${fmtDay(w.end)}: ${w.capDropped} ideas dropped by the 50-idea cap.`);
+    if (w.failed.length) lines.push(`:warning: ${fmtDay(w.end)}: ${w.failed.join(", ")} failed; previous ideas kept for those channels.`);
+    if (w.capDropped) lines.push(`:warning: ${fmtDay(w.end)}: ${w.capDropped} ideas dropped by the 50-idea cap.`);
   }
   return lines.join("\n");
 }
