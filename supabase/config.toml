@@ -9,5 +9,3 @@ verify_jwt = false
 verify_jwt = false
 [functions.portfolio-snapshot]
 verify_jwt = false
-[functions.ca-step4b]
-verify_jwt = false
