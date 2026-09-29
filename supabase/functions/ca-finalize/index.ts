@@ -11,7 +11,7 @@ import type { CaIdea } from "../_shared/community-alpha/validate.ts";
 import { CA_ZONE, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { slackCall } from "../_shared/community-alpha/slack.ts";
 
-const TOKEN_SHA256 = "628c648bfe7df7ef83a24774f1347a52f29c4ce82aa90683845e52e6cc15a8b5";
+const TOKEN_SHA256 = "4ccd1aeb0a9b6167f799418f24982c135238ab31f2241cdeee712b38b1c6965f";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
 const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
 
