@@ -8,6 +8,29 @@ export interface SlackMessage {
   bot_id?: string;
   thread_ts?: string;
   files?: unknown[];
+  /** Slack link previews / legacy attachments. */
+  attachments?: unknown[];
+}
+
+/**
+ * Short list of what's attached, for the AI: "image: chart.png", "pdf: Deck",
+ * "link: <page title>". Never downloads file contents.
+ */
+export function summarizeAttachments(m: SlackMessage): string[] {
+  const out: string[] = [];
+  for (const f of (m.files ?? []) as any[]) {
+    if (!f || f.mode === "tombstone") continue;
+    const mime = String(f.mimetype ?? "");
+    const kind = mime.startsWith("image/") ? "image" : mime.startsWith("video/") ? "video" : (f.filetype || "file");
+    const label = f.name || f.title || "(name hidden)";
+    out.push(`${kind}: ${label}`);
+  }
+  for (const a of (m.attachments ?? []) as any[]) {
+    if (!a) continue;
+    const t = a.title || a.fallback || a.service_name || a.from_url || a.original_url;
+    if (t) out.push(`link: ${String(t).slice(0, 120)}`);
+  }
+  return out;
 }
 
 export interface FilterResult {

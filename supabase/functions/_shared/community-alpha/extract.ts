@@ -1,7 +1,7 @@
 // AI extraction via the Lovable AI Gateway Messages endpoint (Anthropic format).
 // Forced tool = structured output. Streams the response. Never logs prompt content.
 import type { CaChannel } from "./config.ts";
-import type { SlackMessage } from "./filters.ts";
+import { type SlackMessage, summarizeAttachments } from "./filters.ts";
 import type { RawIdea } from "./validate.ts";
 import { tsToPtIso } from "./validate.ts";
 
@@ -11,12 +11,12 @@ const TOOL = "record_ideas";
 
 export function buildPrompt(channel: CaChannel): string {
   const general = channel.strict ? "\nIn this channel, keep ONLY clear ticker + direction calls." : "";
-  return `You extract long-term trade ideas from one week of Macro Ops community Slack messages in channel ${channel.name}. Messages are given as JSON with message_ts, thread_ts, author_id, author_name, posted_at_iso, and text.
+  return `You extract long-term trade ideas from one week of Macro Ops community Slack messages in channel ${channel.name}. Messages are given as JSON with message_ts, thread_ts, author_id, author_name, posted_at_iso, text, and attachments (a short list of attached files and link previews, for example "image: chart.png" or "link: <page title>").
 
 A trade idea is either:
 - Ticker + direction: a named instrument (equity, ETF, index, future, FX pair, commodity, country, crypto) plus a direction (long, short, buy, bullish, bearish, calls, puts, adding), or
 - A thesis post: a substantive argument for a position, even without price levels.
-Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them.${general}
+Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them. Outside #general, a post that names a ticker and attaches a chart, with no direction stated, is a bullish technical idea unless the post says otherwise.${general}
 
 Drop pure tactical position-management updates with no new directional thesis: trims, partial or full profit-taking, stop-outs, "out of all my trades", and any pure exit, cover, or close. Keep substantive bearish-thesis posts even if they mention trimming. Also ignore emoji-only messages, GIFs or images with no text, bare links without commentary, questions without a thesis, and generic chatter.
 
@@ -24,7 +24,7 @@ If one author's idea spans several messages, return ONE idea. If the latest stat
 
 In tickers, list every ticker, instrument, or theme the post names for that idea, not only the main one. A post that lists several new positions or adds (for example a weekly trades update) is one idea with all of them in tickers.
 
-Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
+Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Buying a dip or a pullback is a price-action reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
 Direction precision is critical: never flip long/short, and never label a trim as an entry. If you can't tell the direction of an idea, drop that idea.
 
@@ -84,6 +84,7 @@ export function messagesPayload(msgs: SlackMessage[], names: Map<string, string>
     author_name: names.get(m.user!) ?? m.user,
     posted_at_iso: tsToPtIso(m.ts),
     text: m.text ?? "",
+    attachments: summarizeAttachments(m),
   })));
 }
 
