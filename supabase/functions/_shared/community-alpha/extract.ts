@@ -134,7 +134,7 @@ export function toRawIdea(a: AiIdea): RawIdea {
 
 // ---------- Second pass: direction check (model reports the view; code decides) ----------
 const CHECK_TOOL = "record_checks";
-const CHECK_PROMPT = `You check trade ideas extracted from Slack posts in the channel named in the input. For each item you get an id, the first instrument, the extracted direction, the label, the one-liner, the source message text, and the rest of its thread (posts marked context_only are background from before the week). For each item, report what the author of the source message thinks about the first instrument. Fill the fields in this order: reason (one short sentence on what the author thinks about the first instrument), author_view ("positive" if they expect it to rise or would buy or be long it, "negative" if they expect it to fall or would short or avoid it, "unclear" otherwise; for volatility instruments, the view is on volatility itself), quote (a short phrase from the source message or its thread that supports the view; "..." is allowed between parts; or "chart only" for a ticker-plus-chart post with no words about the view).
+const CHECK_PROMPT = `You check trade ideas extracted from Slack posts in the channel named in the input. For each item you get an id, the first instrument, the extracted direction, the label, the one-liner, the source message text and attachments, and the rest of its thread (posts marked context_only are background from before the week). For each item, report what the author of the source message thinks about the first instrument. Fill the fields in this order: reason (one short sentence on what the author thinks about the first instrument), author_view ("positive" if they expect it to rise or would buy or be long it, "negative" if they expect it to fall or would short or avoid it, "unclear" otherwise; for volatility instruments, the view is on volatility itself), quote (a short phrase from the source message or its thread that supports the view; "..." is allowed between parts; or "chart only" for a ticker-plus-chart post with no words about the view).
 
 Judge the author's view on the first instrument using these rules. For relative views ("prefer A over B", "long A, short B"), the preferred instrument is positive. For options or volatility trades, judge the view on the underlying or its volatility (selling volatility is negative on volatility). Outside #general, a post that is only a ticker and an attached chart, with no words about the view, is positive. It's negative only when the author says the price is likely to fall or that they'd avoid or short it (for example "lower highs", "rolling over", "breaking down", "I'd stay away"). Doubts or questions about a news item are not a negative view. Buying a dip or a pullback is positive.`;
 const CHECK_SCHEMA = {
@@ -160,7 +160,8 @@ const CHECK_SCHEMA = {
 };
 export interface CheckItem {
   id: number; instrument: string; direction: string; label: string; one_liner: string;
-  source_text: string; thread: { text: string; context_only: boolean }[];
+  source_text: string; source_attachments: string[];
+  thread: { text: string; attachments: string[]; context_only: boolean }[];
 }
 export interface CheckAnswer { reason: string; author_view: string; quote: string }
 export interface CheckResult { answers: Map<number, CheckAnswer>; input_tokens: number; output_tokens: number }
