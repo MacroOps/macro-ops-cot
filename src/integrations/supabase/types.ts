@@ -154,8 +154,13 @@ export type Database = {
       community_alpha_runs: {
         Row: {
           anchors: string[]
+          credits_used: number | null
+          dm_sent_at: string | null
+          dm_text: string | null
+          finalized_at: string | null
           finished_at: string | null
           id: string
+          is_manual: boolean
           mode: string
           started_at: string | null
           status: string
@@ -166,8 +171,13 @@ export type Database = {
         }
         Insert: {
           anchors?: string[]
+          credits_used?: number | null
+          dm_sent_at?: string | null
+          dm_text?: string | null
+          finalized_at?: string | null
           finished_at?: string | null
           id?: string
+          is_manual?: boolean
           mode: string
           started_at?: string | null
           status?: string
@@ -178,8 +188,13 @@ export type Database = {
         }
         Update: {
           anchors?: string[]
+          credits_used?: number | null
+          dm_sent_at?: string | null
+          dm_text?: string | null
+          finalized_at?: string | null
           finished_at?: string | null
           id?: string
+          is_manual?: boolean
           mode?: string
           started_at?: string | null
           status?: string
@@ -291,6 +306,7 @@ export type Database = {
           ideas: Json
           ideas_count: number
           run_at: string
+          source: string
           tactical_excluded_count: number
           team_excluded_count: number
           updated_at: string | null
@@ -306,6 +322,7 @@ export type Database = {
           ideas?: Json
           ideas_count?: number
           run_at: string
+          source?: string
           tactical_excluded_count?: number
           team_excluded_count?: number
           updated_at?: string | null
@@ -321,6 +338,7 @@ export type Database = {
           ideas?: Json
           ideas_count?: number
           run_at?: string
+          source?: string
           tactical_excluded_count?: number
           team_excluded_count?: number
           updated_at?: string | null
@@ -339,6 +357,7 @@ export type Database = {
           ideas: Json
           ideas_count: number
           run_at: string
+          source: string
           tactical_excluded_count: number
           team_excluded_count: number
           updated_at: string | null
@@ -354,6 +373,7 @@ export type Database = {
           ideas?: Json
           ideas_count?: number
           run_at: string
+          source?: string
           tactical_excluded_count?: number
           team_excluded_count?: number
           updated_at?: string | null
@@ -369,6 +389,7 @@ export type Database = {
           ideas?: Json
           ideas_count?: number
           run_at?: string
+          source?: string
           tactical_excluded_count?: number
           team_excluded_count?: number
           updated_at?: string | null
