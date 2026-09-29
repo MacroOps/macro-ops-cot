@@ -84,10 +84,12 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
         const src = fetched.get(v.review[i].source_ts)!;
         return {
           id: i, instrument: idea.tickers.split(",")[0].trim(), direction: idea.direction,
-          label: idea.label, one_liner: idea.one_liner,
+          label: idea.label, one_liner: idea.one_liner, idea_author: idea.author_name,
           source_text: src.text ?? "", source_attachments: summarizeAttachments(src),
-          thread: threads[i].filter((m) => m.ts !== src.ts)
-            .map((m) => ({ text: m.text ?? "", attachments: summarizeAttachments(m), context_only: ctxMap.has(m.ts) })),
+          thread: threads[i].filter((m) => m.ts !== src.ts).map((m) => ({
+            author: names.get(m.user!) ?? m.user ?? "unknown", is_idea_author: m.user === src.user,
+            text: m.text ?? "", attachments: summarizeAttachments(m), context_only: ctxMap.has(m.ts),
+          })),
         };
       });
       await guard.beforeCall();
