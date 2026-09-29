@@ -214,8 +214,9 @@ export function mountDashboard(els: DashboardEls, data: { generated_at: string |
         }
         html += '</div>';
         html += '<div class="row2"><span class="author">' + highlight(idea.author_name || '', query) + '</span>: ' + highlight(idea.one_liner || '', query);
-        if (idea.permalink) {
-          html += ' <a href="' + escapeHtml(idea.permalink) + '" target="_blank" rel="noopener">view in Slack</a>';
+        const safeLink = safeSlackUrl(idea.permalink);
+        if (safeLink) {
+          html += ' <a href="' + escapeHtml(safeLink) + '" target="_blank" rel="noopener">view in Slack</a>';
         }
         html += '</div>';
         html += '</div>';
