@@ -10,7 +10,7 @@ import { windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { extractIdeas, toRawIdea } from "../_shared/community-alpha/extract.ts";
 import { validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "d35fc8b23439729597bf6b3a36e2c8aae4b2ae0c3021c0780b9e3d3a169420c2";
+const TOKEN_SHA256 = "d7f90f6b6d1d72a63bdb01ad5b653fe51c2520d1f8c975c163a11d17e2e5f88b";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
