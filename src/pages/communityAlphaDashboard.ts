@@ -46,6 +46,21 @@ export function mountDashboard(els: DashboardEls, data: { generated_at: string |
       .replace(/'/g, '&#39;');
   }
 
+  function safeSlackUrl(url) {
+    if (!url) return null;
+    const raw = String(url).trim();
+    if (!/^https:\/\//i.test(raw)) return null;
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol !== 'https:') return null;
+      const host = parsed.hostname.toLowerCase();
+      if (host !== 'slack.com' && !host.endsWith('.slack.com')) return null;
+      return parsed.href;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function highlight(text, query) {
     const escaped = escapeHtml(text);
     if (!query) return escaped;
