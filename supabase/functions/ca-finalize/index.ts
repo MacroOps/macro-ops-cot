@@ -11,7 +11,7 @@ import type { CaIdea } from "../_shared/community-alpha/validate.ts";
 import { CA_ZONE, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { slackCall } from "../_shared/community-alpha/slack.ts";
 
-const TOKEN_SHA256 = "9170a376079ead9d48178afb51aa234599aa5ea7cab56f9f0b7e0fb2978153eb";
+const TOKEN_SHA256 = "628c648bfe7df7ef83a24774f1347a52f29c4ce82aa90683845e52e6cc15a8b5";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
 const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
 
@@ -31,7 +31,10 @@ interface WeekOut { week: string; ideas: number; channels: number; failed: strin
 async function sendSlack(text: string) {
   const token = Deno.env.get("CA_SLACK_BOT_TOKEN")!;
   if (mode() !== "staging") throw new Error("live Slack channel not configured");
-  for (const u of STAGING_RECIPIENTS) await slackCall(token, "chat.postMessage", { channel: u, text });
+  // No link or media previews: the old system's message has none.
+  for (const u of STAGING_RECIPIENTS) {
+    await slackCall(token, "chat.postMessage", { channel: u, text, unfurl_links: "false", unfurl_media: "false" });
+  }
 }
 
 /** Old system's format, exactly (with [STAGING] prefix in staging). */
@@ -59,7 +62,7 @@ export function buildText(weeks: WeekOut[], staging = mode() === "staging"): str
   return lines.join("\n");
 }
 
-async function finalize(runId: string, forceArchive: boolean) {
+async function finalize(runId: string, forceArchive: boolean, noDm = false) {
   const sb = db();
   const table = mode() === "live" ? "community_alpha_weeks" : "community_alpha_weeks_staging";
   const { data: run, error } = await sb.from("community_alpha_runs").select("*").eq("id", runId).single();
@@ -76,7 +79,7 @@ async function finalize(runId: string, forceArchive: boolean) {
   const anchors = [...new Set(tasks!.map((t) => t.anchor_date as string))].sort();
   for (const a of anchors) {
     const w = windowForWeekDate(a);
-    const { data: existing } = await sb.from(table).select("ideas, source").eq("week_date", a).maybeSingle();
+    const { data: existing } = await sb.from(table).select("ideas, source, channel_status, team_excluded_count, tactical_excluded_count").eq("week_date", a).maybeSingle();
     if (!canReprocessWeek(existing as { source: WeekSource } | null, { forceArchive })) {
       weeks.push({ week: a, ideas: 0, channels: 0, failed: [], capDropped: 0, creditCapped: [], skipped: "archive week, protected", start: w.startIso, end: w.endIso });
       continue;
@@ -86,22 +89,32 @@ async function finalize(runId: string, forceArchive: boolean) {
     const m = mergeWeek(((existing?.ideas ?? []) as CaIdea[]), results);
     const done = wt.filter((t) => t.status === "done");
     const failed = wt.filter((t) => t.status !== "done").map((t) => channelById(t.channel_id)?.name ?? t.channel_id);
-    const channelStatus = Object.fromEntries(wt.map((t) => [t.channel_name, {
-      status: t.status === "done" ? "ok" : "failed",
-      ideas: m.ideas.filter((i) => i.channel_id === t.channel_id).length,
-    }]));
+    // Partial runs (e.g. one channel) replace only that channel's status; other channels keep theirs.
+    const prevStatus = ((existing?.channel_status ?? {}) as Record<string, any>);
+    const newStatus = Object.fromEntries(wt.map((t) => {
+      const prev = prevStatus[t.channel_name];
+      return [t.channel_name, t.status === "done" ? {
+        status: "ok", team_excluded: t.team_excluded ?? 0,
+        tactical_excluded: (t.tactical_author_excluded ?? 0) + (t.tactical_dropped ?? 0),
+      } : { ...(prev ?? {}), status: "failed" }];
+    }));
+    const merged: Record<string, any> = { ...prevStatus, ...newStatus };
+    for (const c of CA_CHANNELS) if (merged[c.name]) merged[c.name].ideas = m.ideas.filter((i) => i.channel_id === c.id).length;
+    const entries = Object.values(merged);
+    const haveCounts = entries.every((e) => e.status !== "ok" || typeof e.team_excluded === "number");
+    const sum = (k: string) => entries.filter((e) => e.status === "ok").reduce((s, e) => s + (e[k] ?? 0), 0);
     const row = {
       week_date: a, anchor_at: w.endIso, run_at: new Date().toISOString(),
       window_start: w.startIso, window_end: w.endIso,
-      channels_scanned: done.length, ideas_count: m.ideas.length,
-      team_excluded_count: done.reduce((s, t) => s + (t.team_excluded ?? 0), 0),
-      tactical_excluded_count: done.reduce((s, t) => s + (t.tactical_author_excluded ?? 0) + (t.tactical_dropped ?? 0), 0),
-      ideas: m.ideas, channel_status: channelStatus, source: "job",
+      channels_scanned: entries.filter((e) => e.status === "ok").length, ideas_count: m.ideas.length,
+      team_excluded_count: haveCounts ? sum("team_excluded") : (existing?.team_excluded_count ?? 0),
+      tactical_excluded_count: haveCounts ? sum("tactical_excluded") : (existing?.tactical_excluded_count ?? 0),
+      ideas: m.ideas, channel_status: merged, source: "job",
     };
     const up = await sb.from(table).upsert(row, { onConflict: "week_date" });
     if (up.error) throw new Error(up.error.message);
     const creditCapped = wt.filter((t) => t.error === "credit_cap").map((t) => channelById(t.channel_id)?.name ?? t.channel_id);
-    weeks.push({ week: a, ideas: m.ideas.length, channels: done.length, failed, creditCapped, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
+    weeks.push({ week: a, ideas: m.ideas.length, channels: row.channels_scanned, failed, creditCapped, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
   }
 
   const credits = Math.round(Number(run.ai_credits ?? caCredits(inTok, outTok)) * 1000) / 1000;
@@ -111,7 +124,7 @@ async function finalize(runId: string, forceArchive: boolean) {
   };
   const text = buildText(weeks);
   let dmSent = false;
-  if (!run.dm_sent_at) { await sendSlack(text); dmSent = true; }
+  if (!run.dm_sent_at && !noDm) { await sendSlack(text); dmSent = true; }
   const warnings = weeks.flatMap((w) => [
     ...w.failed.map((c) => `${w.week} ${c} failed`),
     ...(w.capDropped ? [`${w.week} cap dropped ${w.capDropped}`] : []),
@@ -137,7 +150,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   if (!body.run_id) return new Response("run_id required", { status: 400 });
   try {
-    return Response.json(await finalize(String(body.run_id), body.force_archive === true));
+    return Response.json(await finalize(String(body.run_id), body.force_archive === true, body.no_dm === true));
   } catch (e) {
     const msg = String((e as Error)?.message ?? e).slice(0, 300);
     console.error("[ca-finalize]", msg);
