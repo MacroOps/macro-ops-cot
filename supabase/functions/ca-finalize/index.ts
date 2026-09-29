@@ -5,7 +5,7 @@
 // Manual runs never move state.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { DateTime } from "npm:luxon@3";
-import { CA_CHANNELS, channelById } from "../_shared/community-alpha/config.ts";
+import { CA_CHANNELS, CA_CREDIT_CAP_PER_RUN, caCredits, channelById } from "../_shared/community-alpha/config.ts";
 import { canReprocessWeek, type ChannelResult, mergeWeek, type WeekSource } from "../_shared/community-alpha/merge.ts";
 import type { CaIdea } from "../_shared/community-alpha/validate.ts";
 import { CA_ZONE, windowForWeekDate } from "../_shared/community-alpha/window.ts";
@@ -14,9 +14,6 @@ import { slackCall } from "../_shared/community-alpha/slack.ts";
 const TOKEN_SHA256 = "f014dc30488e72d8130b2441c3b0bdbb5b5cdaf977323eac13632af9cc0cca4f";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
 const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
-// Credit estimate for anthropic/claude-sonnet-5, calibrated on earlier runs' measured cost.
-const CREDITS_PER_INPUT_TOKEN = 7.9e-6;
-const CREDITS_PER_OUTPUT_TOKEN = 4.1e-5;
 
 async function sha256(s: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -29,7 +26,7 @@ const fmtDay = (iso: string) => pt(iso).toFormat("ccc LLL d");          // Fri S
 const fmtDayYear = (iso: string) => pt(iso).toFormat("ccc LLL d, yyyy"); // Fri Sep 25, 2026
 const fmtWin = (iso: string) => pt(iso).toFormat("ccc LLL d, h:mm a");  // Fri Sep 18, 2:00 PM
 
-interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; skipped?: string; start: string; end: string }
+interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; creditCapped: string[]; skipped?: string; start: string; end: string }
 
 async function sendSlack(text: string) {
   const token = Deno.env.get("CA_SLACK_BOT_TOKEN")!;
@@ -54,7 +51,9 @@ export function buildText(weeks: WeekOut[], staging = mode() === "staging"): str
     for (const w of weeks) lines.push(`• *${fmtDay(w.end)}* - ${w.skipped ? `skipped (${w.skipped})` : `${w.ideas} ideas`}`);
   }
   for (const w of weeks) {
-    if (w.failed.length) lines.push(`:warning: ${fmtDay(w.end)}: ${w.failed.join(", ")} failed; previous ideas kept for those channels.`);
+    const other = w.failed.filter((c) => !w.creditCapped.includes(c));
+    if (w.creditCapped.length) lines.push(`:warning: ${fmtDay(w.end)}: credit cap of ${CA_CREDIT_CAP_PER_RUN} credits reached; ${w.creditCapped.join(", ")} not processed; previous ideas kept for those channels.`);
+    if (other.length) lines.push(`:warning: ${fmtDay(w.end)}: ${other.join(", ")} failed; previous ideas kept for those channels.`);
     if (w.capDropped) lines.push(`:warning: ${fmtDay(w.end)}: ${w.capDropped} ideas dropped by the 50-idea cap.`);
   }
   return lines.join("\n");
@@ -71,14 +70,15 @@ async function finalize(runId: string, forceArchive: boolean) {
   await sb.from("community_alpha_runs").update({ status: "finalizing" }).eq("id", runId);
 
   const weeks: WeekOut[] = [];
-  let inTok = 0, outTok = 0;
-  for (const t of tasks!) { inTok += t.input_tokens ?? 0; outTok += t.output_tokens ?? 0; }
+  // Usage comes from the run counters, which include every AI call (also failed/retried tasks).
+  const inTok = (run.extract_input_tokens ?? 0) + (run.check_input_tokens ?? 0);
+  const outTok = (run.extract_output_tokens ?? 0) + (run.check_output_tokens ?? 0);
   const anchors = [...new Set(tasks!.map((t) => t.anchor_date as string))].sort();
   for (const a of anchors) {
     const w = windowForWeekDate(a);
     const { data: existing } = await sb.from(table).select("ideas, source").eq("week_date", a).maybeSingle();
     if (!canReprocessWeek(existing as { source: WeekSource } | null, { forceArchive })) {
-      weeks.push({ week: a, ideas: 0, channels: 0, failed: [], capDropped: 0, skipped: "archive week, protected", start: w.startIso, end: w.endIso });
+      weeks.push({ week: a, ideas: 0, channels: 0, failed: [], capDropped: 0, creditCapped: [], skipped: "archive week, protected", start: w.startIso, end: w.endIso });
       continue;
     }
     const wt = tasks!.filter((t) => t.anchor_date === a);
@@ -100,20 +100,26 @@ async function finalize(runId: string, forceArchive: boolean) {
     };
     const up = await sb.from(table).upsert(row, { onConflict: "week_date" });
     if (up.error) throw new Error(up.error.message);
-    weeks.push({ week: a, ideas: m.ideas.length, channels: done.length, failed, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
+    const creditCapped = wt.filter((t) => t.error === "credit_cap").map((t) => channelById(t.channel_id)?.name ?? t.channel_id);
+    weeks.push({ week: a, ideas: m.ideas.length, channels: done.length, failed, creditCapped, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
   }
 
-  const credits = Math.round((inTok * CREDITS_PER_INPUT_TOKEN + outTok * CREDITS_PER_OUTPUT_TOKEN) * 1000) / 1000;
+  const credits = Math.round(Number(run.ai_credits ?? caCredits(inTok, outTok)) * 1000) / 1000;
+  const split = {
+    extract_credits: Math.round(caCredits(run.extract_input_tokens ?? 0, run.extract_output_tokens ?? 0) * 1000) / 1000,
+    check_credits: Math.round(caCredits(run.check_input_tokens ?? 0, run.check_output_tokens ?? 0) * 1000) / 1000,
+  };
   const text = buildText(run, weeks);
   let dmSent = false;
   if (!run.dm_sent_at) { await sendSlack(text); dmSent = true; }
   const warnings = weeks.flatMap((w) => [
     ...w.failed.map((c) => `${w.week} ${c} failed`),
     ...(w.capDropped ? [`${w.week} cap dropped ${w.capDropped}`] : []),
+    ...(w.creditCapped.length ? [`${w.week} credit cap: ${w.creditCapped.join(", ")}`] : []),
   ]);
   await sb.from("community_alpha_runs").update({
     status: "done", finalized_at: new Date().toISOString(), finished_at: run.finished_at ?? new Date().toISOString(),
-    token_usage: { input_tokens: inTok, output_tokens: outTok }, credits_used: credits, warnings,
+    token_usage: { input_tokens: inTok, output_tokens: outTok, ai_calls: run.ai_calls ?? 0, ...split }, credits_used: credits, warnings,
     summary: `finalized into ${table}: ${weeks.map((w) => `${w.week}=${w.skipped ? "skipped" : w.ideas}`).join(", ")}`,
     ...(dmSent ? { dm_sent_at: new Date().toISOString(), dm_text: text } : {}),
   }).eq("id", runId);
@@ -122,7 +128,7 @@ async function finalize(runId: string, forceArchive: boolean) {
     const latest = anchors[anchors.length - 1];
     await sb.from("community_alpha_state").update({ last_anchor_at: windowForWeekDate(latest).endIso }).eq("id", mode() === "live" ? 1 : 2);
   }
-  return { weeks, input_tokens: inTok, output_tokens: outTok, credits, dm_sent: dmSent, dm_text: text, previous_dm_text: run.dm_text ?? null };
+  return { weeks, input_tokens: inTok, output_tokens: outTok, credits, ...split, dm_sent: dmSent, dm_text: text, previous_dm_text: run.dm_text ?? null };
 }
 
 Deno.serve(async (req) => {
