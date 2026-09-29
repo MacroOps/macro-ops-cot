@@ -4,8 +4,6 @@ import type { SlackMessage } from "./filters.ts";
 import { type CaWindow, isInWindow } from "./window.ts";
 
 const API = "https://slack.com/api";
-/** Thread parents older than the window can still get in-window replies. */
-export const PARENT_LOOKBACK_DAYS = 14;
 
 export class SlackError extends Error {
   constructor(public method: string, public slackError: string) {
@@ -42,15 +40,20 @@ export interface ChannelFetch {
   replies: SlackMessage[];
 }
 
+/**
+ * Matches the old system: only threads whose PARENT is inside the window are read,
+ * and each reply is then kept only if its own ts is inside the window.
+ * Replies to older parents are not fetched (may be added after the parallel run).
+ */
 export async function fetchChannelWindow(token: string, channelId: string, w: CaWindow): Promise<ChannelFetch> {
+  const startSec = Number(w.startMicros / 1_000_000n);
   const endSec = Number(w.endMicros / 1_000_000n) + 1;
-  const lookSec = Number(w.startMicros / 1_000_000n) - PARENT_LOOKBACK_DAYS * 86400;
   const history: RawMsg[] = [];
   let cursor = "";
   do {
     const p: Record<string, string> = {
       channel: channelId,
-      oldest: String(lookSec),
+      oldest: String(startSec),
       latest: String(endSec),
       inclusive: "true",
       limit: "200",
@@ -63,10 +66,7 @@ export async function fetchChannelWindow(token: string, channelId: string, w: Ca
 
   const topLevel = history.filter((m) => isInWindow(m.ts, w));
   const replies: SlackMessage[] = [];
-  const parents = history.filter((m) =>
-    (m.reply_count ?? 0) > 0 && m.latest_reply &&
-    isAfterStart(m.latest_reply, w)
-  );
+  const parents = topLevel.filter((m) => (m.reply_count ?? 0) > 0);
   for (const parent of parents) {
     let c = "";
     do {
@@ -80,9 +80,4 @@ export async function fetchChannelWindow(token: string, channelId: string, w: Ca
     } while (c);
   }
   return { topLevel, replies };
-}
-
-function isAfterStart(ts: string, w: CaWindow): boolean {
-  const [s, f = ""] = ts.split(".");
-  return BigInt(s) * 1_000_000n + BigInt(f.padEnd(6, "0")) > w.startMicros;
 }
