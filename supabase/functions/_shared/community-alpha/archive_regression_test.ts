@@ -1,5 +1,6 @@
 // Regression: every approved idea in the live archive must pass the field/value rules.
-// Reads the archive from CA_ARCHIVE_JSON (a JSON array of ideas); skipped if unset.
+// Reads the archive from CA_ARCHIVE_JSON (a temp file OUTSIDE the project, deleted after use;
+// it contains member names and Slack links and must never be committed) (a JSON array of ideas); skipped if unset.
 // Checks needing the original Slack message (source fetched, author match) are skipped.
 import { assertEquals } from "jsr:@std/assert@1";
 import { channelById } from "./config.ts";
@@ -8,7 +9,10 @@ import { checkFields } from "./validate.ts";
 const path = Deno.env.get("CA_ARCHIVE_JSON");
 
 Deno.test({
-  name: "archive regression: all live ideas pass field rules",
+  // Without an export this test is reported as "ignored" (skipped), never as a pass.
+  name: path
+    ? "archive regression: all live ideas pass field rules"
+    : "archive regression: SKIPPED (no archive export supplied via CA_ARCHIVE_JSON)",
   ignore: !path,
   fn() {
     const ideas = JSON.parse(Deno.readTextFileSync(path!)) as Record<string, unknown>[];
