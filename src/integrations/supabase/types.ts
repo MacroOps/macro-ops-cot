@@ -229,6 +229,8 @@ export type Database = {
           attempts: number
           channel_id: string
           channel_name: string
+          check_input_tokens: number | null
+          check_output_tokens: number | null
           error: string | null
           finished_at: string | null
           id: string
@@ -237,6 +239,7 @@ export type Database = {
           messages_fetched: number | null
           output_tokens: number | null
           rejected: Json | null
+          review: Json | null
           run_id: string | null
           started_at: string | null
           status: string
@@ -250,6 +253,8 @@ export type Database = {
           attempts?: number
           channel_id: string
           channel_name: string
+          check_input_tokens?: number | null
+          check_output_tokens?: number | null
           error?: string | null
           finished_at?: string | null
           id?: string
@@ -258,6 +263,7 @@ export type Database = {
           messages_fetched?: number | null
           output_tokens?: number | null
           rejected?: Json | null
+          review?: Json | null
           run_id?: string | null
           started_at?: string | null
           status?: string
@@ -271,6 +277,8 @@ export type Database = {
           attempts?: number
           channel_id?: string
           channel_name?: string
+          check_input_tokens?: number | null
+          check_output_tokens?: number | null
           error?: string | null
           finished_at?: string | null
           id?: string
@@ -279,6 +287,7 @@ export type Database = {
           messages_fetched?: number | null
           output_tokens?: number | null
           rejected?: Json | null
+          review?: Json | null
           run_id?: string | null
           started_at?: string | null
           status?: string
@@ -794,6 +803,8 @@ export type Database = {
           attempts: number
           channel_id: string
           channel_name: string
+          check_input_tokens: number | null
+          check_output_tokens: number | null
           error: string | null
           finished_at: string | null
           id: string
@@ -802,6 +813,7 @@ export type Database = {
           messages_fetched: number | null
           output_tokens: number | null
           rejected: Json | null
+          review: Json | null
           run_id: string | null
           started_at: string | null
           status: string

@@ -29,6 +29,13 @@
       "when": 1790702861362,
       "tag": "0003_community_alpha_finalize",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790707937230,
+      "tag": "0004_ca_tasks_direction_review",
+      "breakpoints": true
     }
   ]
 }
