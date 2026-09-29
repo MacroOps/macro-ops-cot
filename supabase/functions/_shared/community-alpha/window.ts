@@ -90,14 +90,8 @@ export function isInWindow(ts: string, w: CaWindow): boolean {
 /** The Friday week_date whose window contains this Slack ts. */
 export function weekDateForTs(ts: string): string {
   const t = slackTsToMicros(ts);
-  const ms = Number(t / 1000n);
-  const extra = t % 1000n; // sub-ms part
-  // A ts exactly on an anchor belongs to the window ending there (inclusive).
-  const onOrBefore = latestClosedAnchor(new Date(ms));
-  const anchorMicros = BigInt(onOrBefore.toMillis()) * 1000n;
-  if (t === anchorMicros || (t < anchorMicros + 1000n && extra === 0n && anchorMicros === t)) {
-    return onOrBefore.toISODate()!;
-  }
-  if (t > anchorMicros) return onOrBefore.plus({ weeks: 1 }).toISODate()!;
-  return onOrBefore.toISODate()!;
+  const anchor = latestClosedAnchor(new Date(Number(t / 1000n)));
+  const anchorMicros = BigInt(anchor.toMillis()) * 1000n;
+  // Exactly on the anchor -> belongs to the window ending there (inclusive end).
+  return t === anchorMicros ? anchor.toISODate()! : anchor.plus({ weeks: 1 }).toISODate()!;
 }
