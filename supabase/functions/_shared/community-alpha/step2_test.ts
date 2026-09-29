@@ -53,7 +53,7 @@ const raw = (o: Partial<RawIdea> = {}): RawIdea => ({
   source_ts: "1790267660.344059",
   author_id: "UF32P1XNV",
   idea_type: "ticker+direction",
-  tickers: ["prlb"],
+  tickers: ["$prlb"],
   direction: "bullish",
   label: "Bullish PRLB",
   one_liner: "Flags PRLB with a chart; constructive setup.",

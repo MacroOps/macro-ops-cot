@@ -89,7 +89,9 @@ export function normalizeTickers(t: unknown): string[] | null {
   const seen = new Set<string>();
   for (const x of t) {
     if (typeof x !== "string") return null;
-    const v = x.trim().replace(/^\$(?=[A-Za-z])/, "");
+    const t0 = x.trim();
+    // "$nvda" cashtag -> "NVDA"; names/themes ("Copper", "EU banks") keep their case.
+    const v = /^\$[A-Za-z]/.test(t0) ? t0.slice(1).toUpperCase() : t0;
     if (!v) return null;
     const k = v.toUpperCase();
     if (!seen.has(k)) { seen.add(k); out.push(v); }
