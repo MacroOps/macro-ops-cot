@@ -53,7 +53,7 @@ const raw = (o: Partial<RawIdea> = {}): RawIdea => ({
   source_ts: "1790267660.344059",
   author_id: "UF32P1XNV",
   idea_type: "ticker+direction",
-  tickers: ["prlb"],
+  tickers: ["$prlb"],
   direction: "bullish",
   label: "Bullish PRLB",
   one_liner: "Flags PRLB with a chart; constructive setup.",
@@ -95,9 +95,9 @@ Deno.test("validator: rejects each bad case with a reason", () => {
     [{ idea_type: "hunch" }, "bad_idea_type"],
     [{ direction: "moon" }, "bad_direction"],
     [{ tickers: [] }, "bad_tickers"],
-    [{ tickers: ["not a ticker"] }, "bad_tickers"],
+    [{ tickers: ["  "] }, "bad_tickers"],
     [{ label: "" }, "bad_label"],
-    [{ one_liner: Array(26).fill("w").join(" ") }, "bad_one_liner"],
+    [{ one_liner: "" }, "bad_one_liner"],
     [{ technical: "yes" as unknown as boolean }, "bad_technical"],
   ];
   for (const [o, reason] of cases) {
@@ -206,4 +206,26 @@ Deno.test("archive protection: 'archive' weeks only reprocessed when explicitly 
   assertEquals(canReprocessWeek({ source: "job" }), true);
   assertEquals(canReprocessWeek({ source: "archive" }), false);
   assertEquals(canReprocessWeek({ source: "archive" }, { forceArchive: true }), true);
+});
+
+Deno.test("validator: non-ticker names/themes accepted as tickers", () => {
+  for (const t of [["Copper"], ["Gold", "Silver"], ["EU banks"], ["Ags"], ["HY credit"]]) {
+    const r = validateIdeas([raw({ tickers: t })], ctx());
+    assertEquals(r.rejected, [], t.join());
+    assertEquals(r.ideas[0].tickers, t.join(", "));
+  }
+});
+
+Deno.test("validator: one-liner over 25 words kept with internal warning", () => {
+  const r = validateIdeas([raw({ one_liner: Array(28).fill("w").join(" ") })], ctx());
+  assertEquals(r.ideas.length, 1);
+  assertEquals(r.warnings, [{ source_ts: raw().source_ts, warning: "one_liner_long:28_words" }]);
+});
+
+Deno.test("filters: broadcast thread reply seen in history and replies counted once", () => {
+  const b: SlackMessage = { ts: "1790267700.000100", thread_ts: "1790267660.344059", user: "UDRJF2Y68", subtype: "thread_broadcast", text: "Long GLD" };
+  const r = filterMessages([b, { ...b, subtype: undefined }, { ts: "1.1", user: "UX", text: "Short TLT" }], new Set(), new Set());
+  assertEquals(r.kept.length, 2);
+  assertEquals(r.duplicates, 1);
+  assertEquals(r.kept.filter((m) => m.ts === b.ts).length, 1);
 });

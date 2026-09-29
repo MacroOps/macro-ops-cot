@@ -18,6 +18,8 @@ export interface FilterResult {
   privateExcluded: number;
   botOrSystem: number;
   emptyOrEmoji: number;
+  /** Same ts seen twice (broadcast thread reply). Not counted anywhere else. */
+  duplicates: number;
 }
 
 /** Subtypes that are still real human posts. Everything else is system noise. */
@@ -39,8 +41,16 @@ export function filterMessages(
   teamIds: ReadonlySet<string>,
   privateIds: ReadonlySet<string>,
 ): FilterResult {
-  const r: FilterResult = { kept: [], teamExcluded: 0, privateExcluded: 0, botOrSystem: 0, emptyOrEmoji: 0 };
+  const r: FilterResult = { kept: [], teamExcluded: 0, privateExcluded: 0, botOrSystem: 0, emptyOrEmoji: 0, duplicates: 0 };
+  // A thread reply "also sent to channel" appears in both channel history and thread replies:
+  // dedupe by ts so it is counted (and extracted) once.
+  const seen = new Set<string>();
   for (const m of messages) {
+    if (seen.has(m.ts)) {
+      r.duplicates++;
+      continue;
+    }
+    seen.add(m.ts);
     if (m.bot_id || m.subtype === "bot_message" || !HUMAN_SUBTYPES.has(m.subtype) || !m.user) {
       r.botOrSystem++;
       continue;
