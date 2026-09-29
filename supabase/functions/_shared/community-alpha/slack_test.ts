@@ -1,6 +1,6 @@
 // Slack reader tests with a stubbed fetch (no network).
 import { assertEquals } from "jsr:@std/assert@1";
-import { fetchChannelWindow } from "./slack.ts";
+import { fetchChannelWindow, PARENT_LOOKBACK_DAYS } from "./slack.ts";
 import { windowForWeekDate } from "./window.ts";
 
 const w = windowForWeekDate("2026-09-25");
@@ -9,7 +9,8 @@ const endSec = Number(w.endMicros / 1_000_000n);
 const ts = (sec: number) => `${sec}.000100`;
 
 const inParent = ts(startSec + 3600);
-const oldParent = ts(startSec - 3 * 86400);
+const oldParent = ts(startSec - 3 * 86400); // has an in-window reply
+const staleParent = ts(startSec - 5 * 86400); // last reply before the window
 
 function stub(calls: string[]) {
   return (async (input: string | URL) => {
@@ -23,6 +24,7 @@ function stub(calls: string[]) {
         messages: [
           { ts: inParent, user: "U1", text: "long X", reply_count: 2, latest_reply: ts(endSec + 60) },
           { ts: oldParent, user: "U2", text: "old", reply_count: 1, latest_reply: ts(startSec + 60) },
+          { ts: staleParent, user: "U4", text: "stale", reply_count: 1, latest_reply: ts(startSec - 60) },
         ],
       });
     }
@@ -38,25 +40,27 @@ function stub(calls: string[]) {
   }) as typeof fetch;
 }
 
-Deno.test("history is requested from the window start, not 14 days back", async () => {
+Deno.test("history looks back for older thread parents", async () => {
   const calls: string[] = [];
   const orig = globalThis.fetch;
   globalThis.fetch = stub(calls);
   try {
     await fetchChannelWindow("x", "C1", w);
-    assertEquals(calls[0], `conversations.history:${startSec}`);
+    assertEquals(calls[0], `conversations.history:${startSec - PARENT_LOOKBACK_DAYS * 86400}`);
   } finally { globalThis.fetch = orig; }
 });
 
-Deno.test("only replies to in-window parents are fetched; older parents are skipped", async () => {
+Deno.test("older parent with an in-window reply is read and returned as context only", async () => {
   const calls: string[] = [];
   const orig = globalThis.fetch;
   globalThis.fetch = stub(calls);
   try {
     const r = await fetchChannelWindow("x", "C1", w);
-    assertEquals(calls.filter((c) => c.startsWith("conversations.replies")), [`conversations.replies:${inParent}`]);
+    assertEquals(calls.filter((c) => c.startsWith("conversations.replies")).sort(),
+      [`conversations.replies:${inParent}`, `conversations.replies:${oldParent}`].sort());
     assertEquals(r.topLevel.map((m) => m.ts), [inParent]);
-    // Each reply judged by its own ts: the after-close reply is dropped.
-    assertEquals(r.replies.map((m) => m.text), ["in-window reply"]);
+    assertEquals(r.contextParents.map((m) => m.ts), [oldParent]);
+    // Each reply judged by its own ts: the after-close replies are dropped.
+    assertEquals(r.replies.map((m) => m.text), ["in-window reply", "in-window reply"]);
   } finally { globalThis.fetch = orig; }
 });
