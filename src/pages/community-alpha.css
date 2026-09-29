@@ -616,4 +616,5 @@
 @media (max-width: 720px) {
   .ca-page { height: auto; min-height: 100vh; }
   .ca-page .header-right { flex-direction: column; align-items: stretch; }
+  .ca-page .ca-mode { align-self: flex-start; }
 }
