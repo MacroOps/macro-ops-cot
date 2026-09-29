@@ -26,6 +26,7 @@ import {
   Bell,
   Telescope,
   Flame,
+  Users,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
