@@ -12,7 +12,7 @@ import { CA_ZONE, dueWindows, windowForWeekDate } from "../_shared/community-alp
 import { checkDirections, decideDirection, extractIdeas, toRawIdea, type UsageHook } from "../_shared/community-alpha/extract.ts";
 import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
-const TOKEN_SHA256 = "9170a376079ead9d48178afb51aa234599aa5ea7cab56f9f0b7e0fb2978153eb";
+const TOKEN_SHA256 = "628c648bfe7df7ef83a24774f1347a52f29c4ce82aa90683845e52e6cc15a8b5";
 const MAX_ATTEMPTS = 3;
 const MAX_HOPS = 60;
 const SELF = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ca-worker`;
