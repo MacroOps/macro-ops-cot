@@ -17,7 +17,7 @@ const WEEK = "2026-09-25", CH = "C6Q4C2WR1";
 
 Deno.serve(async (req) => {
   if ((await sha(req.headers.get("x-ca-token") ?? "")) !== HASH) return new Response("no", { status: 401 });
-  const { phase, model } = await req.json();
+  const { phase, model, method } = await req.json();
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const channel = channelById(CH)!;
   const w = windowForWeekDate(WEEK);
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     try { const r = await slackCall(token, "users.info", { user: u }); names.set(u, r.user?.profile?.display_name || r.user?.real_name || u); } catch { names.set(u, u); }
   }
   const { data: run } = await db.from("community_alpha_runs").insert({ mode: "staging", trigger: "manual", anchors: [WEEK], summary: "step4b test " + model }).select("id").single();
-  const ex = await extractIdeas(Deno.env.get("LOVABLE_API_KEY")!, channel, fr.kept, names, "forced_tool", model);
+  const ex = await extractIdeas(Deno.env.get("LOVABLE_API_KEY")!, channel, fr.kept, names, method ?? "forced_tool", model);
   const fetched = new Map(fr.kept.map((m) => [m.ts, m]));
   const excluded = new Set([...CA_TEAM_IDS, ...priv]);
   const v = validateIdeas(ex.ideas.map(toRawIdea), { channel, fetched, excludedIds: excluded, names });
