@@ -20,9 +20,12 @@ export interface MergeResult {
 }
 
 /** Idea identity: permalink + sorted, normalized tickers. */
+/** Link without query string, so thread links and plain archive links compare equal. */
+export const basePermalink = (u: string) => u.split("?")[0];
+
 export function ideaKey(i: Pick<CaIdea, "permalink" | "tickers">): string {
   const t = i.tickers.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean).sort().join(",");
-  return `${i.permalink}|${t}`;
+  return `${basePermalink(i.permalink)}|${t}`;
 }
 
 const channelRank = (id: string) => {

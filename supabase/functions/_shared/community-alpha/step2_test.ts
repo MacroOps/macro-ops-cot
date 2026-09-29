@@ -229,3 +229,9 @@ Deno.test("filters: broadcast thread reply seen in history and replies counted o
   assertEquals(r.duplicates, 1);
   assertEquals(r.kept.filter((m) => m.ts === b.ts).length, 1);
 });
+
+Deno.test("merge: thread link and plain archive link match on base link + tickers", () => {
+  const base = "https://comm-center.slack.com/archives/C6Q4C2WR1/p1786000000000100";
+  const thread = base + "?thread_ts=1786000000.000050&cid=C6Q4C2WR1";
+  assertEquals(ideaKey({ permalink: thread, tickers: "NVDA" }), ideaKey({ permalink: base, tickers: "nvda" }));
+});

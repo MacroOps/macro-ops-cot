@@ -10,21 +10,21 @@ const URL = "https://ai.gateway.lovable.dev/v1/messages";
 const TOOL = "record_ideas";
 
 export function buildPrompt(channel: CaChannel): string {
-  const general = channel.strict ? "\nKeep ONLY explicit ticker + direction calls." : "";
+  const general = channel.strict ? "\nIn this channel, keep ONLY clear ticker + direction calls." : "";
   return `You extract long-term trade ideas from one week of Macro Ops community Slack messages in channel ${channel.name}. Messages are given as JSON with message_ts, thread_ts, author_id, author_name, posted_at_iso, and text.
 
-Keep a message only if it is:
-- Ticker + direction: a named instrument (equity, index, future, FX pair, commodity, country, crypto) plus a direction (long, short, buy, bullish, bearish, calls, puts, adding), or
+A trade idea is either:
+- Ticker + direction: a named instrument (equity, ETF, index, future, FX pair, commodity, country, crypto) plus a direction (long, short, buy, bullish, bearish, calls, puts, adding), or
 - A thesis post: a substantive argument for a position, even without price levels.
-The goal is long-term, high-conviction ideas. Prefer reasoning, valuation, and catalysts over chart-only calls.${general}
+Look for long-term, high-conviction ideas. New entries and adds to a position count as ideas. Chart-based calls count as ideas too: tag them with technical (below) instead of dropping them.${general}
 
-Drop: pure position management (trims, profit-taking, stop-outs, exits, "back in X") with no new thesis; emoji-only; images with no text; bare links without commentary; questions without a thesis; general market chatter; announcements. Keep a multi-paragraph bearish thesis even if it mentions trimming.
+Drop pure tactical position-management updates with no new directional thesis: trims, partial or full profit-taking, stop-outs, "out of all my trades", and any pure exit, cover, or close. Keep substantive bearish-thesis posts even if they mention trimming. Also ignore emoji-only messages, GIFs or images with no text, bare links without commentary, questions without a thesis, and generic chatter.
 
-If one author's idea spans several messages, return ONE idea. If the chain ends in a trim or exit only, return nothing for it. Set message_ts to the message that names the ticker or company most explicitly (the earliest if several do). Never pick a message that does not mention the ticker or company. message_ts must be one of the message_ts values provided.
+If one author's idea spans several messages, return ONE idea. If the latest state of that chain is a trim or exit only, return nothing for it. Set message_ts to the message where the ticker or company in the idea is named most explicitly; if several name it, use the earliest. Never pick a message that doesn't mention the ticker or company. message_ts must be one of the message_ts values provided.
 
-Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false. Technical ideas are kept, not dropped.
+Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
-Never flip long/short, and never label a trim as an entry. If unsure, drop the message.
+Direction precision is critical: never flip long/short, and never label a trim as an entry. If you can't tell the direction of an idea, drop that idea.
 
 Return ideas plus tactical_dropped = the number of pure position-management messages you dropped.`;
 }
@@ -125,9 +125,10 @@ export async function extractIdeas(
   msgs: SlackMessage[],
   names: Map<string, string>,
   method: "forced_tool" | "json_schema" = "forced_tool",
+  model: string = CA_MODEL,
 ): Promise<ExtractResult> {
   const body: Record<string, unknown> = {
-    model: CA_MODEL,
+    model,
     max_tokens: 16000,
     stream: true,
     system: buildPrompt(channel),
@@ -137,7 +138,7 @@ export async function extractIdeas(
     body.tools = [{ name: TOOL, description: "Record the extracted ideas.", input_schema: OUTPUT_SCHEMA }];
     body.tool_choice = { type: "tool", name: TOOL };
   } else {
-    body.output_format = { type: "json_schema", schema: OUTPUT_SCHEMA };
+    body.output_config = { format: { type: "json_schema", schema: OUTPUT_SCHEMA } };
   }
   const res = await fetch(URL, {
     method: "POST",
