@@ -22,6 +22,8 @@ Drop pure tactical position-management updates with no new directional thesis: t
 
 If one author's idea spans several messages, return ONE idea. If the latest state of that chain is a trim or exit only, return nothing for it. Set message_ts to the message where the ticker or company in the idea is named most explicitly; if several name it, use the earliest. Never pick a message that doesn't mention the ticker or company. message_ts must be one of the message_ts values provided.
 
+In tickers, list every ticker, instrument, or theme the post names for that idea, not only the main one. A post that lists several new positions or adds (for example a weekly trades update) is one idea with all of them in tickers.
+
 Set technical = true when the ONLY stated basis is price action or positioning: chart patterns, breakouts, moving averages, momentum or relative strength, volatility setups, COT/sentiment/crowding, "chart attached", or a technician's read with no other reason. Set technical = false if the post gives at least one fundamental or macro reason (valuation, earnings, supply/demand, policy, a catalyst, a structural theme), even if a chart is also cited. Position updates with no stated basis are false.
 
 Direction precision is critical: never flip long/short, and never label a trim as an entry. If you can't tell the direction of an idea, drop that idea.
