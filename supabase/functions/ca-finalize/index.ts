@@ -24,7 +24,7 @@ async function sha256(s: string) {
 }
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const mode = () => (Deno.env.get("CA_MODE") === "live" ? "live" : "staging");
-const fmtDay = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE).toFormat("ccc LLL d");
+const fmtDay = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE).toFormat("LLL d");
 const fmtWin = (iso: string) => DateTime.fromISO(iso).setZone(CA_ZONE).toFormat("LLL d h:mm a");
 
 interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; skipped?: string; start: string; end: string }
