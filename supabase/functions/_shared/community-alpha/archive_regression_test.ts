@@ -22,7 +22,7 @@ Deno.test({
       const ch = channelById(i.channel_id as string);
       if (!ch) { fails.push(`${i.permalink}: unknown_channel ${i.channel_id}`); continue; }
       const t = String(i.tickers ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-      const r = checkFields({ ...i, tickers: t }, ch);
+      const r = checkFields({ ...i, tickers: t } as unknown as Parameters<typeof checkFields>[0], ch);
       if (!r.ok) fails.push(`${i.permalink} [${ch.name}] ${r.reason} tickers="${i.tickers}" type=${i.idea_type} dir=${i.direction}`);
       else warns.push(...r.warnings.map((w) => `${i.permalink}: ${w}`));
     }
