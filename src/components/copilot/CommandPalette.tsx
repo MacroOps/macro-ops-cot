@@ -4,7 +4,8 @@ import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
 } from "@/components/ui/command";
 import { useCopilot } from "./CopilotContext";
-import { useCollectiveAccess } from "@/hooks/useCollectiveAccess";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
+import { canAccessPath } from "@/lib/outseta/entitlements";
 import { Sparkles, LayoutDashboard, Activity, TrendingDown, Layers, Newspaper, LineChart, Boxes, FlaskConical } from "lucide-react";
 
 const ROUTES = [
@@ -34,11 +35,13 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
   const { openCopilot } = useCopilot();
-  const { hasAccess } = useCollectiveAccess();
+  const { isCollective, isTurningPoint, isStaff } = useEntitlements();
+  const flags = { isCollective, isTurningPoint, isStaff };
+  const pages = ROUTES.filter((r) => canAccessPath(r.to.split("?")[0], flags));
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
-      if (!hasAccess) return;
+      if (!isStaff) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
@@ -46,10 +49,10 @@ export function CommandPalette() {
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [hasAccess]);
+  }, [isStaff]);
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={isStaff && open} onOpenChange={setOpen}>
       <CommandInput placeholder="Search pages, ask the copilot..." />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
@@ -66,7 +69,7 @@ export function CommandPalette() {
         </CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Pages">
-          {ROUTES.map((r) => (
+          {pages.map((r) => (
             <CommandItem key={r.to} onSelect={() => { setOpen(false); nav(r.to); }}>
               <r.icon className="mr-2 h-3.5 w-3.5" />
               {r.label}

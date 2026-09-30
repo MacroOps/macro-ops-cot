@@ -47,102 +47,104 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useOutseta } from "@outseta/react";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
+import { canAccessTier, type AccessFlags, type AccessTier, type ViewAsMode } from "@/lib/outseta/entitlements";
 
-type Leaf = { title: string; url: string };
-type Group = { title: string; icon: any; url?: string; children?: Leaf[] };
+type Leaf = { title: string; url: string; access?: AccessTier };
+type Group = { title: string; icon: any; url?: string; access?: AccessTier; children?: Leaf[] };
 
 const NAV: Group[] = [
-  { title: "Overview", icon: LayoutDashboard, url: "/overview" },
-  { title: "Classic HUD", icon: LayoutGrid, url: "/classic-hud" },
-  { title: "Macro Portfolio", icon: BarChart3, url: "/portfolio" },
-  { title: "Daily Briefing", icon: Sparkles, url: "/briefing" },
-  { title: "Heatmap", icon: Flame, url: "/heatmap" },
-  { title: "Analogs", icon: Telescope, url: "/analogs" },
-  { title: "Alerts", icon: Bell, url: "/alerts" },
-  { title: "Community Alpha", icon: Users, url: "/community-alpha" },
-  { title: "Backtests Lab", icon: FlaskConical, url: "/backtests" },
-  { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility" },
-  { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle" },
-  { title: "Market Internals", icon: Network, url: "/market-internals" },
+  { title: "Overview", icon: LayoutDashboard, url: "/overview", access: "staff" },
+  { title: "Classic HUD", icon: LayoutGrid, url: "/classic-hud", access: "collective" },
+  { title: "Macro Portfolio", icon: BarChart3, url: "/portfolio", access: "collective" },
+  { title: "Daily Briefing", icon: Sparkles, url: "/briefing", access: "collective" },
+  { title: "Heatmap", icon: Flame, url: "/heatmap", access: "staff" },
+  { title: "Analogs", icon: Telescope, url: "/analogs", access: "staff" },
+  { title: "Alerts", icon: Bell, url: "/alerts", access: "collective" },
+  { title: "Community Alpha", icon: Users, url: "/community-alpha", access: "collective" },
+  { title: "Backtests Lab", icon: FlaskConical, url: "/backtests", access: "staff" },
+  { title: "Trend Fragility", icon: GitBranch, url: "/trend-fragility", access: "staff" },
+  { title: "Risk Cycle", icon: Gauge, url: "/risk-cycle", access: "staff" },
+  { title: "Market Internals", icon: Network, url: "/market-internals", access: "staff" },
   {
     title: "Breadth",
     icon: Waves,
     children: [
-      { title: "Overview", url: "/breadth/overview" },
-      { title: "Components", url: "/breadth/components" },
-      { title: "Thrusts", url: "/breadth/thrusts" },
-      { title: "Capitulation", url: "/breadth/capitulation" },
+      { title: "Overview", url: "/breadth/overview", access: "staff" },
+      { title: "Components", url: "/breadth/components", access: "staff" },
+      { title: "Thrusts", url: "/breadth/thrusts", access: "staff" },
+      { title: "Capitulation", url: "/breadth/capitulation", access: "staff" },
     ],
   },
   {
     title: "Positioning (CoT)",
     icon: Activity,
     children: [
-      { title: "Global Positioning", url: "/" },
-      { title: "Asset Detail", url: "/asset/ES" },
-      { title: "Sector Aggregates", url: "/sectors" },
-      { title: "News & Divergence", url: "/news" },
-      { title: "Eurex Positioning", url: "/eurex" },
-      { title: "Offsides (Extremes)", url: "/offsides" },
+      { title: "Global Positioning", url: "/", access: "staff" },
+      { title: "Asset Detail", url: "/asset/ES", access: "staff" },
+      { title: "Sector Aggregates", url: "/sectors", access: "staff" },
+      { title: "News & Divergence", url: "/news", access: "staff" },
+      { title: "Eurex Positioning", url: "/eurex", access: "collective" },
+      { title: "Offsides (Extremes)", url: "/offsides", access: "collective" },
     ],
   },
   {
     title: "Macro",
     icon: LineChart,
     children: [
-      { title: "MO Indicators", url: "/macro/mo-indicators" },
-      { title: "US Growth", url: "/macro/us-growth" },
-      { title: "Labor", url: "/macro/labor" },
-      { title: "Global Growth", url: "/macro/global-growth" },
-      { title: "Liquidity", url: "/macro/liquidity" },
-      { title: "Inflation", url: "/macro/inflation" },
-      { title: "Recession", url: "/macro/recession" },
-      { title: "Implied Regime", url: "/macro/implied-regime" },
+      { title: "MO Indicators", url: "/macro/mo-indicators", access: "staff" },
+      { title: "US Growth", url: "/macro/us-growth", access: "staff" },
+      { title: "Labor", url: "/macro/labor", access: "staff" },
+      { title: "Global Growth", url: "/macro/global-growth", access: "staff" },
+      { title: "Liquidity", url: "/macro/liquidity", access: "staff" },
+      { title: "Inflation", url: "/macro/inflation", access: "staff" },
+      { title: "Recession", url: "/macro/recession", access: "staff" },
+      { title: "Implied Regime", url: "/macro/implied-regime", access: "staff" },
     ],
   },
   {
     title: "Tools",
     icon: Calculator,
     children: [
-      { title: "Position Sizing", url: "/tools/position-sizing" },
+      { title: "Position Sizing", url: "/tools/position-sizing", access: "collective" },
     ],
   },
-  { title: "TPMR Overview", icon: Compass, url: "/tpmr/market-overview" },
+  { title: "TPMR Overview", icon: Compass, url: "/tpmr/market-overview", access: "staff" },
   {
     title: "Dual Trend",
     icon: Crosshair,
     children: [
-      { title: "S&P 500", url: "/tpmr/dual-trend/sp500" },
-      { title: "S&P 400", url: "/tpmr/dual-trend/sp400" },
-      { title: "S&P 600", url: "/tpmr/dual-trend/sp600" },
-      { title: "ETFs", url: "/tpmr/dual-trend/etfs" },
-      { title: "Gold & Silver Miners", url: "/tpmr/dual-trend/gold-silver-miners" },
-      { title: "Large Cap Cyclical", url: "/tpmr/dual-trend/large-cap-cyclical" },
-      { title: "Thematic Stocks", url: "/tpmr/dual-trend/thematic" },
+      { title: "S&P 500", url: "/tpmr/dual-trend/sp500", access: "staff" },
+      { title: "S&P 400", url: "/tpmr/dual-trend/sp400", access: "staff" },
+      { title: "S&P 600", url: "/tpmr/dual-trend/sp600", access: "staff" },
+      { title: "ETFs", url: "/tpmr/dual-trend/etfs", access: "staff" },
+      { title: "Gold & Silver Miners", url: "/tpmr/dual-trend/gold-silver-miners", access: "staff" },
+      { title: "Large Cap Cyclical", url: "/tpmr/dual-trend/large-cap-cyclical", access: "staff" },
+      { title: "Thematic Stocks", url: "/tpmr/dual-trend/thematic", access: "staff" },
     ],
   },
   {
     title: "TCTM Guides",
     icon: ShieldAlert,
     children: [
-      { title: "Risk-Off", url: "/tpmr/tctm/risk-off" },
-      { title: "Capitulation", url: "/tpmr/tctm/capitulation" },
-      { title: "Bottom", url: "/tpmr/tctm/bottom" },
-      { title: "Thrust", url: "/tpmr/tctm/thrust" },
-      { title: "Confirmation", url: "/tpmr/tctm/confirmation" },
+      { title: "Risk-Off", url: "/tpmr/tctm/risk-off", access: "staff" },
+      { title: "Capitulation", url: "/tpmr/tctm/capitulation", access: "staff" },
+      { title: "Bottom", url: "/tpmr/tctm/bottom", access: "staff" },
+      { title: "Thrust", url: "/tpmr/tctm/thrust", access: "staff" },
+      { title: "Confirmation", url: "/tpmr/tctm/confirmation", access: "staff" },
     ],
   },
   {
     title: "Signals Lab",
     icon: Globe2,
     children: [
-      { title: "Explorer", url: "/signals/explorer" },
-      { title: "Scanner", url: "/signals/scanner" },
-      { title: "Rankings", url: "/signals/rankings" },
-      { title: "Breadth", url: "/tp/breadth" },
-      { title: "Trend Signals", url: "/tp/trend-signals" },
-      { title: "Risk Composite", url: "/tp/risk-composite" },
-      { title: "Sector Trends", url: "/tp/sector-trends" },
+      { title: "Explorer", url: "/signals/explorer", access: "tp" },
+      { title: "Scanner", url: "/signals/scanner", access: "tp" },
+      { title: "Rankings", url: "/signals/rankings", access: "tp" },
+      { title: "Breadth", url: "/tp/breadth", access: "tp" },
+      { title: "Trend Signals", url: "/tp/trend-signals", access: "tp" },
+      { title: "Risk Composite", url: "/tp/risk-composite", access: "tp" },
+      { title: "Sector Trends", url: "/tp/sector-trends", access: "tp" },
     ],
   },
 ];
@@ -157,6 +159,18 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
+  const { isCollective, isTurningPoint, isStaff } = useEntitlements();
+  const flags: AccessFlags = { isCollective, isTurningPoint, isStaff };
+  const nav = NAV.map((item) => {
+    if (item.children) {
+      const children = item.children.filter((c) => canAccessTier(c.access ?? "staff", flags));
+      return { ...item, children };
+    }
+    return item;
+  }).filter((item) => {
+    if (item.children) return item.children.length > 0;
+    return canAccessTier(item.access ?? "staff", flags);
+  });
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -185,7 +199,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) =>
+              {nav.map((item) =>
                 item.children ? (
                   <NavGroup
                     key={item.title}
@@ -215,10 +229,38 @@ export function AppSidebar() {
         <WorkspacesGroup collapsed={collapsed} pathname={pathname} />
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border space-y-1">
+        <ViewAsControl collapsed={collapsed} />
         <AccountFooter collapsed={collapsed} />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function ViewAsControl({ collapsed }: { collapsed: boolean }) {
+  const { canViewAs, viewAs, setViewAs } = useEntitlements();
+  if (!canViewAs) return null;
+
+  return (
+    <div className={collapsed ? "px-1" : "px-2 pb-1"}>
+      {!collapsed && (
+        <label htmlFor="terminus-view-as" className="block text-[9px] uppercase tracking-[0.14em] text-muted-foreground mb-1">
+          View as
+        </label>
+      )}
+      <select
+        id="terminus-view-as"
+        value={viewAs}
+        onChange={(e) => setViewAs(e.target.value as ViewAsMode)}
+        className="w-full bg-sidebar border border-sidebar-border rounded-sm text-[10px] px-1.5 py-1 text-sidebar-foreground"
+        title="Preview another product without changing Outseta"
+        aria-label="View as"
+      >
+        <option value="staff">Staff</option>
+        <option value="collective">Collective</option>
+        <option value="tp">Turning Point</option>
+      </select>
+    </div>
   );
 }
 

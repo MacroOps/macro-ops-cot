@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCopilot } from "./CopilotContext";
 import { cn } from "@/lib/utils";
 import { persistRun } from "@/lib/backtest/persistence";
-import { useCollectiveAccess } from "@/hooks/useCollectiveAccess";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
 
 type Role = "user" | "assistant";
 interface ToolEvent {
@@ -29,6 +29,7 @@ const SUGGESTIONS = [
 
 export function CopilotDrawer() {
   const { open, close, context, pageContext, seedPrompt } = useCopilot();
+  const { isStaff } = useEntitlements();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,7 +50,7 @@ export function CopilotDrawer() {
 
   async function send(text?: string) {
     const content = (text ?? input).trim();
-    if (!content || busy) return;
+    if (!isStaff || !content || busy) return;
     setInput("");
     const next: Msg[] = [...messages, { role: "user", content }];
     setMessages(next);
@@ -104,7 +105,7 @@ export function CopilotDrawer() {
   }
 
   return (
-    <Sheet open={open} onOpenChange={(o) => (!o ? close() : null)}>
+    <Sheet open={isStaff && open} onOpenChange={(o) => (!o ? close() : null)}>
       <SheetContent side="right" className="w-full sm:max-w-[520px] p-0 flex flex-col bg-background border-l border-border">
         <SheetHeader className="px-4 py-3 border-b border-border space-y-1">
           <SheetTitle className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-semibold">
@@ -338,8 +339,8 @@ function Stat({ label, v }: { label: string; v: string }) {
 
 export function CopilotLauncher() {
   const { openCopilot, open } = useCopilot();
-  const { hasAccess } = useCollectiveAccess();
-  if (open || !hasAccess) return null;
+  const { isStaff } = useEntitlements();
+  if (open || !isStaff) return null;
   return (
     <button
       onClick={() => openCopilot()}

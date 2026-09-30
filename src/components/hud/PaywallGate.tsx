@@ -9,14 +9,14 @@ export function PaywallGate({ signedIn }: { signedIn: boolean }) {
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
       <div className="max-w-md w-full hud-panel p-6 space-y-4">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-deep">The Collective</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-deep">Foundation Research</div>
         <h2 className="font-serif font-light text-[22px] tracking-[-0.005em] text-surface-foreground">
           {signedIn ? "Subscription required" : "Log in to continue"}
         </h2>
         <p className="text-sm text-muted-foreground">
           {signedIn
-            ? "This workspace is included with The Collective. Your current account does not have an active plan."
-            : "Terminus is for Collective members. Log in or subscribe to open the research HUD."}
+            ? "This workspace is included with Turning Point or The Collective. Your current account does not have an active plan."
+            : "Terminus is for Turning Point and Collective members. Log in or subscribe to continue."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           {signedIn ? (

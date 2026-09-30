@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useOutseta } from "@outseta/react";
 import { AppShell } from "@/components/hud/AppShell";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { outsetaEdgePost } from "@/lib/outseta/edge";
 import { mountDashboard } from "./communityAlphaDashboard";
 import "./community-alpha.css";
@@ -12,6 +13,7 @@ const MODE_KEY = "ca-data-mode";
 
 export default function CommunityAlpha() {
   const { user } = useOutseta();
+  const { isStaff } = useEntitlements();
   const [mode, setMode] = useState<Mode>(() => {
     try { return sessionStorage.getItem(MODE_KEY) === "staging" ? "staging" : "live"; } catch { return "live"; }
   });
@@ -26,8 +28,13 @@ export default function CommunityAlpha() {
   useEffect(() => { document.title = "Community Alpha — Terminus"; }, []);
 
   useEffect(() => {
+    if (!isStaff && mode === "staging") setMode("live");
+  }, [isStaff, mode]);
+
+  useEffect(() => {
     try { sessionStorage.setItem(MODE_KEY, mode); } catch { /* ignore */ }
     if (!user) return;
+    if (mode === "staging" && !isStaff) return;
     let cancelled = false;
     setData(null);
     setError(null);
@@ -35,7 +42,7 @@ export default function CommunityAlpha() {
       .then((d) => { if (!cancelled) setData({ generated_at: d.generated_at, days: d.days ?? [] }); })
       .catch((e: Error) => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
-  }, [mode, user]);
+  }, [mode, user, isStaff]);
 
   useEffect(() => {
     if (!data || !dateListRef.current || !mainRef.current || !searchRef.current || !clearRef.current) return;
@@ -53,12 +60,14 @@ export default function CommunityAlpha() {
     <AppShell title="Community Alpha" hideScrubber hideRibbon fillViewport>
     <div className="ca-page">
       <div className="ca-inner">
-      {mode === "staging" && <div className="ca-staging-banner" role="status">STAGING — test data</div>}
+      {isStaff && mode === "staging" && <div className="ca-staging-banner" role="status">STAGING — test data</div>}
       <header className="app-header">
+        {isStaff && (
         <div className="ca-mode" role="group" aria-label="Data source">
           <button type="button" className={mode === "live" ? "on" : ""} aria-pressed={mode === "live"} onClick={() => setMode("live")}>Live</button>
           <button type="button" className={mode === "staging" ? "on" : ""} aria-pressed={mode === "staging"} onClick={() => setMode("staging")}>Staging</button>
         </div>
+        )}
         <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>
           <span className="search-hint">Press <kbd>/</kbd> to search</span>
           <div className="search-wrap">

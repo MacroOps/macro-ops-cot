@@ -28,6 +28,7 @@ import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { useCopilot } from "@/components/copilot/CopilotContext";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { useChartSync } from "@/components/hud/ChartSyncContext";
 import {
   Sparkles,
@@ -512,6 +513,7 @@ function ChartToolbar(props: {
   onFullscreen: () => void;
 }) {
   const { openCopilot } = useCopilot();
+  const { isStaff } = useEntitlements();
   const ctx = {
     title: props.title,
     subtitle: props.subtitle,
@@ -538,16 +540,18 @@ function ChartToolbar(props: {
 
   return (
     <div className="flex items-center gap-0.5 opacity-0 group-hover/card:opacity-100 focus-within:opacity-100 transition-opacity">
+      {isStaff && (
       <IconBtn
         title="Ask Copilot"
         onClick={() => openCopilot({ context: ctx, prompt: `What is ${props.title} telling me right now?` })}
       >
         <Sparkles className="h-3 w-3" />
       </IconBtn>
+      )}
       <a
         href={backtestHref}
         onClick={(e) => {
-          if (e.shiftKey) {
+          if (e.shiftKey && isStaff) {
             e.preventDefault();
             openCopilot({ context: ctx, prompt: `Run a historical backtest of ${props.title} crossing its thresholds and summarize.` });
           }

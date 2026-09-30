@@ -9,11 +9,11 @@ This app (Terminus / Foundation Research) uses Outseta for authentication, CRM, 
 ## Rules
 
 - Outseta is the source of truth for who the customer is and whether they paid.
-- Gate product features with Outseta JWT claims or the REST API (`outseta:planUid`, subscription status).
+- Gate product features with Outseta JWT `outseta:planUid`. Turning Point ⊂ Collective (same plan family). Company/ops is Team Plan (`7malDMWE`, $0, inactive, not sold). Route matrix: `src/lib/outseta/entitlements.ts` — customer nav is entire-live routes only (2026-09-29 audit); hybrid/mock is Team Plan. Team Plan accounts can use in-app View as (Collective / Turning Point) for QA; it does not change Outseta.
 - Keep Supabase for market data; do not use it as the billing or CRM system.
 - Use `@outseta/react` on the frontend and `@outseta/node-sdk` on the server when implementing auth or billing in this repo.
 
 ## Community Alpha
 
 - Weekly window logic lives in `supabase/functions/_shared/community-alpha/window.ts` (Luxon, America/Los_Angeles, Slack ts compared as integer microseconds) — one source of truth for DST-safe Friday 2 PM PT windows.
-- Members page `/community-alpha` renders inside `AppShell` (Collective-plan gate, same as other sections) and reads only via `community-alpha-read` (Outseta JWT verified in-function, live/staging weeks tables only, no author_id); its dashboard logic is a verbatim port of Mike's reference HTML in `src/pages/communityAlphaDashboard.ts` — keep it matching the reference rather than refactoring.
+- Members page `/community-alpha` is Collective (and Team Plan). `community-alpha-read` verifies the Outseta JWT; staging mode is Team Plan only. Dashboard port stays in `src/pages/communityAlphaDashboard.ts`.

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { generateSignalsTape, type ModelSignal } from "@/lib/signals";
 import { useCopilot } from "./CopilotContext";
+import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { Sparkles, ArrowUpRight, ArrowDownRight, AlertTriangle, Radio, Pin, PinOff } from "lucide-react";
 
 function timeAgo(iso: string) {
@@ -38,6 +39,7 @@ const CATEGORY_GROUPS: Array<{ id: string; label: string; match: (m: string) => 
 export function SignalsTape({ limit = 40 }: { limit?: number }) {
   const all = useMemo(() => generateSignalsTape(limit), [limit]);
   const { openCopilot } = useCopilot();
+  const { isStaff } = useEntitlements();
   const [severity, setSeverity] = useState<SeverityFilter>("all");
   const [direction, setDirection] = useState<DirectionFilter>("all");
   const [category, setCategory] = useState<string>("all");
@@ -92,12 +94,14 @@ export function SignalsTape({ limit = 40 }: { limit?: number }) {
             · {filtered.length}/{all.length} fires · last 14d
           </span>
         </div>
+        {isStaff && (
         <button
           onClick={() => openCopilot({ prompt: "Summarize the most material model signals that fired in the last 14 days, grouped by regime implication." })}
           className="text-[10px] uppercase tracking-wider text-primary hover:underline flex items-center gap-1"
         >
           <Sparkles className="h-3 w-3" /> Ask Copilot
         </button>
+        )}
       </div>
 
       <div className="px-3 py-1.5 border-b border-border bg-surface/30 flex items-center gap-2 flex-wrap text-[10px]">
@@ -158,12 +162,14 @@ export function SignalsTape({ limit = 40 }: { limit?: number }) {
                 >
                   {isPin ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
                 </button>
+                {isStaff && (
                 <button
                   onClick={() => ask(s)}
                   className="opacity-0 group-hover:opacity-100 text-[9px] uppercase tracking-wider px-1.5 py-0.5 border border-primary text-primary rounded-sm hover:bg-primary hover:text-primary-foreground transition-opacity"
                 >
                   explain
                 </button>
+                )}
                 {s.href && (
                   <Link
                     to={s.href}
