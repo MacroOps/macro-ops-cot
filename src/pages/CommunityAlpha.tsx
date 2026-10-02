@@ -69,27 +69,29 @@ export default function CommunityAlpha() {
           <PageHeader
             eyebrow="Research"
             title="Community Alpha"
-            actions={isStaff ? (
-              <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)}>
-                <TabsList className="ca-mode" aria-label="Data source">
-                  <TabsTrigger value="live" aria-pressed={mode === "live"}>Live</TabsTrigger>
-                  <TabsTrigger value="staging" aria-pressed={mode === "staging"}>Staging</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : undefined}
-          />
-          <div className="app-header">
-            <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>
-              <span className="search-hint">Press <kbd>/</kbd> to search</span>
-              <div className="search-wrap">
-                <Search className="search-icon" aria-hidden="true" />
-                <Input ref={searchRef} type="text" id="search" className="search-input" placeholder="Search ticker, member, channel, keyword…" autoComplete="off" spellCheck={false} />
-                <Button ref={clearRef} type="button" variant="ghost" size="icon" className="search-clear" id="search-clear" aria-label="Clear search" title="Clear search (Esc)">
-                  <X aria-hidden="true" />
-                </Button>
+            actions={(
+              <div className="ca-header-actions">
+                <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>
+                  <span className="search-hint">Press <kbd>/</kbd> to search</span>
+                  <div className="search-wrap">
+                    <Search className="search-icon" aria-hidden="true" />
+                    <Input ref={searchRef} type="text" id="search" className="search-input" placeholder="Search ticker, member, channel, keyword…" autoComplete="off" spellCheck={false} />
+                    <Button ref={clearRef} type="button" variant="ghost" size="icon" className="search-clear" id="search-clear" aria-label="Clear search" title="Clear search (Esc)">
+                      <X aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+                {isStaff && (
+                  <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)}>
+                    <TabsList className="ca-mode" aria-label="Data source">
+                      <TabsTrigger value="live" aria-pressed={mode === "live"}>Live</TabsTrigger>
+                      <TabsTrigger value="staging" aria-pressed={mode === "staging"}>Staging</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                )}
               </div>
-            </div>
-          </div>
+            )}
+          />
 
           {error ? (
             <div className="ca-status">Couldn't load Community Alpha: {error}</div>

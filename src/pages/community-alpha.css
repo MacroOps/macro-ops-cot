@@ -52,13 +52,11 @@
   text-transform: uppercase;
 }
 
-.ca-page .app-header {
+.ca-page .ca-header-actions {
   display: flex;
   flex-shrink: 0;
-  justify-content: flex-end;
-  border-bottom: 1px solid hsl(var(--border));
-  background: hsl(var(--surface) / 0.3);
-  padding: 10px 16px;
+  align-items: center;
+  gap: 10px;
 }
 
 .ca-page .search-side {
@@ -84,7 +82,7 @@
 
 .ca-page .search-wrap {
   position: relative;
-  width: min(360px, 50vw);
+  width: min(300px, 24vw);
 }
 
 .ca-page .search-input {
@@ -199,7 +197,7 @@
 .ca-page .date-btn.has-matches .date-count { border-color: hsl(var(--accent) / 0.45); color: hsl(var(--accent-deep)); }
 
 .ca-page .main { min-width: 0; overflow-y: auto; padding: 22px 24px 48px; }
-.ca-page .main-inner { width: 100%; max-width: 940px; margin: 0 auto; }
+.ca-page .main-inner { width: 100%; max-width: 940px; margin: 0; }
 
 .ca-page .main-header {
   display: flex;
@@ -281,7 +279,7 @@
 
 .ca-page .summary-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
 .ca-page .pill { font-family: "IBM Plex Mono", ui-monospace, monospace; }
-.ca-page .tech-toggle { font-family: inherit; font-weight: 600; }
+.ca-page .tech-toggle { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; }
 .ca-page .tech-toggle.on { border-color: hsl(var(--primary)); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
 
 .ca-page .channel { margin: 20px 0; }
@@ -407,9 +405,10 @@
 
 @container ca (max-width: 720px) {
   .ca-page > .ca-inner { height: auto; }
-  .ca-page .app-header { padding: 8px 12px; }
-  .ca-page .search-side, .ca-page .search-wrap { width: 100%; }
-  .ca-page .search-wrap { max-width: none; }
+  .ca-page > .ca-inner > .flex.items-end { flex-wrap: wrap; }
+  .ca-page .ca-header-actions { width: 100%; justify-content: flex-end; }
+  .ca-page .search-side { flex: 1; }
+  .ca-page .search-wrap { width: 100%; max-width: none; flex: 1; }
   .ca-page .search-hint { display: none; }
   .ca-page .layout { display: flex; flex-direction: column; overflow: visible; }
   .ca-page .sidebar { width: 100%; overflow-y: visible; border-right: 0; border-bottom: 1px solid hsl(var(--border)); }
