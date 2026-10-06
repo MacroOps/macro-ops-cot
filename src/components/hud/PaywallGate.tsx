@@ -1,4 +1,5 @@
 import { useOutseta } from "@outseta/react";
+import { signOutOfOutseta } from "@/lib/outseta/session";
 
 const btnClass =
   "text-[10px] uppercase tracking-wider px-3 py-1.5 border border-border rounded-sm hover:border-primary hover:text-primary";
@@ -24,7 +25,7 @@ export function PaywallGate({ signedIn }: { signedIn: boolean }) {
               <button type="button" className={btnClass} onClick={() => openProfile({ tab: "planChange" })}>
                 View plans
               </button>
-              <button type="button" className={btnClass} onClick={logout}>
+              <button type="button" className={btnClass} onClick={() => void signOutOfOutseta(logout)}>
                 Sign out
               </button>
             </>

@@ -48,6 +48,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useOutseta } from "@outseta/react";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
+import { signOutOfOutseta } from "@/lib/outseta/session";
 import { canAccessTier, type AccessFlags, type AccessTier, type ViewAsMode } from "@/lib/outseta/entitlements";
 
 type Leaf = { title: string; url: string; access?: AccessTier };
@@ -295,7 +296,7 @@ function AccountFooter({ collapsed }: { collapsed: boolean }) {
       </button>
       <button
         type="button"
-        onClick={logout}
+        onClick={() => void signOutOfOutseta(logout)}
         className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
         aria-label="Sign out"
         title="Sign out"
