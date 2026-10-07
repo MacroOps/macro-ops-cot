@@ -40,13 +40,13 @@ export function canAccessTier(tier: AccessTier, f: AccessFlags): boolean {
 }
 
 /**
- * Customer-visible routes = entire live data only (audit 2026-09-29).
- * Hybrid and mock stay staff until they are 100% live.
+ * Customer alpha: live Collective routes plus Dual Trend / TPMR / TCTM / TP lab.
+ * Remaining hybrid/mock (Overview, Heatmap, macros, etc.) stay Team Plan.
  */
 export function pathAccessTier(pathname: string): AccessTier {
   const p = pathname.split("?")[0] || "/";
 
-  if (p.startsWith("/signals/") || p.startsWith("/tp/")) return "tp";
+  if (p.startsWith("/signals/") || p.startsWith("/tp/") || p.startsWith("/tpmr/")) return "tp";
 
   if (
     p === "/classic-hud" ||

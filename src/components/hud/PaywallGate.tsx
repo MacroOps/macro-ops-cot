@@ -5,7 +5,7 @@ const btnClass =
   "text-[10px] uppercase tracking-wider px-3 py-1.5 border border-border rounded-sm hover:border-primary hover:text-primary";
 
 export function PaywallGate({ signedIn }: { signedIn: boolean }) {
-  const { openLogin, openSignup, openProfile, logout } = useOutseta();
+  const { openLogin, logout } = useOutseta();
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
@@ -16,28 +16,18 @@ export function PaywallGate({ signedIn }: { signedIn: boolean }) {
         </h2>
         <p className="text-sm text-muted-foreground">
           {signedIn
-            ? "This workspace is included with Turning Point or The Collective. Your current account does not have an active plan."
-            : "Terminus is for Turning Point and Collective members. Log in or subscribe to continue."}
+            ? "This workspace is included with Turning Point or The Collective. Your current account does not have an active plan. Membership is through foundationmacro.com."
+            : "Terminus is for Turning Point and Collective members. Log in to continue. New memberships go through foundationmacro.com."}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           {signedIn ? (
-            <>
-              <button type="button" className={btnClass} onClick={() => openProfile({ tab: "planChange" })}>
-                View plans
-              </button>
-              <button type="button" className={btnClass} onClick={() => void signOutOfOutseta(logout)}>
-                Sign out
-              </button>
-            </>
+            <button type="button" className={btnClass} onClick={() => void signOutOfOutseta(logout)}>
+              Sign out
+            </button>
           ) : (
-            <>
-              <button type="button" className={btnClass} onClick={() => openLogin()}>
-                Log in
-              </button>
-              <button type="button" className={btnClass} onClick={() => openSignup()}>
-                Subscribe
-              </button>
-            </>
+            <button type="button" className={btnClass} onClick={() => openLogin()}>
+              Log in
+            </button>
           )}
         </div>
       </div>
