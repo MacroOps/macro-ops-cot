@@ -52,8 +52,6 @@ export function pathAccessTier(pathname: string): AccessTier {
     p === "/classic-hud" ||
     p === "/portfolio" ||
     p === "/community-alpha" ||
-    p === "/alerts" ||
-    p === "/briefing" ||
     p === "/tools/position-sizing" ||
     p === "/eurex" ||
     p === "/offsides"

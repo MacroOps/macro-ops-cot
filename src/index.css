@@ -311,3 +311,40 @@
     50%      { r: 5; opacity: 0.55; }
   }
 }
+
+/* Unlayered so it can beat Outseta's injected embed CSS.
+   Dark mode must set --dark-mode-bg-color; the dashboard background
+   token only fills --color-bg, so login (displayMode auto/dark) goes black
+   until the profile widget remounts. */
+.o--Reset--scope .o--Widget--widget {
+  --color-bg: hsl(var(--card));
+  --dark-mode-bg-color: #534f4a;
+  --color-text: hsl(var(--card-foreground));
+  --color-text-dark: #f4f2ec;
+  --color-text-secondary: hsl(var(--muted-foreground));
+  --color-text-secondary-dark: #c4bfb6;
+  --color-coal: hsl(var(--border));
+  --color-coal-dark: #6f6a63;
+  --color-slate: hsl(var(--border));
+  --color-slate-dark: #6f6a63;
+  --accent-color: hsl(var(--accent));
+}
+
+.o--Reset--scope .o--Widget--widget.o--Widget--popup {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+.dark .o--Reset--scope .o--Widget--widget.o--Widget--popup {
+  background-color: #534f4a;
+}
+
+.o--Reset--scope .o--Widget--widget button.o--Button--btn {
+  background-color: hsl(var(--accent));
+  color: #fff;
+}
+
+.o--Reset--scope .o--Widget--widget .o--Button--btn .o--Button--children,
+.o--Reset--scope .o--Widget--widget button.o--Button--btn * {
+  color: #fff;
+}

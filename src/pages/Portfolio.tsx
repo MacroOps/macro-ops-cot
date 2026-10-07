@@ -111,12 +111,17 @@ export default function Portfolio() {
     () => stats.filter((d) => d.date.startsWith(String(year))),
     [stats, year],
   );
-  const weekAgo = useMemo(() => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - 7);
-    return d.toISOString().slice(0, 10);
-  }, []);
-  const weekSeries = useMemo(() => stats.filter((d) => d.date >= weekAgo), [stats, weekAgo]);
+  const WINDOW_DAYS = 30;
+  const recentSeries = useMemo(() => {
+    if (!stats.length) return [];
+    const ordered = [...stats].sort((a, b) => a.date.localeCompare(b.date));
+    const last = ordered[ordered.length - 1].date;
+    const end = new Date(`${last}T00:00:00Z`);
+    const start = new Date(end);
+    start.setUTCDate(start.getUTCDate() - (WINDOW_DAYS - 1));
+    const from = start.toISOString().slice(0, 10);
+    return ordered.filter((d) => d.date >= from);
+  }, [stats]);
 
   const eqFlat = useMemo(() => {
     if (!port) return [];
@@ -218,9 +223,9 @@ export default function Portfolio() {
               pad={false}
             />
             <ChartPanel
-              title="Last 7 days"
-              sub={weekSeries.length ? `${weekSeries[0].date} – ${weekSeries[weekSeries.length - 1].date}` : "No series"}
-              data={weekSeries}
+              title="Last 30 days"
+              sub={recentSeries.length ? `${recentSeries[0].date} – ${recentSeries[recentSeries.length - 1].date}` : "No series"}
+              data={recentSeries}
               pad
             />
           </div>

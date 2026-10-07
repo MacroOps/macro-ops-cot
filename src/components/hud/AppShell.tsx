@@ -108,10 +108,10 @@ export function AppShell({
           <ShellHeader
             title={title}
             showSidebarTrigger
-            showAlerts
+            showAlerts={isStaff}
             viewAsHint={canViewAs ? viewAs : null}
           />
-          {!hideRibbon && <RegimeRibbon />}
+          {isStaff && !hideRibbon && <RegimeRibbon />}
           <main
             className={
               fillViewport ? "flex-1 min-h-0 overflow-hidden flex flex-col" : "flex-1 overflow-auto"
@@ -119,7 +119,7 @@ export function AppShell({
           >
             {children}
           </main>
-          {!hideScrubber && <GlobalScrubber />}
+          {isStaff && !hideScrubber && <GlobalScrubber />}
         </div>
       </div>
     </SidebarProvider>

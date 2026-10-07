@@ -37,6 +37,7 @@ import ClassicHud from "./pages/ClassicHud.tsx";
 import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
+import TctmLive from "./pages/tpmr/TctmLive.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
 import Offsides from "./pages/Offsides.tsx";
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/tpmr/dual-trend/gold-silver-miners" element={<DualTrendPage slug="gold-silver-miners" />} />
             <Route path="/tpmr/dual-trend/large-cap-cyclical" element={<DualTrendPage slug="large-cap-cyclical" />} />
             <Route path="/tpmr/dual-trend/thematic" element={<DualTrendPage slug="thematic" />} />
+            <Route path="/tpmr/tctm-live" element={<TctmLive />} />
             <Route path="/tpmr/tctm/risk-off" element={<TctmGuide slug="risk-off" />} />
             <Route path="/tpmr/tctm/capitulation" element={<TctmGuide slug="capitulation" />} />
             <Route path="/tpmr/tctm/bottom" element={<TctmGuide slug="bottom" />} />
