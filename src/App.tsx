@@ -38,6 +38,7 @@ import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
 import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import TctmLive from "./pages/tpmr/TctmLive.tsx";
+import TctmGlossary from "./pages/tpmr/TctmGlossary.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
 import Offsides from "./pages/Offsides.tsx";
@@ -111,6 +112,7 @@ const App = () => (
             <Route path="/tpmr/tctm/bottom" element={<TctmGuide slug="bottom" />} />
             <Route path="/tpmr/tctm/thrust" element={<TctmGuide slug="thrust" />} />
             <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
+            <Route path="/tpmr/tctm/glossary" element={<TctmGlossary />} />
             <Route path="/eurex" element={<EurexPositioning />} />
             <Route path="/offsides" element={<Offsides />} />
             <Route path="/tp/breadth" element={<TpBreadth />} />

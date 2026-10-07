@@ -146,6 +146,7 @@ const NAV: Group[] = [
       { title: "Bottom Guide", url: "/tpmr/tctm/bottom", access: "tp" },
       { title: "Thrust Guide", url: "/tpmr/tctm/thrust", access: "tp" },
       { title: "Confirmation Guide", url: "/tpmr/tctm/confirmation", access: "tp" },
+      { title: "Glossary", url: "/tpmr/tctm/glossary", access: "tp" },
     ],
   },
   {
