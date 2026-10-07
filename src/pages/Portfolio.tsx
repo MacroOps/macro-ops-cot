@@ -70,36 +70,33 @@ function BarList({
   );
 }
 
+const POS_COLS =
+  "grid grid-cols-[minmax(0,3fr)_minmax(8rem,1.4fr)_minmax(6.5rem,1fr)] gap-x-4 items-center px-3";
+
 function PosTable({ rows }: { rows: PublicPosition[] }) {
   if (!rows.length) {
     return <div className="px-3 py-4 text-[11px] text-muted-foreground">No positions</div>;
   }
   return (
-    <table className="w-full text-xs">
-      <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
-        <tr>
-          <th className="text-left py-1.5 px-3 font-medium">Name</th>
-          <th className="text-left py-1.5 px-3 font-medium">Ticker</th>
-          <th className="text-right py-1.5 px-3 font-medium">Notional</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((p) => (
-          <tr key={`${p.ticker}-${p.name}`} className="border-t border-border/50">
-            <td className="py-1.5 px-3">{p.name}</td>
-            <td className="py-1.5 px-3 font-mono">
-              {p.ticker}
-              {p.isShort && (
-                <span className="ml-1.5 text-[9px] uppercase tracking-wider text-destructive">Short</span>
-              )}
-            </td>
-            <td className={`py-1.5 px-3 text-right font-mono tabular-nums ${tone(p.notional)}`}>
-              {fp(p.notional)}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="text-xs pb-2">
+      <div className={`${POS_COLS} py-1.5 border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground`}>
+        <div>Name</div>
+        <div>Ticker</div>
+        <div className="text-right">Notional</div>
+      </div>
+      {rows.map((p) => (
+        <div key={`${p.ticker}-${p.name}`} className={`${POS_COLS} py-1.5 border-b border-border/50 last:border-b-0`}>
+          <div className="pr-2 leading-snug">{p.name}</div>
+          <div className="font-mono whitespace-nowrap">
+            {p.ticker}
+            {p.isShort && (
+              <span className="ml-1.5 text-[9px] uppercase tracking-wider text-destructive">Short</span>
+            )}
+          </div>
+          <div className={`font-mono tabular-nums text-right ${tone(p.notional)}`}>{fp(p.notional)}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -165,7 +162,7 @@ export default function Portfolio() {
   const latestStat = ytdSeries[ytdSeries.length - 1] ?? stats[stats.length - 1];
 
   return (
-    <AppShell title="Macro Portfolio">
+    <AppShell title="Macro Portfolio" hideScrubber>
       <PageHeader
         eyebrow="Macro Ops Book"
         title="Macro Portfolio"
@@ -239,19 +236,21 @@ export default function Portfolio() {
             </div>
           </div>
 
-          <div className="px-3 pb-3 space-y-3">
+          <div className="px-3 pb-16 space-y-3">
             <div className="hud-panel">
-              <div className="px-3 py-2 border-b border-border flex justify-between text-[11px] uppercase tracking-wider">
+              <div className={`${POS_COLS} py-2 border-b border-border text-[11px] uppercase tracking-wider`}>
                 <span className="font-semibold">Futures, Bonds & FX</span>
-                <span className="text-muted-foreground font-mono">{fp(s.futures)}</span>
+                <span />
+                <span className="text-muted-foreground font-mono text-right">{fp(s.futures)}</span>
               </div>
               <PosTable rows={port.futures} />
             </div>
 
             <div className="hud-panel">
-              <div className="px-3 py-2 border-b border-border flex justify-between items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-semibold uppercase tracking-wider">Equities</span>
-                <span className="text-[11px] text-muted-foreground font-mono">{fp(s.equity)}</span>
+              <div className={`${POS_COLS} py-2 border-b border-border text-[11px] uppercase tracking-wider`}>
+                <span className="font-semibold">Equities</span>
+                <span />
+                <span className="text-muted-foreground font-mono text-right">{fp(s.equity)}</span>
               </div>
               <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
                 {eqPills.map((f) => (

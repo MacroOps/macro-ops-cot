@@ -22,6 +22,7 @@ const ROUTES = [
   { label: "News", to: "/news", icon: Newspaper },
   { label: "Macro Portfolio", to: "/portfolio", icon: LineChart },
   { label: "Classic HUD", to: "/classic-hud", icon: LayoutDashboard },
+  { label: "Dual Trend Portfolio", to: "/tp/dean-portfolio", icon: LayoutDashboard },
 ];
 
 const ASKS = [

@@ -2,9 +2,8 @@ import { type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { useTheme } from "./ThemeProvider";
 import { PaywallGate } from "./PaywallGate";
-import { Moon, Sun, Circle } from "lucide-react";
+import { Circle } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
 import { AlertsInbox } from "./AlertsInbox";
 import { GlobalScrubber } from "./GlobalScrubber";
@@ -28,8 +27,6 @@ function ShellHeader({
   showAlerts: boolean;
   viewAsHint?: ViewAsMode | null;
 }) {
-  const { theme, toggle } = useTheme();
-
   return (
     <header className="h-11 flex items-center justify-between border-b border-border bg-surface/40 px-3">
       <div className="flex items-center gap-3 min-w-0">
@@ -50,16 +47,12 @@ function ShellHeader({
           <Circle className="h-2 w-2 fill-success text-success" />
           <span>Live</span>
         </div>
-        <div className="hidden md:block h-4 w-px bg-border" />
-        {showAlerts && <AlertsInbox />}
-        <button
-          onClick={toggle}
-          className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
-          aria-label="Toggle theme"
-        >
-          {theme === "light" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-          <span className="hidden sm:inline">{theme === "light" ? "Light" : "Dark"}</span>
-        </button>
+        {showAlerts && (
+          <>
+            <div className="hidden md:block h-4 w-px bg-border" />
+            <AlertsInbox />
+          </>
+        )}
       </div>
     </header>
   );

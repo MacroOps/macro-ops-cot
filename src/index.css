@@ -160,6 +160,22 @@
     @apply border-border;
   }
 
+  /* Tailwind preflight + `* { border }` flatten Outseta embed buttons/fields. */
+  .o--Reset--scope,
+  .o--Reset--scope * {
+    border-color: revert-layer;
+  }
+
+  .o--Reset--scope :where(button, [type="button"], [type="submit"], input, select, textarea) {
+    background-color: revert-layer;
+    background-image: revert-layer;
+    color: revert-layer;
+    border: revert-layer;
+    padding: revert-layer;
+    font: revert-layer;
+    box-shadow: revert-layer;
+  }
+
   html, body, #root {
     height: 100%;
   }

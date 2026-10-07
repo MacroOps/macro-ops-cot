@@ -8,6 +8,8 @@ import {
   FlaskConical,
   Settings,
   LogOut,
+  Moon,
+  Sun,
   LayoutDashboard,
   Waves,
   Gauge,
@@ -27,6 +29,7 @@ import {
   Telescope,
   Flame,
   Users,
+  Briefcase,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import {
@@ -49,6 +52,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useOutseta } from "@outseta/react";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { signOutOfOutseta } from "@/lib/outseta/session";
+import { useTheme } from "@/components/hud/ThemeProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { canAccessTier, type AccessFlags, type AccessTier, type ViewAsMode } from "@/lib/outseta/entitlements";
 
 type Leaf = { title: string; url: string; access?: AccessTier };
@@ -110,6 +121,7 @@ const NAV: Group[] = [
       { title: "Position Sizing", url: "/tools/position-sizing", access: "collective" },
     ],
   },
+  { title: "Dual Trend Portfolio", icon: Briefcase, url: "/tp/dean-portfolio", access: "tp" },
   { title: "TPMR Overview", icon: Compass, url: "/tpmr/market-overview", access: "staff" },
   {
     title: "Dual Trend",
@@ -267,6 +279,7 @@ function ViewAsControl({ collapsed }: { collapsed: boolean }) {
 
 function AccountFooter({ collapsed }: { collapsed: boolean }) {
   const { user, openProfile, logout } = useOutseta();
+  const { theme, toggle } = useTheme();
   const name = user?.FullName || user?.FirstName || user?.Email?.split("@")[0] || "Account";
   const initial = (name.trim()[0] || "U").toUpperCase();
 
@@ -274,7 +287,7 @@ function AccountFooter({ collapsed }: { collapsed: boolean }) {
     <div className={`flex items-center gap-0.5 ${collapsed ? "flex-col" : ""}`}>
       <button
         type="button"
-        onClick={() => openProfile({ tab: "profile" })}
+        onClick={() => openProfile()}
         className="flex flex-1 min-w-0 items-center gap-2 rounded-sm px-1.5 py-1.5 hover:bg-sidebar-accent text-left"
         aria-label="Profile"
         title="Profile"
@@ -286,23 +299,29 @@ function AccountFooter({ collapsed }: { collapsed: boolean }) {
           <span className="truncate text-xs text-sidebar-foreground">{name}</span>
         )}
       </button>
-      <button
-        type="button"
-        className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-        aria-label="Settings"
-        title="Settings (coming soon)"
-      >
-        <Settings className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => void signOutOfOutseta(logout)}
-        className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-        aria-label="Sign out"
-        title="Sign out"
-      >
-        <LogOut className="h-4 w-4" />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="end" className="w-44">
+          <DropdownMenuItem className="gap-2 text-xs" onSelect={() => toggle()}>
+            {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+            <span>{theme === "light" ? "Dark mode" : "Light mode"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2 text-xs" onSelect={() => void signOutOfOutseta(logout)}>
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
