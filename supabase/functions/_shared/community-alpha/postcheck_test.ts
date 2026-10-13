@@ -40,3 +40,10 @@ Deno.test("same author, different first instrument both kept", () => {
     { author_id: "U1", tickers: "ZC, ZS", source_ts: "1" }, { author_id: "U1", tickers: "ZS, ZC", source_ts: "2" },
   ]).keep, [0, 1]);
 });
+
+import { parseIdeasList } from "./extract.ts";
+Deno.test("ideas sent as JSON text are accepted; broken text throws", () => {
+  assertEquals(parseIdeasList('[{"a":1}]').length, 1);
+  assertEquals(parseIdeasList(undefined), []);
+  assertThrows(() => parseIdeasList('[{"a":1},'));
+});

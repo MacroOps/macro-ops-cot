@@ -5,12 +5,13 @@
 //   the call that closes a scheduled run triggers ca-finalize once.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { DateTime } from "npm:luxon@3";
+import { ideaKey } from "../_shared/community-alpha/merge.ts";
 import { CA_CHANNELS, CA_CREDIT_CAP_PER_RUN, CA_TEAM_IDS, caCredits, channelById, parsePrivateList } from "../_shared/community-alpha/config.ts";
 import { filterMessages, type SlackMessage, summarizeAttachments } from "../_shared/community-alpha/filters.ts";
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { CA_ZONE, dueWindows, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { checkDirections, decideDirection, extractIdeas, toRawIdea, type UsageHook } from "../_shared/community-alpha/extract.ts";
-import { mergeSameAuthor } from "../_shared/community-alpha/postcheck.ts";
+import { mergeSameAuthor, selectSecondLook } from "../_shared/community-alpha/postcheck.ts";
 import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 const TOKEN_SHA256 = "4ccd1aeb0a9b6167f799418f24982c135238ab31f2241cdeee712b38b1c6965f";
@@ -64,7 +65,8 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
   );
   const names = await resolveNames(slackToken, [...new Set([...kept, ...context].map((m) => m.user!))]);
   let ideas: unknown[] = [], rejected: unknown[] = [], review: unknown[] = [];
-  let tacticalDropped = 0, inTok = 0, outTok = 0, chkIn = 0, chkOut = 0;
+  let tacticalDropped = 0, inTok = 0, outTok = 0, chkIn = 0, chkOut = 0, slIn = 0, slOut = 0;
+  let secondLook: { sent: number; added: number; failed: boolean } = { sent: 0, added: 0, failed: false };
   if (kept.length) {
     await guard.beforeCall();
     const r = await extractIdeas(apiKey, channel, kept, names, "forced_tool", undefined, context, guard.onUsage);
@@ -76,11 +78,44 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
     // Same author + same first instrument in this channel/week: keep only the latest message's idea.
-    {
+    const applyMerge = () => {
       const mg = mergeSameAuthor(v.ideas.map((idea, i) => ({ author_id: idea.author_id, tickers: idea.tickers, source_ts: v.review[i].source_ts })));
       for (const i of mg.dropped) rejected.push({ source_ts: v.review[i].source_ts, reason: "same_author_merged", tickers: v.ideas[i].tickers, direction: v.ideas[i].direction });
       v.ideas = mg.keep.map((i) => v.ideas[i]);
       v.review = mg.keep.map((i) => v.review[i]);
+    };
+    applyMerge();
+    // Second look: messages that produced no idea go back with the same rules. Failure keeps pass-1 ideas.
+    {
+      const usedTs = new Set(v.review.map((r) => r.source_ts));
+      const sl = selectSecondLook(kept, usedTs);
+      const sent = sl.candidates.length;
+      let added = 0, failed = false;
+      if (sent) {
+        await guard.beforeCall();
+        try {
+          const ctx2 = [...context, ...sl.mates];
+          const r2 = await extractIdeas(apiKey, channel, sl.candidates, names, "forced_tool", undefined, ctx2, guard.onUsage, true);
+          inTok += r2.input_tokens; outTok += r2.output_tokens; slIn = r2.input_tokens; slOut = r2.output_tokens;
+          const v2 = validateIdeas(r2.ideas.map(toRawIdea), {
+            channel, fetched, excludedIds: excluded, names, contextTs: new Set([...context.map((m) => m.ts), ...usedTs]),
+          });
+          rejected.push(...v2.rejected.map((x) => ({ ...x, second_look: true })), ...v2.warnings.map((x) => ({ ...x, reason: "warning", second_look: true })));
+          const have = new Set(v.ideas.map(ideaKey));
+          v2.ideas.forEach((idea, i) => {
+            if (have.has(ideaKey(idea))) return;
+            have.add(ideaKey(idea));
+            v.ideas.push(idea); v.review.push({ ...v2.review[i], second_look: true } as any);
+          });
+          applyMerge();
+          added = v.review.filter((r: any) => r.second_look).length;
+        } catch (e) {
+          if (e instanceof CreditCapError) throw e;
+          failed = true;
+          rejected.push({ source_ts: "", reason: "warning", warning: "second_look_failed", error: String((e as Error)?.message ?? e).slice(0, 200) });
+        }
+      }
+      secondLook = { sent, added, failed };
     }
     // Second pass: model reports the author's view; code decides.
     if (v.ideas.length) {
@@ -134,7 +169,8 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     status: "done", error: null, finished_at: new Date().toISOString(),
     messages_fetched: all.length - fr.duplicates, team_excluded: fr.teamExcluded,
     tactical_author_excluded: fr.privateExcluded, tactical_dropped: tacticalDropped,
-    ideas, rejected, review, input_tokens: inTok, output_tokens: outTok,
+    ideas, rejected: [...rejected, { source_ts: "", reason: "second_look_stats", ...secondLook, input_tokens: slIn, output_tokens: slOut }],
+    review, input_tokens: inTok, output_tokens: outTok,
     check_input_tokens: chkIn, check_output_tokens: chkOut,
   };
 }
