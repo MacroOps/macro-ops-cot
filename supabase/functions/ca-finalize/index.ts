@@ -54,8 +54,10 @@ export function buildText(weeks: WeekOut[], staging = mode() === "staging"): str
     for (const w of weeks) lines.push(`• *${fmtDay(w.end)}* - ${w.skipped ? `skipped (${w.skipped})` : `${w.ideas} ideas`}`);
   }
   for (const w of weeks) {
-    const other = w.failed.filter((c) => !w.creditCapped.includes(c));
+    const dcf = w.checkFailed ?? [];
+    const other = w.failed.filter((c) => !w.creditCapped.includes(c) && !dcf.includes(c));
     if (w.creditCapped.length) lines.push(`:warning: ${fmtDay(w.end)}: credit cap of ${CA_CREDIT_CAP_PER_RUN} credits reached; ${w.creditCapped.join(", ")} not processed; previous ideas kept for those channels.`);
+    if (dcf.length) lines.push(`:warning: ${fmtDay(w.end)}: direction check failed for ${dcf.join(", ")}; previous ideas kept for those channels.`);
     if (other.length) lines.push(`:warning: ${fmtDay(w.end)}: ${other.join(", ")} failed; previous ideas kept for those channels.`);
     if (w.capDropped) lines.push(`:warning: ${fmtDay(w.end)}: ${w.capDropped} ideas dropped by the 50-idea cap.`);
   }

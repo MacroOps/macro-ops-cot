@@ -10,6 +10,7 @@ import { filterMessages, type SlackMessage, summarizeAttachments } from "../_sha
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { CA_ZONE, dueWindows, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { checkDirections, decideDirection, extractIdeas, toRawIdea, type UsageHook } from "../_shared/community-alpha/extract.ts";
+import { mergeSameAuthor } from "../_shared/community-alpha/postcheck.ts";
 import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 const TOKEN_SHA256 = "4ccd1aeb0a9b6167f799418f24982c135238ab31f2241cdeee712b38b1c6965f";
@@ -139,6 +140,7 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
 }
 
 class CreditCapError extends Error {}
+class DirectionCheckFailed extends Error {}
 
 /** Per-run credit guard: checked before every AI call; every call's usage is recorded, even on failure. */
 function creditGuard(sb: ReturnType<typeof db>, runId: string) {
@@ -171,6 +173,10 @@ async function work(token: string, hops: number) {
       await sb.from("community_alpha_tasks").update({ status: "failed", error: "credit_cap", started_at: null, finished_at: now })
         .eq("run_id", task.run_id).or(`id.eq.${task.id},status.eq.pending`);
       console.error(`[ca-worker] run ${task.run_id} reached the credit cap`);
+    } else if (e instanceof DirectionCheckFailed) {
+      // No attempts-based retry: the check already retried once.
+      await sb.from("community_alpha_tasks").update({ status: "failed", error: "direction_check_failed", started_at: null, finished_at: new Date().toISOString() }).eq("id", task.id);
+      console.error(`[ca-worker] task ${task.id} direction_check_failed: ${(e as Error).message}`);
     } else {
       const msg = String((e as Error)?.message ?? e).slice(0, 500);
       const final = task.attempts >= MAX_ATTEMPTS;
