@@ -235,6 +235,8 @@ async function readSse(res: Response, onEvent: (ev: any) => void) {
   }
 }
 
+export const SECOND_LOOK_LINE = "These messages produced no idea in a first pass. Using the same rules, return only ideas that were missed. Return none if there are none. Messages marked context_only are background and can't be a source.";
+
 export async function extractIdeas(
   apiKey: string,
   channel: CaChannel,
@@ -244,12 +246,13 @@ export async function extractIdeas(
   model: string = CA_MODEL,
   contextParents: SlackMessage[] = [],
   onUsage?: UsageHook,
+  secondLook = false,
 ): Promise<ExtractResult> {
   const body: Record<string, unknown> = {
     model,
     max_tokens: 16000,
     stream: true,
-    system: buildPrompt(channel),
+    system: buildPrompt(channel) + (secondLook ? "\n\n" + SECOND_LOOK_LINE : ""),
     messages: [{ role: "user", content: messagesPayload(msgs, names, contextParents) }],
   };
   if (method === "forced_tool") {

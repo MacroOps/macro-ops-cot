@@ -48,3 +48,15 @@ export function mergeSameAuthor(
   items.forEach((_, i) => (keepSet.has(i) ? keep : dropped).push(i));
   return { keep, dropped };
 }
+
+/**
+ * Second look: messages that produced no kept idea are candidates; other messages in the
+ * candidates' threads (first-pass sources) go along as context only.
+ */
+export function selectSecondLook<M extends { ts: string; thread_ts?: string }>(kept: M[], usedTs: ReadonlySet<string>) {
+  const rootOf = (m: M) => (m.thread_ts && m.thread_ts !== m.ts ? m.thread_ts : m.ts);
+  const candidates = kept.filter((m) => !usedTs.has(m.ts));
+  const roots = new Set(candidates.map(rootOf));
+  const mates = kept.filter((m) => usedTs.has(m.ts) && roots.has(rootOf(m)));
+  return { candidates, mates };
+}
