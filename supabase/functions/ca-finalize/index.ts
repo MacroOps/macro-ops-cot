@@ -26,7 +26,7 @@ const fmtDay = (iso: string) => pt(iso).toFormat("ccc LLL d");          // Fri S
 const fmtDayYear = (iso: string) => pt(iso).toFormat("ccc LLL d, yyyy"); // Fri Sep 25, 2026
 const fmtWin = (iso: string) => pt(iso).toFormat("ccc LLL d, h:mm a");  // Fri Sep 18, 2:00 PM
 
-interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; creditCapped: string[]; skipped?: string; start: string; end: string }
+interface WeekOut { week: string; ideas: number; channels: number; failed: string[]; capDropped: number; creditCapped: string[]; checkFailed?: string[]; skipped?: string; start: string; end: string }
 
 async function sendSlack(text: string) {
   const token = Deno.env.get("CA_SLACK_BOT_TOKEN")!;
@@ -116,7 +116,8 @@ async function finalize(runId: string, forceArchive: boolean, noDm = false) {
     const up = await sb.from(table).upsert(row, { onConflict: "week_date" });
     if (up.error) throw new Error(up.error.message);
     const creditCapped = wt.filter((t) => t.error === "credit_cap").map((t) => channelById(t.channel_id)?.name ?? t.channel_id);
-    weeks.push({ week: a, ideas: m.ideas.length, channels: row.channels_scanned, failed, creditCapped, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
+    const checkFailed = wt.filter((t) => t.error === "direction_check_failed").map((t) => channelById(t.channel_id)?.name ?? t.channel_id);
+    weeks.push({ week: a, ideas: m.ideas.length, channels: row.channels_scanned, failed, creditCapped, checkFailed, capDropped: m.capDropped, start: w.startIso, end: w.endIso });
   }
 
   const credits = Math.round(Number(run.ai_credits ?? caCredits(inTok, outTok)) * 1000) / 1000;
