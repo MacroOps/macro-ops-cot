@@ -89,7 +89,8 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     {
       const usedTs = new Set(v.review.map((r) => r.source_ts));
       const sl = selectSecondLook(kept, usedTs);
-      const sent = sl.candidates.length, added = 0, failed = false;
+      const sent = sl.candidates.length;
+      let added = 0, failed = false;
       if (sent) {
         await guard.beforeCall();
         try {
