@@ -10,6 +10,7 @@ import { filterMessages, type SlackMessage, summarizeAttachments } from "../_sha
 import { fetchChannelWindow, slackCall } from "../_shared/community-alpha/slack.ts";
 import { CA_ZONE, dueWindows, windowForWeekDate } from "../_shared/community-alpha/window.ts";
 import { checkDirections, decideDirection, extractIdeas, toRawIdea, type UsageHook } from "../_shared/community-alpha/extract.ts";
+import { mergeSameAuthor } from "../_shared/community-alpha/postcheck.ts";
 import { quoteFoundLoosely, validateIdeas } from "../_shared/community-alpha/validate.ts";
 
 const TOKEN_SHA256 = "4ccd1aeb0a9b6167f799418f24982c135238ab31f2241cdeee712b38b1c6965f";
@@ -74,6 +75,13 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     });
     rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
+    // Same author + same first instrument in this channel/week: keep only the latest message's idea.
+    {
+      const mg = mergeSameAuthor(v.ideas.map((idea, i) => ({ author_id: idea.author_id, tickers: idea.tickers, source_ts: v.review[i].source_ts })));
+      for (const i of mg.dropped) rejected.push({ source_ts: v.review[i].source_ts, reason: "same_author_merged", tickers: v.ideas[i].tickers, direction: v.ideas[i].direction });
+      v.ideas = mg.keep.map((i) => v.ideas[i]);
+      v.review = mg.keep.map((i) => v.review[i]);
+    }
     // Second pass: model reports the author's view; code decides.
     if (v.ideas.length) {
       const ctxMap = new Map(context.map((m) => [m.ts, m]));
@@ -96,8 +104,19 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
           })),
         };
       });
-      await guard.beforeCall();
-      const c = await checkDirections(apiKey, channel, items, guard.onUsage);
+      // One retry; a second failure fails the task with direction_check_failed (no pass-through).
+      let c;
+      let lastErr = "";
+      for (let attempt = 0; attempt < 2 && !c; attempt++) {
+        await guard.beforeCall();
+        try { c = await checkDirections(apiKey, channel, items, guard.onUsage); }
+        catch (e) {
+          if (e instanceof CreditCapError) throw e;
+          lastErr = String((e as Error)?.message ?? e).slice(0, 200);
+          console.error(`[ca-worker] direction check attempt ${attempt + 1} failed: ${lastErr}`);
+        }
+      }
+      if (!c) throw new DirectionCheckFailed(lastErr);
       chkIn = c.input_tokens; chkOut = c.output_tokens;
       v.ideas.forEach((idea, i) => {
         const a = c.answers.get(i) ?? { reason: "no answer", author_view: "unclear", quote: "" };
@@ -121,6 +140,7 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
 }
 
 class CreditCapError extends Error {}
+class DirectionCheckFailed extends Error {}
 
 /** Per-run credit guard: checked before every AI call; every call's usage is recorded, even on failure. */
 function creditGuard(sb: ReturnType<typeof db>, runId: string) {
@@ -153,6 +173,10 @@ async function work(token: string, hops: number) {
       await sb.from("community_alpha_tasks").update({ status: "failed", error: "credit_cap", started_at: null, finished_at: now })
         .eq("run_id", task.run_id).or(`id.eq.${task.id},status.eq.pending`);
       console.error(`[ca-worker] run ${task.run_id} reached the credit cap`);
+    } else if (e instanceof DirectionCheckFailed) {
+      // No attempts-based retry: the check already retried once.
+      await sb.from("community_alpha_tasks").update({ status: "failed", error: "direction_check_failed", started_at: null, finished_at: new Date().toISOString() }).eq("id", task.id);
+      console.error(`[ca-worker] task ${task.id} direction_check_failed: ${(e as Error).message}`);
     } else {
       const msg = String((e as Error)?.message ?? e).slice(0, 500);
       const final = task.attempts >= MAX_ATTEMPTS;
