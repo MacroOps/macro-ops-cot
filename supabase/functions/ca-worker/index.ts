@@ -76,11 +76,45 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
     // Same author + same first instrument in this channel/week: keep only the latest message's idea.
-    {
+    const applyMerge = () => {
       const mg = mergeSameAuthor(v.ideas.map((idea, i) => ({ author_id: idea.author_id, tickers: idea.tickers, source_ts: v.review[i].source_ts })));
       for (const i of mg.dropped) rejected.push({ source_ts: v.review[i].source_ts, reason: "same_author_merged", tickers: v.ideas[i].tickers, direction: v.ideas[i].direction });
       v.ideas = mg.keep.map((i) => v.ideas[i]);
       v.review = mg.keep.map((i) => v.review[i]);
+    };
+    applyMerge();
+    // Second look: messages that produced no idea go back with the same rules. Failure keeps pass-1 ideas.
+    {
+      const usedTs = new Set(v.review.map((r) => r.source_ts));
+      const sl = selectSecondLook(kept, usedTs);
+      let sent = sl.candidates.length, added = 0, failed = false;
+      if (sent) {
+        await guard.beforeCall();
+        try {
+          const ctx2 = [...context, ...sl.mates];
+          const r2 = await extractIdeas(apiKey, channel, sl.candidates, names, "forced_tool", undefined, ctx2, guard.onUsage, true);
+          inTok += r2.input_tokens; outTok += r2.output_tokens; slIn = r2.input_tokens; slOut = r2.output_tokens;
+          const v2 = validateIdeas(r2.ideas.map(toRawIdea), {
+            channel, fetched, excludedIds: excluded, names, contextTs: new Set([...context.map((m) => m.ts), ...usedTs]),
+          });
+          rejected.push(...v2.rejected.map((x) => ({ ...x, second_look: true })), ...v2.warnings.map((x) => ({ ...x, reason: "warning", second_look: true })));
+          const have = new Set(v.ideas.map(ideaKey));
+          v2.ideas.forEach((idea, i) => {
+            if (have.has(ideaKey(idea))) return;
+            have.add(ideaKey(idea));
+            v.ideas.push(idea); v.review.push({ ...v2.review[i], second_look: true } as any);
+          });
+          const before = v.ideas.length - v2.ideas.length;
+          applyMerge();
+          added = v.review.filter((r: any) => r.second_look).length;
+          void before;
+        } catch (e) {
+          if (e instanceof CreditCapError) throw e;
+          failed = true;
+          rejected.push({ source_ts: "", reason: "warning", warning: "second_look_failed", error: String((e as Error)?.message ?? e).slice(0, 200) });
+        }
+      }
+      secondLook = { sent, added, failed };
     }
     // Second pass: model reports the author's view; code decides.
     if (v.ideas.length) {
