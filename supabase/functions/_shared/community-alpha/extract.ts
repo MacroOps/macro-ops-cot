@@ -298,3 +298,13 @@ export async function extractIdeas(
     runId,
   };
 }
+
+/** The model sometimes sends the ideas list as JSON text; accept that, reject anything else. */
+export function parseIdeasList(v: unknown): unknown[] {
+  if (v === undefined || v === null) return [];
+  if (typeof v === "string") {
+    try { v = JSON.parse(v); } catch { throw new AiError(502, "ideas is unparseable text"); }
+  }
+  if (!Array.isArray(v)) throw new AiError(502, "ideas is not a list");
+  return v;
+}
