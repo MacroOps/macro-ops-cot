@@ -290,7 +290,7 @@ export async function extractIdeas(
   if (!raw) throw new AiError(502, `empty output (stop_reason=${stop})`);
   const parsed = JSON.parse(raw);
   return {
-    ideas: parseIdeasList(parsed.ideas),
+    ideas: parseIdeasList(parsed.ideas) as AiIdea[],
     tactical_dropped: Number(parsed.tactical_dropped ?? 0),
     input_tokens: inTok,
     output_tokens: outTok,
