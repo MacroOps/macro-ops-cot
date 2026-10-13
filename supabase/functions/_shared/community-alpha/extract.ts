@@ -1,5 +1,6 @@
 // AI extraction via the Lovable AI Gateway Messages endpoint (Anthropic format).
 // Forced tool = structured output. Streams the response. Never logs prompt content.
+import { parseCheckAnswers } from "./postcheck.ts";
 import type { CaChannel } from "./config.ts";
 import { type SlackMessage, summarizeAttachments } from "./filters.ts";
 import type { RawIdea } from "./validate.ts";
