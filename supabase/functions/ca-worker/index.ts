@@ -74,6 +74,13 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
     });
     rejected = [...v.rejected, ...v.warnings.map((x) => ({ ...x, reason: "warning" }))];
     tacticalDropped = r.tactical_dropped; inTok = r.input_tokens; outTok = r.output_tokens;
+    // Same author + same first instrument in this channel/week: keep only the latest message's idea.
+    {
+      const mg = mergeSameAuthor(v.ideas.map((idea, i) => ({ author_id: idea.author_id, tickers: idea.tickers, source_ts: v.review[i].source_ts })));
+      for (const i of mg.dropped) rejected.push({ source_ts: v.review[i].source_ts, reason: "same_author_merged", tickers: v.ideas[i].tickers, direction: v.ideas[i].direction });
+      v.ideas = mg.keep.map((i) => v.ideas[i]);
+      v.review = mg.keep.map((i) => v.review[i]);
+    }
     // Second pass: model reports the author's view; code decides.
     if (v.ideas.length) {
       const ctxMap = new Map(context.map((m) => [m.ts, m]));
@@ -96,8 +103,19 @@ async function processTask(task: any, guard: { beforeCall: () => Promise<void>; 
           })),
         };
       });
-      await guard.beforeCall();
-      const c = await checkDirections(apiKey, channel, items, guard.onUsage);
+      // One retry; a second failure fails the task with direction_check_failed (no pass-through).
+      let c;
+      let lastErr = "";
+      for (let attempt = 0; attempt < 2 && !c; attempt++) {
+        await guard.beforeCall();
+        try { c = await checkDirections(apiKey, channel, items, guard.onUsage); }
+        catch (e) {
+          if (e instanceof CreditCapError) throw e;
+          lastErr = String((e as Error)?.message ?? e).slice(0, 200);
+          console.error(`[ca-worker] direction check attempt ${attempt + 1} failed: ${lastErr}`);
+        }
+      }
+      if (!c) throw new DirectionCheckFailed(lastErr);
       chkIn = c.input_tokens; chkOut = c.output_tokens;
       v.ideas.forEach((idea, i) => {
         const a = c.answers.get(i) ?? { reason: "no answer", author_view: "unclear", quote: "" };

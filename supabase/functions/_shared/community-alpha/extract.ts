@@ -173,10 +173,8 @@ export async function checkDirections(
     apiKey, model, CHECK_PROMPT, JSON.stringify({ channel: channel.name, items }), CHECK_TOOL,
     "Record the direction checks.", CHECK_SCHEMA, 6000, (i, o) => onUsage?.("check", i, o) ?? Promise.resolve(),
   );
-  const answers = new Map<number, CheckAnswer>();
-  for (const c of r.parsed.checks ?? []) {
-    answers.set(Number(c.id), { reason: String(c.reason ?? ""), author_view: String(c.author_view ?? "unclear"), quote: String(c.quote ?? "") });
-  }
+  // Strict: every idea must get exactly one valid answer, else DirectionCheckError.
+  const answers = parseCheckAnswers(r.parsed, items.length);
   return { answers, input_tokens: r.inTok, output_tokens: r.outTok };
 }
 
