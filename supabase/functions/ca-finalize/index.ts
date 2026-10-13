@@ -13,7 +13,7 @@ import { slackCall } from "../_shared/community-alpha/slack.ts";
 
 const TOKEN_SHA256 = "4ccd1aeb0a9b6167f799418f24982c135238ab31f2241cdeee712b38b1c6965f";
 const STAGING_RECIPIENTS = ["U03CSJ4QPFS", "UUSBEJG9K"];
-const PAGE_URL = "https://macro-ops-cot.lovable.app/community-alpha";
+const PAGE_URL = "https://app.foundationmacro.com/community-alpha";
 
 async function sha256(s: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
