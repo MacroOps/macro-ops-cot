@@ -4,8 +4,9 @@
 
 /* Macro HUD Design System — Paper, Ink & Tan
  * Brand spirit from the public Foundation site: warm paper, near-black ink,
- * Hanken Grotesk + Newsreader + IBM Plex Mono, tan accent (#be9173).
+ * Hanken Grotesk + Newsreader, tan accent (#be9173).
  * Dense HUD chrome stays grotesk; display serif is for page titles only.
+ * System ui-monospace is only for <pre>/<code>/<kbd>, not product data.
  * Data semantics (long/short/success) stay green/red. All colors MUST be HSL.
  */
 
@@ -188,10 +189,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  .font-mono {
-    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-      Consolas, "Liberation Mono", "Courier New", monospace;
-    font-feature-settings: "tnum" 1, "zero" 1;
+  pre,
+  code,
+  kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
   }
 }
 
@@ -201,11 +203,11 @@
   }
 
   .hud-label {
-    @apply text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium font-mono;
+    @apply text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium;
   }
 
   .hud-stat {
-    @apply font-mono tabular-nums text-surface-foreground;
+    @apply tabular-nums text-surface-foreground;
   }
 
   .hud-divider {
@@ -280,7 +282,7 @@
     margin-bottom: 0.75rem;
   }
   .hud-section-eyebrow {
-    @apply text-[9px] uppercase tracking-[0.22em] text-accent-deep font-medium font-mono;
+    @apply text-[9px] uppercase tracking-[0.22em] text-accent-deep font-medium;
   }
   .hud-section-title {
     @apply text-[13px] font-semibold uppercase tracking-[0.08em] text-surface-foreground;
@@ -309,6 +311,14 @@
   @keyframes hud-halo {
     0%, 100% { r: 3; opacity: 1; }
     50%      { r: 5; opacity: 0.55; }
+  }
+
+  @keyframes hud-ledger {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+  .animate-hud-ledger {
+    animation: hud-ledger 1.8s ease-in-out infinite;
   }
 }
 

@@ -90,7 +90,7 @@ export function SignalsTape({ limit = 40 }: { limit?: number }) {
           <div className="text-[11px] uppercase tracking-[0.16em] font-semibold text-surface-foreground">
             Signals Tape
           </div>
-          <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
             · {filtered.length}/{all.length} fires · last 14d
           </span>
         </div>
@@ -149,7 +149,7 @@ export function SignalsTape({ limit = 40 }: { limit?: number }) {
                 </div>
                 <div className="text-[10px] text-muted-foreground truncate">{s.detail}</div>
               </div>
-              <span className="text-[10px] font-mono tabular-nums text-muted-foreground shrink-0">
+              <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
                 {timeAgo(s.ts)}
               </span>
               <div className="flex items-center gap-1">
@@ -202,7 +202,7 @@ function FilterChips({
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
-          className={`px-1.5 py-0.5 uppercase tracking-wider font-mono transition-colors ${
+          className={`px-1.5 py-0.5 uppercase tracking-wider transition-colors ${
             value === o.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface-2"
           }`}
         >

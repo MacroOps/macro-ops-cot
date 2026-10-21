@@ -32,10 +32,10 @@ function exportCsv(rows: SpxDualTrendRow[]) {
 }
 
 function Pct({ v, loading }: { v: number | null | undefined; loading: boolean }) {
-  if (loading) return <span className="font-mono tabular-nums">…</span>;
-  if (v === null || v === undefined) return <span className="font-mono tabular-nums">—</span>;
+  if (loading) return <span className="tabular-nums">…</span>;
+  if (v === null || v === undefined) return <span className="tabular-nums">—</span>;
   return (
-    <span className={cn("font-mono tabular-nums", v >= 0 ? "text-success" : "text-destructive")}>
+    <span className={cn("tabular-nums", v >= 0 ? "text-success" : "text-destructive")}>
       {v > 0 ? "+" : ""}{v.toFixed(1)}%
     </span>
   );
@@ -73,11 +73,11 @@ function DetailPanel({
       <div className="p-3 space-y-2 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Trend Level</span>
-          <span className="font-mono tabular-nums">{trend}</span>
+          <span className="tabular-nums">{trend}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Relative Level</span>
-          <span className="font-mono tabular-nums">{relative}</span>
+          <span className="tabular-nums">{relative}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Signal</span>
@@ -94,11 +94,11 @@ function DetailPanel({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Days in Signal</span>
-            <span className="font-mono tabular-nums">{loading ? "…" : days ?? "—"}</span>
+            <span className="tabular-nums">{loading ? "…" : days ?? "—"}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Signal Date</span>
-            <span className="font-mono tabular-nums">{loading ? "…" : signalDate || "—"}</span>
+            <span className="tabular-nums">{loading ? "…" : signalDate || "—"}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Return</span>
@@ -128,18 +128,18 @@ function SpxRow({ r }: { r: SpxDualTrendRow }) {
         <td className="py-1.5 pl-2">
           <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
         </td>
-        <td className="py-1.5 font-mono font-medium">{r.symbol}</td>
+        <td className="py-1.5 font-medium">{r.symbol}</td>
         <td className="py-1.5 truncate max-w-[180px]">{r.name}</td>
         <td className="py-1.5 text-[10px] text-muted-foreground whitespace-nowrap">{r.sectorLabel}</td>
         <td className="py-1.5 text-[10px] text-muted-foreground truncate max-w-[160px]">{r.subIndustry}</td>
         <td className="py-1.5"><LevelBar value={r.ltTrend} /></td>
         <td className="py-1.5"><LevelBar value={r.ltRelative} /></td>
         <td className="py-1.5"><SignalBadge value={r.ltSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
-        <td className="py-1.5 text-right font-mono tabular-nums">{data ? data.lt.days : r.ltDays || "—"}</td>
+        <td className="py-1.5 text-right tabular-nums">{data ? data.lt.days : r.ltDays || "—"}</td>
         <td className="py-1.5"><LevelBar value={r.stTrend} /></td>
         <td className="py-1.5"><LevelBar value={r.stRelative} /></td>
         <td className="py-1.5"><SignalBadge value={r.stSignal.toUpperCase() as "BULLISH" | "BEARISH"} /></td>
-        <td className="py-1.5 text-right font-mono tabular-nums pr-2">{data ? data.st.days : r.stDays || "—"}</td>
+        <td className="py-1.5 text-right tabular-nums pr-2">{data ? data.st.days : r.stDays || "—"}</td>
       </tr>
       {open && (
         <tr className="bg-muted/20 border-t border-border/50">

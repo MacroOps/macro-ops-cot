@@ -10,7 +10,7 @@ export function PaywallGate({ signedIn }: { signedIn: boolean }) {
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
       <div className="max-w-md w-full hud-panel p-6 space-y-4">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-deep">Foundation Research</div>
+        <div className="text-[10px] uppercase tracking-[0.22em] text-accent-deep">Foundation Research</div>
         <h2 className="font-serif font-light text-[22px] tracking-[-0.005em] text-surface-foreground">
           {signedIn ? "Subscription required" : "Log in to continue"}
         </h2>

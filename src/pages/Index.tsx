@@ -105,7 +105,7 @@ const Index = () => {
         <Stat label="Capitulation ≤−75" value={stats.exShort.toString()} accent="short" />
         <Stat label="Crowded 50–74" value={`${stats.crowdedLong}↑ / ${stats.crowdedShort}↓`} />
         <div className="relative">
-          <Stat label="Report" value={data?.reportDate ?? "—"} mono />
+          <Stat label="Report" value={data?.reportDate ?? "—"} />
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -189,12 +189,12 @@ const Index = () => {
   );
 };
 
-function Stat({ label, value, accent, mono }: { label: string; value: string; accent?: "long" | "short"; mono?: boolean }) {
+function Stat({ label, value, accent }: { label: string; value: string; accent?: "long" | "short" }) {
   const color = accent === "long" ? "text-pos-long" : accent === "short" ? "text-pos-short" : "text-surface-foreground";
   return (
     <div className="px-4 py-3 border-r border-border last:border-r-0">
       <div className="hud-label">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${mono ? "font-mono" : ""} ${color}`}>{value}</div>
+      <div className={`mt-1 text-lg font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }
@@ -257,10 +257,10 @@ function Row({ m, idx }: { m: MarketSnapshot; idx: number }) {
 
   return (
     <tr className="border-b border-border/60 hover:bg-surface/40 transition-colors group">
-      <td className="px-3 py-2 text-center font-mono tabular-nums text-[10px] text-muted-foreground">{idx}</td>
+      <td className="px-3 py-2 text-center tabular-nums text-[10px] text-muted-foreground">{idx}</td>
       <td className="px-3 py-2">
         <Link to={`/asset/${m.symbol}`} className="flex flex-col">
-          <span className="font-mono text-[12px] font-semibold text-surface-foreground group-hover:text-primary">
+          <span className="text-[12px] font-semibold text-surface-foreground group-hover:text-primary">
             {m.symbol}
           </span>
           <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m.name}</span>
@@ -269,12 +269,12 @@ function Row({ m, idx }: { m: MarketSnapshot; idx: number }) {
       <td className="px-3 py-2 hidden md:table-cell">
         <span className="hud-label">{m.sector}</span>
       </td>
-      <td className="px-3 py-2 text-right font-mono tabular-nums text-surface-foreground">
+      <td className="px-3 py-2 text-right tabular-nums text-surface-foreground">
         {fmt.format(m.price)}
       </td>
       <td className="px-3 py-2 text-right">
         <span
-          className="inline-flex items-center justify-end gap-0.5 font-mono tabular-nums text-[11px]"
+          className="inline-flex items-center justify-end gap-0.5 tabular-nums text-[11px]"
           style={{ color: up ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
         >
           {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -289,20 +289,20 @@ function Row({ m, idx }: { m: MarketSnapshot; idx: number }) {
       </td>
       <td className="px-3 py-2 hidden lg:table-cell">
         <span
-          className="font-mono text-[10px] tracking-wider"
+          className="text-[10px] tracking-wider"
           style={{ color: tierColor(m.extremityScore) }}
         >
           {bandLabel(m.extremityScore)}
         </span>
       </td>
       <td
-        className="px-3 py-2 text-right font-mono tabular-nums hidden xl:table-cell"
+        className="px-3 py-2 text-right tabular-nums hidden xl:table-cell"
         style={{ color: m.netSpecContracts >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
       >
         {m.netSpecContracts >= 0 ? "+" : ""}{fmtInt.format(m.netSpecContracts)}
       </td>
       <td
-        className="px-3 py-2 text-right font-mono tabular-nums"
+        className="px-3 py-2 text-right tabular-nums"
         style={{ color: m.wowChange >= 0 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
       >
         {m.wowChange >= 0 ? "+" : ""}{fmtInt.format(m.wowChange)}
@@ -339,7 +339,7 @@ function PercentileBar({ value }: { value: number }) {
         <div className="absolute inset-y-0 left-0" style={{ width: `${v}%`, background: fill }} />
       </div>
       <span
-        className="font-mono tabular-nums text-[11px] w-7 text-right"
+        className="tabular-nums text-[11px] w-7 text-right"
         style={{
           color: extreme
             ? (v >= 85 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))")
@@ -381,7 +381,7 @@ function ExtremityBar({ score }: { score: number }) {
         <div className="absolute top-0 bottom-0 w-px opacity-40" style={{ left: "87.5%", background: "hsl(var(--pos-long))" }} />
       </div>
       <span
-        className="font-mono tabular-nums text-[11px] w-9 text-right"
+        className="tabular-nums text-[11px] w-9 text-right"
         style={{ color, fontWeight: Math.abs(s) >= 50 ? 600 : 400 }}
       >
         {s > 0 ? "+" : ""}{s.toFixed(0)}

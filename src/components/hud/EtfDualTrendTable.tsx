@@ -21,7 +21,7 @@ function PctCell({ v, className }: { v?: number | null; className?: string }) {
   return (
     <td
       className={cn(
-        "py-1.5 text-right font-mono tabular-nums",
+        "py-1.5 text-right tabular-nums",
         v == null ? "text-muted-foreground" : v >= 0 ? "text-success" : "text-destructive",
         className,
       )}
@@ -79,17 +79,17 @@ function DetailCard({
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
         <div className="text-muted-foreground">Trend Level</div>
-        <div className="text-right font-mono tabular-nums">{trend}</div>
+        <div className="text-right tabular-nums">{trend}</div>
         <div className="text-muted-foreground">Relative Level</div>
-        <div className="text-right font-mono tabular-nums">{relative}</div>
+        <div className="text-right tabular-nums">{relative}</div>
         <div className="text-muted-foreground">Days in Signal</div>
-        <div className="text-right font-mono tabular-nums">{days}</div>
+        <div className="text-right tabular-nums">{days}</div>
         <div className="text-muted-foreground">Signal Date</div>
-        <div className="text-right font-mono tabular-nums">{date}</div>
+        <div className="text-right tabular-nums">{date}</div>
         <div className="text-muted-foreground">Return</div>
-        <div className={cn("text-right font-mono tabular-nums", ret === null ? "" : ret >= 0 ? "text-success" : "text-destructive")}>{pct(ret)}</div>
+        <div className={cn("text-right tabular-nums", ret === null ? "" : ret >= 0 ? "text-success" : "text-destructive")}>{pct(ret)}</div>
         <div className="text-muted-foreground">Net Return</div>
-        <div className={cn("text-right font-mono tabular-nums", net === null ? "" : net >= 0 ? "text-success" : "text-destructive")}>{pct(net)}</div>
+        <div className={cn("text-right tabular-nums", net === null ? "" : net >= 0 ? "text-success" : "text-destructive")}>{pct(net)}</div>
         <div className="text-muted-foreground">Risk System</div>
         <div className="text-right"><SignalBadge value={badge(risk)} /></div>
       </div>
@@ -105,19 +105,19 @@ function Row({ r }: { r: EtfDualTrendRow }) {
         <td className="py-1.5 pl-2">
           <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
         </td>
-        <td className="py-1.5 font-mono font-medium">{r.etf}</td>
+        <td className="py-1.5 font-medium">{r.etf}</td>
         <td className="py-1.5 truncate max-w-[240px]">{r.name}</td>
         <td className="py-1.5 text-[10px] text-muted-foreground whitespace-nowrap">{r.category}</td>
         <td className="py-1.5"><LevelBar value={r.ltTrend} /></td>
         <td className="py-1.5"><LevelBar value={r.ltRelative} /></td>
         <td className="py-1.5"><SignalBadge value={badge(r.ltSignal)} /></td>
-        <td className="py-1.5 text-right font-mono tabular-nums">{r.ltDays}</td>
+        <td className="py-1.5 text-right tabular-nums">{r.ltDays}</td>
         <PctCell v={r.ltReturn} />
         <PctCell v={r.ltNet} />
         <td className="py-1.5"><LevelBar value={r.stTrend} /></td>
         <td className="py-1.5"><LevelBar value={r.stRelative} /></td>
         <td className="py-1.5"><SignalBadge value={badge(r.stSignal)} /></td>
-        <td className="py-1.5 text-right font-mono tabular-nums">{r.stDays}</td>
+        <td className="py-1.5 text-right tabular-nums">{r.stDays}</td>
         <PctCell v={r.stReturn} />
         <PctCell v={r.stNet} className="pr-2" />
       </tr>
@@ -186,7 +186,7 @@ export function EtfDualTrendTable() {
           ETF Dual Trend · {rows.length} of {data?.rows.length ?? 0}
         </div>
         <div className="flex items-center gap-2">
-          {data?.asOf && <span className="text-[9px] font-mono text-muted-foreground">{data.asOf}</span>}
+          {data?.asOf && <span className="text-[9px] text-muted-foreground">{data.asOf}</span>}
           <select
             value={cat}
             onChange={(e) => setCat(e.target.value)}

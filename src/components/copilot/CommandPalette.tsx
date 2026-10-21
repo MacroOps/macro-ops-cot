@@ -76,7 +76,7 @@ export function CommandPalette() {
             <CommandItem key={r.to} onSelect={() => { setOpen(false); nav(r.to); }}>
               <r.icon className="mr-2 h-3.5 w-3.5" />
               {r.label}
-              <span className="ml-auto text-[10px] font-mono text-muted-foreground">{r.to}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground">{r.to}</span>
             </CommandItem>
           ))}
         </CommandGroup>

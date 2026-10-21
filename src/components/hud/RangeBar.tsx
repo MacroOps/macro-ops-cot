@@ -35,7 +35,7 @@ export function RangeBar({ label = "Time range" }: { label?: string }) {
           <button
             key={p}
             onClick={() => setRange(p)}
-            className={`px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+            className={`px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors ${
               range === p
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-surface-2"
@@ -45,7 +45,7 @@ export function RangeBar({ label = "Time range" }: { label?: string }) {
           </button>
         ))}
       </div>
-      <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-muted-foreground hidden md:inline">
+      <span className="ml-auto text-[9px] uppercase tracking-wider text-muted-foreground hidden md:inline">
         [ / ] step · \ reset
       </span>
     </div>

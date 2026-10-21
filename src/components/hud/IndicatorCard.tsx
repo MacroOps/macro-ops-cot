@@ -175,12 +175,12 @@ function IndicatorCardInner({
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="flex items-baseline gap-1.5">
-              <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
+              <span className={`tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
                 {headerValue.toFixed(1)}
                 {unit}
               </span>
               {!hoverPoint && (
-                <span className={`font-mono tabular-nums text-[9px] ${wowTone}`}>
+                <span className={`tabular-nums text-[9px] ${wowTone}`}>
                   {wow > 0 ? "▲" : wow < 0 ? "▼" : "·"}{Math.abs(wow).toFixed(2)}
                 </span>
               )}
@@ -229,7 +229,7 @@ function IndicatorCardInner({
           <DialogHeader>
             <DialogTitle className="text-[11px] uppercase tracking-[0.16em] flex items-center gap-2">
               {resolvedTitle}
-              <span className="text-muted-foreground font-mono normal-case tracking-normal text-[10px]">
+              <span className="text-muted-foreground normal-case tracking-normal text-[10px]">
                 · {subtitle}
               </span>
             </DialogTitle>
@@ -474,7 +474,7 @@ function StatsStrip({
   if (!stats) return null;
   const cell = "px-3 py-2 border-r border-border last:border-r-0 flex-1 min-w-[80px]";
   return (
-    <div className="flex border border-border rounded-sm bg-surface/30 text-[10px] font-mono">
+    <div className="flex border border-border rounded-sm bg-surface/30 text-[10px] ">
       <Stat label="Last" value={`${stats.last.toFixed(2)}${unit ?? ""}`} cn={cell} />
       <Stat label="Z-score" value={stats.z.toFixed(2)} cn={cell} tone={Math.abs(stats.z) > 1.5 ? "warn" : undefined} />
       <Stat label="Percentile" value={`${stats.pct.toFixed(0)}%`} cn={cell} />
@@ -621,7 +621,7 @@ function AnnotatePopover({ indicatorKey, point }: { indicatorKey: string; point?
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3 space-y-2" align="end">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          New annotation @ <span className="font-mono">{point.t}</span> · <span className="font-mono">{point.v.toFixed(2)}</span>
+          New annotation @ <span className="">{point.t}</span> · <span className="">{point.v.toFixed(2)}</span>
         </div>
         <textarea
           autoFocus
@@ -698,7 +698,7 @@ function PinPopover({ item }: { item: Omit<Parameters<typeof addItem>[1], "id"> 
               className="w-full text-left text-xs px-2 py-1 rounded-sm hover:bg-surface-2 flex items-center justify-between"
             >
               <span className="truncate">{w.name}</span>
-              <span className="text-[9px] font-mono text-muted-foreground">{w.items.length}</span>
+              <span className="text-[9px] text-muted-foreground">{w.items.length}</span>
             </button>
           ))}
         </div>
@@ -746,8 +746,8 @@ function AnnotationList({ indicatorKey }: { indicatorKey: string }) {
       <div className="space-y-1 max-h-32 overflow-auto">
         {items.map((a) => (
           <div key={a.id} className="flex items-start gap-2 text-[11px] px-2 py-1 bg-surface-2/40 rounded-sm">
-            <span className="font-mono tabular-nums text-muted-foreground shrink-0">{a.t}</span>
-            <span className="font-mono tabular-nums text-primary shrink-0">{a.v.toFixed(1)}</span>
+            <span className="tabular-nums text-muted-foreground shrink-0">{a.t}</span>
+            <span className="tabular-nums text-primary shrink-0">{a.v.toFixed(1)}</span>
             <span className="flex-1 text-surface-foreground">{a.note}</span>
             <button
               onClick={() => removeAnnotation(a.id)}

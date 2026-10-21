@@ -52,7 +52,7 @@ export default function Scanner() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {conds.map((c, i) => (
-            <span key={i} className="text-[11px] font-mono bg-background border border-border rounded-sm pl-2 pr-1 py-1 inline-flex items-center gap-1">
+            <span key={i} className="text-[11px] bg-background border border-border rounded-sm pl-2 pr-1 py-1 inline-flex items-center gap-1">
               {c}
               <button onClick={() => remove(i)} className="text-muted-foreground hover:text-destructive"><X className="h-3 w-3" /></button>
             </span>
@@ -62,7 +62,7 @@ export default function Scanner() {
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") add(); }}
             placeholder="signal_key>value"
-            className="h-7 w-56 bg-background border border-border rounded-sm px-2 text-xs font-mono"
+            className="h-7 w-56 bg-background border border-border rounded-sm px-2 text-xs "
           />
           <button onClick={add} className="h-7 px-2 border border-border rounded-sm text-xs hover:border-muted-foreground inline-flex items-center gap-1">
             <Plus className="h-3 w-3" /> add
@@ -114,7 +114,7 @@ export default function Scanner() {
                   <th className="px-3 py-2 font-normal">#</th>
                   <th className="px-3 py-2 font-normal">Entity</th>
                   {condKeys.map(k => (
-                    <th key={k} className="px-3 py-2 font-normal text-right font-mono text-[10px]">{k}</th>
+                    <th key={k} className="px-3 py-2 font-normal text-right text-[10px]">{k}</th>
                   ))}
                   <th className="px-3 py-2 font-normal">Date</th>
                 </tr>
@@ -125,7 +125,7 @@ export default function Scanner() {
                   return (
                     <tr key={`${r.entity}-${i}`} className="border-b border-border/50 hover:bg-surface/40">
                       <td className="px-3 py-1.5 text-muted-foreground">{i + 1}</td>
-                      <td className="px-3 py-1.5 font-mono font-semibold">{r.entity}</td>
+                      <td className="px-3 py-1.5 font-semibold">{r.entity}</td>
                       {condKeys.map(k => {
                         const v = row[k];
                         const n = typeof v === "number" ? v : Number(v);

@@ -24,7 +24,7 @@ export function PercentileGauge({ value, label, emphasize }: Props) {
           {label}
         </span>
         <span
-          className={`font-mono tabular-nums ${emphasize ? "text-[12px] font-semibold" : "text-[11px]"}`}
+          className={`tabular-nums ${emphasize ? "text-[12px] font-semibold" : "text-[11px]"}`}
           style={{
             color: extreme
               ? (v >= 85 ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))")

@@ -115,9 +115,9 @@ export default function Alerts() {
                       <div key={e.id} className={`px-3 py-2 flex items-center gap-3 ${e.acknowledged ? "opacity-50" : ""}`}>
                         <div className="flex-1">
                           <div className="text-xs font-medium">{a?.name ?? "—"}</div>
-                          <div className="text-[10px] text-muted-foreground font-mono">{e.message}</div>
+                          <div className="text-[10px] text-muted-foreground ">{e.message}</div>
                         </div>
-                        <div className="text-[10px] font-mono tabular-nums text-muted-foreground shrink-0">
+                        <div className="text-[10px] tabular-nums text-muted-foreground shrink-0">
                           {new Date(e.fired_at).toLocaleString()}
                         </div>
                         {!e.acknowledged && (
@@ -161,11 +161,11 @@ export default function Alerts() {
                             />
                           </td>
                           <td className="py-2 font-medium">{a.name}</td>
-                          <td className="py-2 font-mono text-[11px] text-muted-foreground">
+                          <td className="py-2 text-[11px] text-muted-foreground">
                             {ind?.label ?? a.indicator_key} {a.operator.replace("_", " ")} {a.threshold}
                           </td>
-                          <td className="py-2 text-right font-mono tabular-nums">{a.last_value ?? "—"}</td>
-                          <td className="py-2 text-right font-mono text-[10px] text-muted-foreground tabular-nums">
+                          <td className="py-2 text-right tabular-nums">{a.last_value ?? "—"}</td>
+                          <td className="py-2 text-right text-[10px] text-muted-foreground tabular-nums">
                             {a.last_fired_at ? new Date(a.last_fired_at).toLocaleDateString() : "—"}
                           </td>
                           <td className="py-2 pr-3 text-right">
@@ -211,7 +211,7 @@ export default function Alerts() {
                 </div>
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Threshold {indicator && <span className="font-mono">[{indicator.min}, {indicator.max}]</span>}
+                    Threshold {indicator && <span className="">[{indicator.min}, {indicator.max}]</span>}
                   </label>
                   <Input type="number" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
                 </div>

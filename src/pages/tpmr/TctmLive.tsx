@@ -34,11 +34,11 @@ function StageCard({
       <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
         <div>
           <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Date</div>
-          <div className="font-mono tabular-nums">{date ?? "—"}</div>
+          <div className="tabular-nums">{date ?? "—"}</div>
         </div>
         <div>
           <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Count</div>
-          <div className="font-mono tabular-nums">{count == null ? "—" : `${count}%`}</div>
+          <div className="tabular-nums">{count == null ? "—" : `${count}%`}</div>
         </div>
       </div>
     </div>

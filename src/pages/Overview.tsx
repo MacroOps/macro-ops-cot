@@ -83,7 +83,7 @@ function DualTrendList({
           {title}
         </div>
         <span
-          className={`text-[9px] font-mono uppercase tracking-wider ${
+          className={`text-[9px] uppercase tracking-wider ${
             tone === "bull" ? "text-success" : "text-destructive"
           }`}
         >
@@ -104,7 +104,7 @@ function DualTrendList({
         <tbody>
           {rows.map((s) => (
             <tr key={`${s.universeSlug}-${s.symbol}`} className="border-t border-border/50">
-              <td className="py-1.5 pl-3 font-mono font-medium">
+              <td className="py-1.5 pl-3 font-medium">
                 <Link to={`/tpmr/dual-trend/${s.universeSlug}`} className="hover:text-primary">
                   {s.symbol}
                 </Link>
@@ -116,7 +116,7 @@ function DualTrendList({
               <td className="py-1.5 w-[100px]"><LevelBar value={s.ltRelative} /></td>
               <td className="py-1.5"><SignalBadge value={s.ltSignal} /></td>
               <td
-                className={`py-1.5 pr-3 text-right font-mono tabular-nums ${
+                className={`py-1.5 pr-3 text-right tabular-nums ${
                   s.ltReturn >= 0 ? "text-success" : "text-destructive"
                 }`}
               >
@@ -291,7 +291,7 @@ export default function Overview() {
                 <Link
                   key={m.symbol}
                   to={`/asset/${m.symbol}`}
-                  className={`inline-flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-surface border border-border hover:border-primary ${color}`}
+                  className={`inline-flex items-center gap-1 text-[10px] tabular-nums px-1.5 py-0.5 rounded-sm bg-surface border border-border hover:border-primary ${color}`}
                 >
                   {m.symbol}
                   <span className="opacity-70">

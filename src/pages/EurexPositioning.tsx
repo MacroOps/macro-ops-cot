@@ -158,11 +158,11 @@ export default function EurexPositioning() {
                   <tbody>
                     {items.map((r) => (
                       <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-2 font-mono font-semibold">{r.symbol}</td>
+                        <td className="px-4 py-2 font-semibold">{r.symbol}</td>
                         <td className="px-4 py-2 text-muted-foreground">{r.name}</td>
-                        <td className="px-4 py-2 text-right font-mono">{num(r.open_interest)}</td>
+                        <td className="px-4 py-2 text-right ">{num(r.open_interest)}</td>
                         <td
-                          className={`px-4 py-2 text-right font-mono ${
+                          className={`px-4 py-2 text-right ${
                             r.oi_change == null
                               ? ""
                               : r.oi_change > 0
@@ -194,7 +194,7 @@ export default function EurexPositioning() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono">{num(r.volume)}</td>
+                        <td className="px-4 py-2 text-right ">{num(r.volume)}</td>
                         <td className="px-4 py-2 text-right text-xs text-muted-foreground">
                           {r.observed_on ?? "—"}
                         </td>

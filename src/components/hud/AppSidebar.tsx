@@ -191,7 +191,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground font-mono text-[10px] font-medium tracking-wider">
+          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-medium tracking-wider">
             FR
           </div>
           {!collapsed && (
@@ -199,7 +199,7 @@ export function AppSidebar() {
               <span className="font-serif italic font-light text-[15px] text-surface-foreground">
                 Foundation Research
               </span>
-              <span className="font-mono text-[9px] text-accent-deep tracking-[0.22em] uppercase">
+              <span className="text-[9px] text-accent-deep tracking-[0.22em] uppercase">
                 Terminus Platform
               </span>
             </div>
@@ -367,7 +367,7 @@ function WorkspacesGroup({ collapsed, pathname }: { collapsed: boolean; pathname
                   {!collapsed && (
                     <>
                       <span className="text-xs truncate flex-1">{w.name}</span>
-                      <span className="text-[9px] font-mono text-muted-foreground">{w.items.length}</span>
+                      <span className="text-[9px] text-muted-foreground">{w.items.length}</span>
                     </>
                   )}
                 </NavLink>

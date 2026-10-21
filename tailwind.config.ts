@@ -17,7 +17,7 @@ export default {
         sans: ['"Hanken Grotesk"', "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
         serif: ["Newsreader", "Georgia", "Times New Roman", "serif"],
         display: ["Newsreader", "Georgia", "Times New Roman", "serif"],
-        mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",

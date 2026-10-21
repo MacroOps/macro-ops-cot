@@ -101,21 +101,21 @@ export default function Analogs() {
           <div className="pt-3 border-t border-border space-y-2">
             <div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Current value</div>
-              <div className="text-lg font-mono tabular-nums">{result.now.toFixed(2)}</div>
+              <div className="text-lg tabular-nums">{result.now.toFixed(2)}</div>
             </div>
             <div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Analogs found</div>
-              <div className="text-lg font-mono tabular-nums">{result.top.length}</div>
+              <div className="text-lg tabular-nums">{result.top.length}</div>
             </div>
             <div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Mean fwd return</div>
-              <div className={`text-lg font-mono tabular-nums ${result.meanFinal >= 0 ? "text-success" : "text-destructive"}`}>
+              <div className={`text-lg tabular-nums ${result.meanFinal >= 0 ? "text-success" : "text-destructive"}`}>
                 {result.meanFinal >= 0 ? "+" : ""}{result.meanFinal.toFixed(2)}%
               </div>
             </div>
             <div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Hit rate</div>
-              <div className="text-lg font-mono tabular-nums">{result.hit.toFixed(0)}%</div>
+              <div className="text-lg tabular-nums">{result.hit.toFixed(0)}%</div>
             </div>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function Analogs() {
             <div className="text-[11px] uppercase tracking-wider font-semibold">
               Forward path fan · {result.top.length} analogs · {horizon}w
             </div>
-            <div className="flex items-center gap-3 text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="flex items-center gap-3 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-3 h-2 rounded-sm" style={{ background: "hsl(var(--chart-accent) / 0.18)", border: "1px solid hsl(var(--chart-accent) / 0.4)" }} />
                 IQR
@@ -221,7 +221,7 @@ export default function Analogs() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div className="px-3 py-2 border-t border-border flex items-center justify-between text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+          <div className="px-3 py-2 border-t border-border flex items-center justify-between text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             <span>Empirical distribution of forward returns from {result.top.length} closest analog weeks.</span>
             <span>
               Mean <span className={`tabular-nums ${result.meanFinal >= 0 ? "text-success" : "text-destructive"}`}>{result.meanFinal >= 0 ? "+" : ""}{result.meanFinal.toFixed(2)}%</span>
@@ -255,14 +255,14 @@ export default function Analogs() {
                 const fwd = m.path[m.path.length - 1];
                 return (
                   <tr key={m.idx} className="border-b border-border/50">
-                    <td className="py-1.5 pl-3 font-mono">
+                    <td className="py-1.5 pl-3 ">
                       <span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: "hsl(var(--chart-accent))" }} />
                       {k + 1}
                     </td>
-                    <td className="py-1.5 font-mono">{m.date}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{m.value}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums text-muted-foreground">±{m.distance}</td>
-                    <td className={`py-1.5 pr-3 text-right font-mono tabular-nums ${fwd >= 0 ? "text-success" : "text-destructive"}`}>
+                    <td className="py-1.5 ">{m.date}</td>
+                    <td className="py-1.5 text-right tabular-nums">{m.value}</td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground">±{m.distance}</td>
+                    <td className={`py-1.5 pr-3 text-right tabular-nums ${fwd >= 0 ? "text-success" : "text-destructive"}`}>
                       {fwd >= 0 ? "+" : ""}{fwd.toFixed(2)}%
                     </td>
                   </tr>

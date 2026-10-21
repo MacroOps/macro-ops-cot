@@ -110,7 +110,7 @@ export function CopilotDrawer() {
         <SheetHeader className="px-4 py-3 border-b border-border space-y-1">
           <SheetTitle className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-semibold">
             <Brain className="h-3.5 w-3.5 text-primary" /> Research Copilot
-            <span className="ml-2 text-[9px] font-mono uppercase tracking-wider text-muted-foreground border border-border rounded-sm px-1.5 py-0.5">
+            <span className="ml-2 text-[9px] uppercase tracking-wider text-muted-foreground border border-border rounded-sm px-1.5 py-0.5">
               agent · 5 tools
             </span>
           </SheetTitle>
@@ -123,7 +123,7 @@ export function CopilotDrawer() {
         </SheetHeader>
 
         {context && (
-          <div className="px-4 py-2 border-b border-border bg-surface-2/40 text-[10px] font-mono tabular-nums flex items-center justify-between">
+          <div className="px-4 py-2 border-b border-border bg-surface-2/40 text-[10px] tabular-nums flex items-center justify-between">
             <span className="text-muted-foreground uppercase tracking-wider">Value</span>
             <span className="text-surface-foreground font-semibold">{context.value.toFixed(2)}{context.unit ?? ""}</span>
             {context.thresholdHi != null && (<><span className="text-muted-foreground uppercase tracking-wider ml-3">Hi</span><span>{context.thresholdHi}</span></>)}
@@ -173,7 +173,7 @@ export function CopilotDrawer() {
                       {m.toolEvents.map((ev) => (
                         <AccordionItem key={ev.id} value={ev.id} className="border-b border-border last:border-b-0 px-2">
                           <AccordionTrigger className="py-1.5 hover:no-underline">
-                            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider">
                               <Wrench className="h-3 w-3 text-primary" />
                               <span className="text-primary">{ev.name}</span>
                               <span className="text-muted-foreground normal-case">
@@ -245,12 +245,12 @@ function summarizeToolResult(ev: ToolEvent): string {
 function ToolBody({ event }: { event: ToolEvent }) {
   const r = event.result as Record<string, unknown>;
   if (!r) return null;
-  if (r.error) return <div className="text-[11px] text-destructive font-mono">{String(r.error)}</div>;
+  if (r.error) return <div className="text-[11px] text-destructive ">{String(r.error)}</div>;
 
   if (event.name === "scan_extremes") {
     const rows = r.extremes as Array<Record<string, unknown>>;
     return (
-      <table className="w-full text-[11px] font-mono tabular-nums">
+      <table className="w-full text-[11px] tabular-nums">
         <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
           <tr><th className="text-left">Indicator</th><th className="text-right">Value</th><th className="text-right">%ile</th><th className="text-right">Flag</th></tr>
         </thead>
@@ -270,7 +270,7 @@ function ToolBody({ event }: { event: ToolEvent }) {
   if (event.name === "run_backtest") {
     const ex = r.examples as Array<{ date: string; trigger: number; fwd: number }>;
     return (
-      <div className="space-y-1.5 text-[11px] font-mono tabular-nums">
+      <div className="space-y-1.5 text-[11px] tabular-nums">
         <div className="grid grid-cols-4 gap-2">
           <Stat label="Hit" v={`${r.hit_rate}%`} />
           <Stat label="Mean" v={`${(r.mean_return as number) >= 0 ? "+" : ""}${r.mean_return}%`} />
@@ -295,7 +295,7 @@ function ToolBody({ event }: { event: ToolEvent }) {
   if (event.name === "find_analogs") {
     const an = r.analogs as Array<{ date: string; value: number; fwd_5d: number; fwd_21d: number }>;
     return (
-      <table className="w-full text-[11px] font-mono tabular-nums">
+      <table className="w-full text-[11px] tabular-nums">
         <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
           <tr><th className="text-left">Date</th><th className="text-right">Value</th><th className="text-right">Fwd 5d</th><th className="text-right">Fwd 21d</th></tr>
         </thead>
@@ -314,7 +314,7 @@ function ToolBody({ event }: { event: ToolEvent }) {
   }
   if (event.name === "query_indicator") {
     return (
-      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono tabular-nums">
+      <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums">
         <Stat label="Value" v={`${r.value}${String(r.unit ?? "")}`} />
         <Stat label="%ile" v={String(r.percentile)} />
         <Stat label="Δ 1w" v={`${(r.delta_1w as number) >= 0 ? "+" : ""}${r.delta_1w}`} />

@@ -306,7 +306,7 @@ const SectorAggregates = () => {
             </ResponsiveContainer>
           )}
         </div>
-        <div className="mt-2 text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+        <div className="mt-2 text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }}>
           {histData.length ? `${histData.length} weekly observations · ${histData[0].date} → ${histData[histData.length - 1].date}` : ""}
         </div>
       </div>
@@ -369,18 +369,18 @@ function SectorSummaryRow({ r }: { r: SectorRollup }) {
       </div>
       <div className="text-right">
         <div className="text-[9px] uppercase tracking-wider" style={{ color: "hsl(var(--chart-axis))" }}>3Y</div>
-        <div className="font-mono text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct3y) }}>
+        <div className="text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct3y) }}>
           {r.avgNetSpecPct3y}
         </div>
       </div>
       <div className="text-right">
         <div className="text-[9px] uppercase tracking-wider" style={{ color: "hsl(var(--chart-axis))" }}>6M</div>
-        <div className="font-mono text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct6m) }}>
+        <div className="text-xs tabular-nums" style={{ color: pctColor(r.avgNetSpecPct6m) }}>
           {r.avgNetSpecPct6m}
         </div>
       </div>
       <div
-        className="flex items-center gap-0.5 text-[10px] font-mono tabular-nums"
+        className="flex items-center gap-0.5 text-[10px] tabular-nums"
         style={{ color: up ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
       >
         {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -395,7 +395,7 @@ function SectorHeatmapRow({ r, windowKey }: { r: SectorRollup; windowKey: "netSp
     <div className="grid grid-cols-[120px_1fr] gap-3 items-center">
       <div>
         <div className="text-xs font-semibold" style={{ color: "hsl(var(--chart-surface-foreground))" }}>{r.sector}</div>
-        <div className="text-[10px] font-mono tabular-nums" style={{ color: "hsl(var(--chart-axis))" }}>
+        <div className="text-[10px] tabular-nums" style={{ color: "hsl(var(--chart-axis))" }}>
           Net {r.netContracts >= 0 ? "+" : ""}{fmtInt.format(r.netContracts)}
         </div>
       </div>
@@ -417,10 +417,10 @@ function SectorHeatmapRow({ r, windowKey }: { r: SectorRollup; windowKey: "netSp
                 }}
                 title={`${m.name} · Net Spec ${windowKey === "netSpecPct3y" ? "3Y" : "6M"} ${v}`}
               >
-                <div className="font-mono text-[10px] font-semibold" style={{ color: fg }}>
+                <div className="text-[10px] font-semibold" style={{ color: fg }}>
                   {m.symbol}
                 </div>
-                <div className="font-mono text-[10px] tabular-nums" style={{ color: fg }}>
+                <div className="text-[10px] tabular-nums" style={{ color: fg }}>
                   {v}
                 </div>
               </Link>

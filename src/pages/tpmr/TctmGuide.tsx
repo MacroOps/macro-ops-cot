@@ -17,7 +17,7 @@ export default function TctmGuide({ slug }: { slug: keyof typeof TCTM_GUIDES }) 
           <div className="p-3 text-xs text-surface-foreground/90 leading-relaxed space-y-2">
             <p>{g.howItWorks}</p>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">Trigger Threshold</div>
-            <div className="font-mono text-xs">{g.threshold}</div>
+            <div className="text-xs">{g.threshold}</div>
           </div>
         </div>
 
@@ -29,7 +29,7 @@ export default function TctmGuide({ slug }: { slug: keyof typeof TCTM_GUIDES }) 
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Current</div>
             <SignalBadge value="Neutral" />
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground pt-2">Components</div>
-            <div className="font-mono text-2xl tabular-nums">
+            <div className="text-2xl tabular-nums">
               {Math.round(g.components.length * 0.3)}<span className="text-muted-foreground text-base"> / {g.components.length}</span>
             </div>
           </div>
@@ -81,8 +81,8 @@ export default function TctmGuide({ slug }: { slug: keyof typeof TCTM_GUIDES }) 
                 {g.history.map((h, i) => (
                   <tr key={i} className="border-t border-border/50">
                     <td className="py-1.5 px-3">{h.event}</td>
-                    <td className="py-1.5 px-3 font-mono">{h.date}</td>
-                    <td className="py-1.5 px-3 text-right font-mono tabular-nums">
+                    <td className="py-1.5 px-3 ">{h.date}</td>
+                    <td className="py-1.5 px-3 text-right tabular-nums">
                       {h.triggered}/{h.total}
                     </td>
                     <td className="py-1.5 px-3 text-right">

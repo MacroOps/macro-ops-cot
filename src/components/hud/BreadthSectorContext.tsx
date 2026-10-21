@@ -46,7 +46,7 @@ export function BreadthSectorPicker() {
         <button
           key={s}
           onClick={() => setSector(s)}
-          className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm border transition-colors ${
+          className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border transition-colors ${
             sector === s
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border text-muted-foreground hover:text-surface-foreground hover:border-muted-foreground"

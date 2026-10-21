@@ -56,8 +56,8 @@ function StatBlock({ label, value, sub, tone = "default" }: { label: string; val
   return (
     <div className="flex flex-col gap-0.5 px-3 py-2 border-r border-border last:border-r-0 min-w-[120px]">
       <span className="hud-label">{label}</span>
-      <span className={`font-mono text-sm tabular-nums font-semibold ${toneCls}`}>{value}</span>
-      {sub && <span className="text-[10px] text-muted-foreground font-mono">{sub}</span>}
+      <span className={`text-sm tabular-nums font-semibold ${toneCls}`}>{value}</span>
+      {sub && <span className="text-[10px] text-muted-foreground ">{sub}</span>}
     </div>
   );
 }
@@ -84,7 +84,7 @@ function ChartPanel({
           <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
             {title}
           </span>
-          {sub && <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
+          {sub && <span className="text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
         </div>
         <div className="flex items-center gap-2">
           {right}
@@ -551,7 +551,7 @@ export default function AssetDetail() {
             <select
               value={symbol}
               onChange={(e) => navigate(`/asset/${e.target.value}`)}
-              className="font-mono text-sm font-semibold bg-surface border border-border rounded-sm px-2 py-1 text-surface-foreground hover:border-primary/60 focus:outline-none focus:border-primary"
+              className="text-sm font-semibold bg-surface border border-border rounded-sm px-2 py-1 text-surface-foreground hover:border-primary/60 focus:outline-none focus:border-primary"
               title="Switch asset"
             >
               {!marketList?.some(m => m.symbol === symbol) && (
@@ -588,7 +588,7 @@ export default function AssetDetail() {
               const d = data?.lastReportDate;
               if (!d) {
                 return (
-                  <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     <span className="text-muted-foreground">CFTC report · </span>—
                   </div>
                 );
@@ -608,7 +608,7 @@ export default function AssetDetail() {
                 : `next release Fri ${nextLabel}`;
               return (
                 <div
-                  className={`text-[10px] uppercase tracking-wider font-mono ${tone}`}
+                  className={`text-[10px] uppercase tracking-wider ${tone}`}
                   title={`CFTC publishes weekly on Fridays at 3:30pm ET, reflecting positions held the prior Tuesday. Latest report: ${d} (Tue). ${nextHint}.`}
                 >
                   <span className="text-muted-foreground">CFTC report (Tue) · </span>
@@ -680,7 +680,7 @@ export default function AssetDetail() {
                   <Newspaper className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="hud-label">News · Divergence Feed</span>
                 </div>
-                <span className="text-[10px] text-muted-foreground font-mono">
+                <span className="text-[10px] text-muted-foreground ">
                   {data?.news.filter(n => n.is_divergence).length ?? 0} flagged
                 </span>
               </div>
@@ -701,7 +701,7 @@ export default function AssetDetail() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>{n.source ?? "—"} · {new Date(n.published_at).toISOString().slice(0, 10)}</span>
                         {n.url && (
                           <a href={n.url} target="_blank" rel="noreferrer" className="hover:text-primary inline-flex items-center gap-0.5">
@@ -709,7 +709,7 @@ export default function AssetDetail() {
                           </a>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] font-mono">
+                      <div className="flex items-center gap-3 text-[10px] ">
                         <span className="text-muted-foreground">
                           Expected:{" "}
                           <span style={{ color: dir > 0 ? "hsl(var(--pos-long))" : dir < 0 ? "hsl(var(--pos-short))" : undefined }}>
@@ -759,7 +759,7 @@ export default function AssetDetail() {
                   <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
                     Forward Performance
                   </span>
-                  <span className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+                  <span className="text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }}>
                     Bucket {Math.max(0, currentPct - 10)}–{Math.min(100, currentPct + 10)} · {windowLabel}
                   </span>
                 </div>
@@ -781,13 +781,13 @@ export default function AssetDetail() {
                         {f.horizon}w forward
                       </span>
                       <div
-                        className="flex items-center gap-1 font-mono text-sm font-semibold tabular-nums"
+                        className="flex items-center gap-1 text-sm font-semibold tabular-nums"
                         style={{ color: pos ? "hsl(var(--pos-long))" : "hsl(var(--pos-short))" }}
                       >
                         {pos ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
                         {pos ? "+" : ""}{f.mean.toFixed(2)}%
                       </div>
-                      <div className="text-[10px] font-mono" style={{ color: "hsl(var(--chart-ink-muted))" }}>
+                      <div className="text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }}>
                         Hit {f.hitRate.toFixed(0)}% · n={f.count}
                       </div>
                     </div>
@@ -817,7 +817,7 @@ export default function AssetDetail() {
           </div>
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="font-mono text-sm font-semibold text-surface-foreground">{symbol}</span>
+              <span className="text-sm font-semibold text-surface-foreground">{symbol}</span>
               <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
                 {expanded === "price" ? "Price" : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
               </span>

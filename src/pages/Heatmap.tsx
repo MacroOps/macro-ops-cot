@@ -112,7 +112,7 @@ export default function Heatmap() {
                 <th className="text-center py-2 px-2 text-[9px] uppercase tracking-wider text-muted-foreground font-medium">12w</th>
                 <th className="text-center py-2 px-2 text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Now</th>
                 {MARKETS.map((m) => (
-                  <th key={m} className="text-center py-2 px-1.5 text-[9px] uppercase tracking-wider text-muted-foreground font-mono font-semibold">{m}</th>
+                  <th key={m} className="text-center py-2 px-1.5 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{m}</th>
                 ))}
               </tr>
             </thead>
@@ -128,12 +128,12 @@ export default function Heatmap() {
                   <td className="py-1.5 px-2 w-[80px]">
                     <Sparkline data={perMarket[0].spark} />
                   </td>
-                  <td className={`py-1.5 px-2 text-center font-mono tabular-nums text-[11px] ${pctColor(pct)}`}>
+                  <td className={`py-1.5 px-2 text-center tabular-nums text-[11px] ${pctColor(pct)}`}>
                     <div>{now.toFixed(1)}</div>
                     <div className="text-[9px] opacity-70">{pct}p</div>
                   </td>
                   {perMarket.map((c) => (
-                    <td key={c.market} className={`text-center py-1.5 px-1 font-mono tabular-nums text-[10px] ${pctColor(c.percentile)}`}>
+                    <td key={c.market} className={`text-center py-1.5 px-1 tabular-nums text-[10px] ${pctColor(c.percentile)}`}>
                       {c.percentile}
                     </td>
                   ))}

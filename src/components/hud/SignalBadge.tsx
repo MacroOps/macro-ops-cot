@@ -19,7 +19,7 @@ export function SignalBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-sm border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider",
+        "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[9px] uppercase tracking-wider",
         styles,
         className,
       )}
@@ -31,12 +31,12 @@ export function SignalBadge({
 
 export function DeltaCell({ value }: { value: number | null }) {
   if (value == null)
-    return <span className="text-muted-foreground font-mono text-xs">—</span>;
+    return <span className="text-muted-foreground text-xs">—</span>;
   const color =
     value > 0 ? "text-success" : value < 0 ? "text-destructive" : "text-muted-foreground";
   const sign = value > 0 ? "+" : "";
   return (
-    <span className={cn("font-mono tabular-nums text-xs", color)}>
+    <span className={cn("tabular-nums text-xs", color)}>
       {sign}
       {value}
     </span>
@@ -52,7 +52,7 @@ export function LevelBar({ value }: { value: number }) {
       <div className="flex-1 h-1.5 rounded-sm bg-muted/40 overflow-hidden">
         <div className={cn("h-full", color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="font-mono tabular-nums text-[10px] text-surface-foreground w-6 text-right">
+      <span className="tabular-nums text-[10px] text-surface-foreground w-6 text-right">
         {pct}
       </span>
     </div>

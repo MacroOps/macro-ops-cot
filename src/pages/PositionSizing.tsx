@@ -222,7 +222,7 @@ function NumberInput({
       step={step}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full bg-background border border-border rounded-sm px-2 py-1.5 text-sm font-mono tabular-nums"
+      className="w-full bg-background border border-border rounded-sm px-2 py-1.5 text-sm tabular-nums"
     />
   );
 }
@@ -231,7 +231,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="border border-border rounded-sm p-2">
       <div className="hud-label">{label}</div>
-      <div className="mt-1 font-mono tabular-nums text-sm text-surface-foreground">{value}</div>
+      <div className="mt-1 tabular-nums text-sm text-surface-foreground">{value}</div>
     </div>
   );
 }

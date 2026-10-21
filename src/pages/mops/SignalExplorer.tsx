@@ -53,7 +53,7 @@ export default function SignalExplorer() {
           value={key}
           onChange={e => setKey(e.target.value)}
           list="signal-keys"
-          className="h-7 w-64 bg-background border border-border rounded-sm px-2 font-mono tabular-nums"
+          className="h-7 w-64 bg-background border border-border rounded-sm px-2 tabular-nums"
         />
         <datalist id="signal-keys">
           {keys.map(k => <option key={k} value={k} />)}
@@ -75,7 +75,7 @@ export default function SignalExplorer() {
           value={entity}
           onChange={e => setEntity(e.target.value.toUpperCase())}
           list="mops-entities"
-          className="h-7 w-40 bg-background border border-border rounded-sm px-2 font-mono uppercase"
+          className="h-7 w-40 bg-background border border-border rounded-sm px-2 uppercase"
         />
         <datalist id="mops-entities">
           {entities.slice(0, 500).map(e => <option key={e} value={e} />)}
@@ -137,7 +137,7 @@ export default function SignalExplorer() {
               <button
                 key={k}
                 onClick={() => setKey(k)}
-                className={`text-[10px] font-mono px-2 py-1 rounded-sm border transition-colors ${
+                className={`text-[10px] px-2 py-1 rounded-sm border transition-colors ${
                   k === key
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border text-muted-foreground hover:text-surface-foreground hover:border-muted-foreground"
@@ -159,7 +159,7 @@ function Stat({ label, value, sub, tone, mono }: { label: string; value: string;
   return (
     <div className="px-4 py-3 border-r border-border last:border-r-0">
       <div className="hud-label">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${c} ${mono ? "font-mono truncate" : ""}`}>{value}</div>
+      <div className={`mt-1 text-lg font-semibold tabular-nums ${c} ${mono ? "truncate" : ""}`}>{value}</div>
       {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
     </div>
   );

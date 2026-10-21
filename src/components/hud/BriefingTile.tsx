@@ -68,16 +68,16 @@ export function BriefingTile() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent-deep font-medium">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-accent-deep font-medium">
               Daily Briefing
             </div>
             {isToday && (
-              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-success/15 text-success rounded-sm font-mono">
+              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-success/15 text-success rounded-sm ">
                 ● Live
               </span>
             )}
             {!isToday && briefing && (
-              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-muted text-muted-foreground rounded-sm font-mono">
+              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-muted text-muted-foreground rounded-sm ">
                 {briefing.briefing_date}
               </span>
             )}
@@ -111,7 +111,7 @@ export function BriefingTile() {
                 return (
                   <span
                     key={h.key}
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-sm border ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${
                       extreme
                         ? "border-primary/40 bg-primary/10 text-primary"
                         : "border-border bg-surface-2/60 text-muted-foreground"

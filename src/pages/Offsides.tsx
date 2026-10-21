@@ -288,7 +288,7 @@ export default function Offsides() {
             {asOf && (
               <p className="text-xs text-muted-foreground mt-1">
                 As of report date{" "}
-                <span className="font-mono text-foreground">{asOf}</span> ·{" "}
+                <span className="text-foreground">{asOf}</span> ·{" "}
                 lookback {lookback}w
               </p>
             )}
@@ -376,7 +376,7 @@ export default function Offsides() {
                             className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                           >
                             <td className="px-4 py-2">
-                              <div className="font-mono font-semibold">{m.symbol}</div>
+                              <div className="font-semibold">{m.symbol}</div>
                               <div className="text-xs text-muted-foreground">
                                 {m.name}
                               </div>
@@ -384,20 +384,20 @@ export default function Offsides() {
                             <td className="px-4 py-2 text-muted-foreground">
                               {m.sector}
                             </td>
-                            <td className="px-4 py-2 text-right font-mono font-semibold">
+                            <td className="px-4 py-2 text-right font-semibold">
                               {p.idx.toFixed(1)}
                             </td>
-                            <td className="px-4 py-2 text-right font-mono text-xs">
+                            <td className="px-4 py-2 text-right text-xs">
                               {p.z.toFixed(2)}
                             </td>
-                            <td className="px-4 py-2 text-right font-mono text-xs">
+                            <td className="px-4 py-2 text-right text-xs">
                               {p.pct.toFixed(0)}
                             </td>
                             <td className="px-4 py-2">{tierBadge(p)}</td>
                             <td className="px-4 py-2">{signalBadge(p)}</td>
                             <td className="px-4 py-2">{regimeBadge(p.regime)}</td>
-                            <td className="px-4 py-2 text-right font-mono">{p.wks}</td>
-                            <td className="px-4 py-2 text-right font-mono text-xs">
+                            <td className="px-4 py-2 text-right ">{p.wks}</td>
+                            <td className="px-4 py-2 text-right text-xs">
                               {fmtNet(p.net)}
                             </td>
                           </tr>
@@ -449,13 +449,13 @@ export default function Offsides() {
                             }`}
                             style={{ background: heatColor(v) }}
                           >
-                            <div className="font-mono text-xs font-semibold">
+                            <div className="text-xs font-semibold">
                               {m.symbol}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate">
                               {m.name}
                             </div>
-                            <div className="mt-1 font-mono text-lg font-semibold">
+                            <div className="mt-1 text-lg font-semibold">
                               {v == null ? "—" : v.toFixed(0)}
                             </div>
                           </button>
@@ -500,11 +500,11 @@ export default function Offsides() {
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <div className="text-xs text-muted-foreground">
                       as of{" "}
-                      <span className="font-mono text-foreground">
+                      <span className="text-foreground">
                         {selected.latest.d}
                       </span>
                     </div>
-                    <span className="font-mono text-lg font-semibold">
+                    <span className="text-lg font-semibold">
                       {selected.latest.idx.toFixed(1)}
                     </span>
                     <span className="text-xs text-muted-foreground">

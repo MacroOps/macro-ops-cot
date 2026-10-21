@@ -78,7 +78,7 @@ export default function WorkspacePage() {
                 >
                   <div>
                     <div className="text-xs font-medium">{w.name}</div>
-                    <div className="text-[10px] text-muted-foreground font-mono">
+                    <div className="text-[10px] text-muted-foreground ">
                       {w.items.length} pinned · {new Date(w.createdAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -131,7 +131,7 @@ export default function WorkspacePage() {
               </button>
             </>
           )}
-          <span className="text-[10px] font-mono text-muted-foreground">· {ws.items.length} pinned</span>
+          <span className="text-[10px] text-muted-foreground">· {ws.items.length} pinned</span>
         </div>
         <button
           onClick={() => {

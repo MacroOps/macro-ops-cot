@@ -73,7 +73,7 @@ export function LiveBreadthCard({
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate flex items-center gap-1.5">
             {resolvedTitle}
-            <span className="text-[9px] font-mono px-1 py-0 rounded-sm bg-success/15 text-success border border-success/30">
+            <span className="text-[9px] px-1 py-0 rounded-sm bg-success/15 text-success border border-success/30">
               LIVE · {sector}
             </span>
           </div>
@@ -83,11 +83,11 @@ export function LiveBreadthCard({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex items-baseline gap-1.5">
-            <span className={`font-mono tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
+            <span className={`tabular-nums text-xs ${hoverPoint ? "text-primary" : "text-surface-foreground"}`}>
               {headerVal.toFixed(2)}{unit}
             </span>
             {!hoverPoint && (
-              <span className={`font-mono tabular-nums text-[9px] ${wowTone}`}>
+              <span className={`tabular-nums text-[9px] ${wowTone}`}>
                 {wow > 0 ? "▲" : wow < 0 ? "▼" : "·"}{Math.abs(wow).toFixed(2)}
               </span>
             )}
@@ -127,7 +127,7 @@ export function LiveBreadthCard({
                   const p = payload[0]?.payload as { v: number; spx: number } | undefined;
                   if (!p) return null;
                   return (
-                    <div className="bg-popover border border-border rounded-sm px-2 py-1.5 text-[10px] font-mono space-y-0.5 shadow-lg">
+                    <div className="bg-popover border border-border rounded-sm px-2 py-1.5 text-[10px] space-y-0.5 shadow-lg">
                       <div className="text-muted-foreground">{String(label)}</div>
                       <div><span className="text-muted-foreground">val </span><span className="text-surface-foreground">{p.v.toFixed(2)}{unit}</span></div>
                       <div><span className="text-muted-foreground">{sector} </span><span className="text-surface-foreground">{p.spx.toFixed(2)}</span></div>

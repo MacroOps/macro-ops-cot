@@ -54,7 +54,7 @@ export function ExtremityBadge({ score, band, compact }: Props) {
           {labelFor(band)}
         </span>
         <span
-          className="font-mono tabular-nums text-[11px] font-semibold"
+          className="tabular-nums text-[11px] font-semibold"
           style={{ color }}
         >
           {v > 0 ? "+" : ""}{v}

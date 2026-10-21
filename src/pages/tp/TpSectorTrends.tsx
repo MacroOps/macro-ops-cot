@@ -42,11 +42,11 @@ export default function TpSectorTrends() {
           return (
             <div key={`${r.entity}-${i}`} className="border border-border rounded-sm bg-surface/30 px-3 py-2 flex items-center gap-3">
               <span className="w-6 text-xs text-muted-foreground tabular-nums">{r.rank ?? i + 1}</span>
-              <span className="font-mono text-sm font-semibold w-40 truncate">{r.entity}</span>
+              <span className="text-sm font-semibold w-40 truncate">{r.entity}</span>
               <div className="flex-1 h-3 bg-background border border-border rounded-sm overflow-hidden">
                 <div className="h-full bg-primary" style={{ width: `${pct}%`, opacity: 0.75 }} />
               </div>
-              <span className="w-20 text-right font-mono text-xs tabular-nums">{Number.isNaN(v) ? String(r.value) : `${fmt.format(v)}`}</span>
+              <span className="w-20 text-right text-xs tabular-nums">{Number.isNaN(v) ? String(r.value) : `${fmt.format(v)}`}</span>
             </div>
           );
         })}

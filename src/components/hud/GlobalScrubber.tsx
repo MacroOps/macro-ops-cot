@@ -13,7 +13,7 @@ export function GlobalScrubber() {
         <Rewind className="h-3 w-3" />
         As of
       </div>
-      <div className="font-mono text-[11px] tabular-nums w-[88px] shrink-0 text-surface-foreground">
+      <div className="text-[11px] tabular-nums w-[88px] shrink-0 text-surface-foreground">
         {dateLabel}
       </div>
       <div className="flex-1 max-w-2xl">
@@ -25,7 +25,7 @@ export function GlobalScrubber() {
           onValueChange={(v) => setAsOfIdx(v[0])}
         />
       </div>
-      <div className="text-[10px] font-mono tabular-nums text-muted-foreground shrink-0">
+      <div className="text-[10px] tabular-nums text-muted-foreground shrink-0">
         wk {asOfIdx + 1}/{totalWeeks}
       </div>
       <button

@@ -290,7 +290,7 @@ const Backtests = () => {
                     <select
                       value={activeSymbol}
                       onChange={(e) => setSymbol(e.target.value)}
-                      className="w-full text-xs font-mono bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
+                      className="w-full text-xs bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
                     >
                       {groupedMarkets.map((g) => (
                         <optgroup key={g.sector} label={g.sector}>
@@ -305,7 +305,7 @@ const Backtests = () => {
                     <select
                       value={cotIndicator}
                       onChange={(e) => setCotIndicator(e.target.value as BtIndicator)}
-                      className="w-full text-xs font-mono bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
+                      className="w-full text-xs bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
                     >
                       {cotIndicatorGroups.map(([group, items]) => (
                         <optgroup key={group} label={group}>
@@ -323,7 +323,7 @@ const Backtests = () => {
                     <select
                       value={indKey}
                       onChange={(e) => setIndKey(e.target.value)}
-                      className="w-full text-xs font-mono bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
+                      className="w-full text-xs bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-chart-surface-foreground focus:outline-none focus:border-chart-ink"
                     >
                       {indByCategory.map(([cat, items]) => (
                         <optgroup key={cat} label={cat}>
@@ -335,7 +335,7 @@ const Backtests = () => {
                     </select>
                   </Section>
                   <Section label={`Underlying · ${ind.underlying}`}>
-                    <div className="text-[10px] text-chart-axis font-mono">
+                    <div className="text-[10px] text-chart-axis ">
                       Forward path measured on the indicator's natural underlying market.
                     </div>
                   </Section>
@@ -374,7 +374,7 @@ const Backtests = () => {
                   onChange={(e) => setThreshold(Number(e.target.value))}
                   className="w-full accent-chart-ink"
                 />
-                <div className="flex justify-between text-[9px] text-chart-axis font-mono">
+                <div className="flex justify-between text-[9px] text-chart-axis ">
                   <span>{mode === "cot" ? cotThMin : ind.min}</span>
                   <span>{Math.round(((mode === "cot" ? cotThMin : ind.min) + (mode === "cot" ? cotThMax : ind.max)) / 2)}</span>
                   <span>{mode === "cot" ? cotThMax : ind.max}</span>
@@ -447,7 +447,7 @@ const Backtests = () => {
               <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis">
                 Forward Returns · each line = one past instance
               </div>
-              <div className="text-[10px] font-mono text-chart-axis">{unified?.count ?? 0} paths</div>
+              <div className="text-[10px] text-chart-axis">{unified?.count ?? 0} paths</div>
             </div>
             <div className="h-[28rem]">
               {isLoading ? (
@@ -533,7 +533,7 @@ const Backtests = () => {
                 Sample Log · {unified?.count ?? 0}
               </div>
               <div className="overflow-auto max-h-64 -mx-3 px-3">
-                <table className="w-full text-[11px] font-mono tabular-nums">
+                <table className="w-full text-[11px] tabular-nums">
                   <thead className="text-[9px] uppercase tracking-wider text-chart-axis sticky top-0 bg-chart-surface">
                     <tr className="border-b border-chart-grid">
                       <th className="text-left py-1.5 font-medium">Entry</th>
@@ -658,7 +658,7 @@ function KPI({ icon, label, value, sub, tone, big }: { icon?: React.ReactNode; l
         {icon}{label}
       </div>
       <div className={`mt-1 ${big ? "text-2xl" : "text-base"} font-semibold tabular-nums ${color} truncate`}>{value}</div>
-      {sub && <div className="text-[9px] font-mono text-chart-axis mt-0.5 truncate">{sub}</div>}
+      {sub && <div className="text-[9px] text-chart-axis mt-0.5 truncate">{sub}</div>}
     </div>
   );
 }
@@ -702,7 +702,7 @@ function HistoryTab({ onReopen }: { onReopen: (row: BtRunRow) => void }) {
     <div className="p-3">
       <div className="hud-chart">
         <div className="overflow-auto">
-          <table className="w-full text-[11px] font-mono tabular-nums">
+          <table className="w-full text-[11px] tabular-nums">
             <thead className="text-[9px] uppercase tracking-wider text-chart-axis sticky top-0 bg-chart-surface">
               <tr className="border-b border-chart-grid">
                 <th className="text-left py-2 px-3 font-medium">When</th>
@@ -796,7 +796,7 @@ function CompareTab() {
                 }`}
               >
                 <span className="truncate">{r.label ?? r.indicator_key}</span>
-                <span className="text-[9px] font-mono text-muted-foreground ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
+                <span className="text-[9px] text-muted-foreground ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
               </button>
             );
           })}
@@ -811,8 +811,8 @@ function CompareTab() {
             return (
               <div key={r.id} className="hud-chart p-3 space-y-2">
                 <div className="text-[10px] uppercase tracking-wider font-semibold truncate">{r.label ?? r.indicator_key}</div>
-                <div className="text-[9px] font-mono text-chart-axis">{new Date(r.created_at).toLocaleString()}</div>
-                <div className="grid grid-cols-2 gap-1 text-[11px] font-mono tabular-nums pt-2">
+                <div className="text-[9px] text-chart-axis">{new Date(r.created_at).toLocaleString()}</div>
+                <div className="grid grid-cols-2 gap-1 text-[11px] tabular-nums pt-2">
                   <Stat lbl="Samples" val={s.count ?? "—"} />
                   <Stat lbl="Hit %" val={s.pctPositive != null ? `${Number(s.pctPositive).toFixed(0)}%` : "—"} />
                   <Stat lbl="Mean" val={s.meanReturn != null ? fmtPct(Number(s.meanReturn)) : "—"} tone={(s.meanReturn ?? 0) >= 0 ? "long" : "short"} />

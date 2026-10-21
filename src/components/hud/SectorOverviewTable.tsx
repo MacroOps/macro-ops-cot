@@ -6,18 +6,18 @@ function Row({ r, emphasis }: { r: SectorOverviewRow; emphasis?: boolean }) {
   return (
     <tr className={cn("border-t border-border/50", emphasis && "bg-muted/30 font-semibold border-b-2 border-border")}>
       <td className="py-1.5 pl-2 text-left">{r.name}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums">{r.total}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums text-success">{r.bullishLT}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBullishLT}%</td>
+      <td className="py-1.5 text-right tabular-nums">{r.total}</td>
+      <td className="py-1.5 text-right tabular-nums text-success">{r.bullishLT}</td>
+      <td className="py-1.5 text-right tabular-nums">{r.pctBullishLT}%</td>
       <td className="py-1.5 text-right"><DeltaCell value={r.bullishLTChg || null} /></td>
-      <td className="py-1.5 text-right font-mono tabular-nums text-destructive">{r.bearishLT}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBearishLT}%</td>
+      <td className="py-1.5 text-right tabular-nums text-destructive">{r.bearishLT}</td>
+      <td className="py-1.5 text-right tabular-nums">{r.pctBearishLT}%</td>
       <td className="py-1.5 text-right"><DeltaCell value={r.bearishLTChg || null} /></td>
-      <td className="py-1.5 text-right font-mono tabular-nums text-success">{r.bullishST}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBullishST}%</td>
+      <td className="py-1.5 text-right tabular-nums text-success">{r.bullishST}</td>
+      <td className="py-1.5 text-right tabular-nums">{r.pctBullishST}%</td>
       <td className="py-1.5 text-right"><DeltaCell value={r.bullishSTChg || null} /></td>
-      <td className="py-1.5 text-right font-mono tabular-nums text-destructive">{r.bearishST}</td>
-      <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBearishST}%</td>
+      <td className="py-1.5 text-right tabular-nums text-destructive">{r.bearishST}</td>
+      <td className="py-1.5 text-right tabular-nums">{r.pctBearishST}%</td>
       <td className="py-1.5 text-right pr-2"><DeltaCell value={r.bearishSTChg || null} /></td>
     </tr>
   );
@@ -32,7 +32,7 @@ export function SectorOverviewTable() {
         <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
           S&P 500 Sector Overview
         </div>
-        <div className="text-[10px] font-mono text-muted-foreground">
+        <div className="text-[10px] text-muted-foreground">
           {data ? `as of ${data.asOf} · 5-day chg vs ${data.priorDate}` : ""}
         </div>
       </div>

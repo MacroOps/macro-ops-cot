@@ -116,7 +116,7 @@ export function RegimeTimeline({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3 shrink-0 text-[9px] font-mono">
+        <div className="flex items-center gap-3 shrink-0 text-[9px] ">
           {(["risk-on", "neutral", "risk-off"] as Regime[]).map((r) => (
             <div key={r} className="flex items-center gap-1.5">
               <span

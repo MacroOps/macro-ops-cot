@@ -31,7 +31,7 @@ export default function Rankings() {
           value={key}
           onChange={e => setKey(e.target.value)}
           list="rank-keys"
-          className="h-7 w-64 bg-background border border-border rounded-sm px-2 font-mono"
+          className="h-7 w-64 bg-background border border-border rounded-sm px-2 "
         />
         <datalist id="rank-keys">{keys.map(k => <option key={k} value={k} />)}</datalist>
 
@@ -85,7 +85,7 @@ export default function Rankings() {
                   return (
                     <tr key={`${r.entity}-${i}`} className="border-b border-border/50 hover:bg-surface/40">
                       <td className="px-3 py-1.5 text-muted-foreground">{r.rank ?? i + 1}</td>
-                      <td className="px-3 py-1.5 font-mono font-semibold">{r.entity}</td>
+                      <td className="px-3 py-1.5 font-semibold">{r.entity}</td>
                       <td className="px-3 py-1.5">
                         <div className="h-2 bg-background border border-border rounded-sm relative overflow-hidden">
                           <div
@@ -94,7 +94,7 @@ export default function Rankings() {
                           />
                         </div>
                       </td>
-                      <td className="px-3 py-1.5 text-right font-mono">{Number.isNaN(v) ? String(r.value) : fmt.format(v)}</td>
+                      <td className="px-3 py-1.5 text-right ">{Number.isNaN(v) ? String(r.value) : fmt.format(v)}</td>
                     </tr>
                   );
                 })}

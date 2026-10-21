@@ -168,7 +168,7 @@ function FeedRow({ item }: { item: NewsItem }) {
         {/* Body */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-chart-ink-muted mb-1">
-            <Link to={`/asset/${item.symbol}`} className="font-mono font-semibold text-chart-ink hover:underline">
+            <Link to={`/asset/${item.symbol}`} className="font-semibold text-chart-ink hover:underline">
               {item.symbol}
             </Link>
             <span>·</span>
@@ -184,13 +184,13 @@ function FeedRow({ item }: { item: NewsItem }) {
               {divLabel[item.divergence]}
             </span>
             <span className="mx-2">·</span>
-            <span>Net Spec %ile (3y): <span className="font-mono text-chart-ink">{item.netSpecPct3y}</span></span>
+            <span>Net Spec %ile (3y): <span className="text-chart-ink">{item.netSpecPct3y}</span></span>
           </div>
         </div>
 
         {/* Return */}
         <div className="text-right shrink-0 w-20">
-          <div className={`flex items-center justify-end gap-0.5 font-mono text-sm font-semibold ${retColor}`}>
+          <div className={`flex items-center justify-end gap-0.5 text-sm font-semibold ${retColor}`}>
             <ArrowIcon className="h-3.5 w-3.5" />
             {fmtPct(item.observedReturn1d)}
           </div>
@@ -211,7 +211,7 @@ function Stat({ label, value, accent = false }: { label: string; value: number; 
   return (
     <div className="hud-chart px-4 py-3">
       <div className="text-[9px] uppercase tracking-[0.14em] text-chart-ink-muted">{label}</div>
-      <div className={`mt-1 font-mono text-2xl font-semibold ${accent ? "text-[hsl(var(--chart-accent-2))]" : "text-chart-ink"}`}>
+      <div className={`mt-1 text-2xl font-semibold ${accent ? "text-[hsl(var(--chart-accent-2))]" : "text-chart-ink"}`}>
         {value}
       </div>
     </div>

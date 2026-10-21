@@ -59,7 +59,7 @@ function BarList({
                 style={{ width: `${w}%` }}
               />
             </div>
-            <span className={`font-mono tabular-nums text-right ${tone(r.pct)}`}>{has ? fp(r.pct) : "—"}</span>
+            <span className={`tabular-nums text-right ${tone(r.pct)}`}>{has ? fp(r.pct) : "—"}</span>
             <span className="text-[10px] text-muted-foreground text-right">
               {r.count != null ? `${r.count} pos` : ""}
             </span>
@@ -87,13 +87,13 @@ function PosTable({ rows }: { rows: PublicPosition[] }) {
       {rows.map((p) => (
         <div key={`${p.ticker}-${p.name}`} className={`${POS_COLS} py-1.5 border-b border-border/50 last:border-b-0`}>
           <div className="pr-2 leading-snug">{p.name}</div>
-          <div className="font-mono whitespace-nowrap">
+          <div className="whitespace-nowrap">
             {p.ticker}
             {p.isShort && (
               <span className="ml-1.5 text-[9px] uppercase tracking-wider text-destructive">Short</span>
             )}
           </div>
-          <div className={`font-mono tabular-nums text-right ${tone(p.notional)}`}>{fp(p.notional)}</div>
+          <div className={`tabular-nums text-right ${tone(p.notional)}`}>{fp(p.notional)}</div>
         </div>
       ))}
     </div>
@@ -246,7 +246,7 @@ export default function Portfolio() {
               <div className={`${POS_COLS} py-2 border-b border-border text-[11px] uppercase tracking-wider`}>
                 <span className="font-semibold">Futures, Bonds & FX</span>
                 <span />
-                <span className="text-muted-foreground font-mono text-right">{fp(s.futures)}</span>
+                <span className="text-muted-foreground text-right">{fp(s.futures)}</span>
               </div>
               <PosTable rows={port.futures} />
             </div>
@@ -255,7 +255,7 @@ export default function Portfolio() {
               <div className={`${POS_COLS} py-2 border-b border-border text-[11px] uppercase tracking-wider`}>
                 <span className="font-semibold">Equities</span>
                 <span />
-                <span className="text-muted-foreground font-mono text-right">{fp(s.equity)}</span>
+                <span className="text-muted-foreground text-right">{fp(s.equity)}</span>
               </div>
               <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
                 {eqPills.map((f) => (
@@ -285,8 +285,8 @@ export default function Portfolio() {
                       <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
                         {o.isNet ? "Net" : o.isCall ? "Call" : o.isPut ? "Put" : "Leg"}
                       </div>
-                      <div className="font-mono text-xs mt-1">{o.ticker}</div>
-                      <div className={`font-mono text-sm mt-1 ${tone(o.notional)}`}>{fp(o.notional)}</div>
+                      <div className="text-xs mt-1">{o.ticker}</div>
+                      <div className={`text-sm mt-1 ${tone(o.notional)}`}>{fp(o.notional)}</div>
                     </div>
                   ))}
                 </div>
@@ -309,7 +309,7 @@ function Kpi({ label, value, className = "" }: { label: string; value: string; c
   return (
     <div className="px-4 py-3 border-r border-b border-border last:border-r-0">
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className={`text-lg font-medium tabular-nums font-mono ${className}`}>{value}</div>
+      <div className={`text-lg font-medium tabular-nums ${className}`}>{value}</div>
     </div>
   );
 }

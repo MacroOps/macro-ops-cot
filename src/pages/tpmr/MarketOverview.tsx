@@ -47,11 +47,11 @@ function PerfTable({ rows }: { rows: ModelPerfRow[] }) {
         {rows.map((r) => (
           <tr key={r.signal} className="border-t border-border/50">
             <td className="py-1.5">{r.signal}</td>
-            <td className={`py-1.5 text-right font-mono tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
+            <td className={`py-1.5 text-right tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
               {r.annReturn > 0 ? "+" : ""}
               {r.annReturn.toFixed(1)}%
             </td>
-            <td className="py-1.5 text-right font-mono tabular-nums">{r.pctTime}%</td>
+            <td className="py-1.5 text-right tabular-nums">{r.pctTime}%</td>
           </tr>
         ))}
       </tbody>
@@ -90,7 +90,7 @@ export default function MarketOverview() {
           eyebrow="1A"
           badge={
             data?.asOf ? (
-              <span className="text-[9px] font-mono text-muted-foreground">{data.asOf}</span>
+              <span className="text-[9px] text-muted-foreground">{data.asOf}</span>
             ) : null
           }
         >
@@ -110,7 +110,7 @@ export default function MarketOverview() {
                 <tr key={r.type} className="border-t border-border/50">
                   <td className="py-2">{r.type}</td>
                   <td className="py-2"><SignalBadge value={r.direction} /></td>
-                  <td className="py-2 text-right font-mono tabular-nums">{r.signalDate}</td>
+                  <td className="py-2 text-right tabular-nums">{r.signalDate}</td>
                 </tr>
               ))}
             </tbody>
@@ -125,8 +125,8 @@ export default function MarketOverview() {
                   {c.name}
                 </div>
                 <div className="mt-1"><SignalBadge value={c.signal} /></div>
-                <div className="mt-1 text-[10px] font-mono text-muted-foreground">{c.signalDate}</div>
-                <div className="mt-1 font-mono text-xs tabular-nums">
+                <div className="mt-1 text-[10px] text-muted-foreground">{c.signalDate}</div>
+                <div className="mt-1 text-xs tabular-nums">
                   {c.count}/{c.total}
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function MarketOverview() {
                         <SignalBadge value={s.signal} />
                         <LevelBar value={s.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">
+                      <div className="text-[9px] text-muted-foreground mt-0.5">
                         {s.date} · {s.days}d
                       </div>
                     </td>
@@ -197,24 +197,24 @@ export default function MarketOverview() {
                         <SignalBadge value={r.riskST.signal} />
                         <LevelBar value={r.riskST.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskST.date} · {r.riskST.days}d</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{r.riskST.date} · {r.riskST.days}d</div>
                     </td>
                     <td className="py-1.5">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.riskLT.signal} />
                         <LevelBar value={r.riskLT.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.riskLT.date} · {r.riskLT.days}d</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{r.riskLT.date} · {r.riskLT.days}d</div>
                     </td>
                     <td className="py-1.5">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.trend.signal} />
                         <LevelBar value={r.trend.level} />
                       </div>
-                      <div className="text-[9px] font-mono text-muted-foreground mt-0.5">{r.trend.date} · {r.trend.days}d</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{r.trend.date} · {r.trend.days}d</div>
                     </td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{r.trend.tLevel}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{r.trend.rLevel}</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.trend.tLevel}</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.trend.rLevel}</td>
                   </tr>
                 ))}
               </tbody>
@@ -247,12 +247,12 @@ export default function MarketOverview() {
                 {TCTM_THRESHOLDS.map((r, i) => (
                   <tr key={i} className="border-t border-border/50">
                     <td className="py-1.5">{r.condition}</td>
-                    <td className="py-1.5 font-mono">{r.threshold}</td>
-                    <td className={`py-1.5 text-right font-mono tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
+                    <td className="py-1.5 ">{r.threshold}</td>
+                    <td className={`py-1.5 text-right tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
                       {r.annReturn > 0 ? "+" : ""}
                       {r.annReturn.toFixed(1)}%
                     </td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">
+                    <td className="py-1.5 text-right tabular-nums">
                       <DeltaCell value={null} />
                       <span className="ml-1">{r.pctTime}%</span>
                     </td>

@@ -52,7 +52,7 @@ export default function TpTrendSignals() {
               >
                 {/* every returned row already satisfies the scan conditions */}
                 <CheckCircle2 className="h-3 w-3 text-[hsl(var(--pos-long))]" />
-                <span className="font-mono text-xs font-semibold">{r.entity}</span>
+                <span className="text-xs font-semibold">{r.entity}</span>
                 <span className="ml-auto text-[10px] text-muted-foreground">{r.date}</span>
               </div>
             ))}

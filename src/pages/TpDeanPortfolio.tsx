@@ -43,7 +43,7 @@ function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="hud-panel px-3 py-2 min-w-[8.5rem]">
       <div className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
-      <div className="font-mono text-sm tabular-nums text-surface-foreground mt-0.5">{value}</div>
+      <div className="text-sm tabular-nums text-surface-foreground mt-0.5">{value}</div>
     </div>
   );
 }
@@ -68,11 +68,11 @@ function BookColHead() {
 function HoldingRow({ h }: { h: DeanHolding }) {
   return (
     <div className={`${BOOK_COLS} py-1.5 border-b border-border/60 text-xs`}>
-      <div className="font-mono font-semibold text-surface-foreground truncate">{h.symbol}</div>
+      <div className="font-semibold text-surface-foreground truncate">{h.symbol}</div>
       <div className="text-muted-foreground truncate" title={h.name}>
         {h.name}
       </div>
-      <div className="font-mono tabular-nums text-right">{pct(h.weightPct)}</div>
+      <div className="tabular-nums text-right">{pct(h.weightPct)}</div>
       <div className="text-muted-foreground truncate" title={h.subIndustry}>
         {h.subIndustry}
       </div>
@@ -176,7 +176,7 @@ export default function TpDeanPortfolio() {
           <ul className="divide-y divide-border/60">
             {comments.map((c) => (
               <li key={c.id} className="px-3 py-2.5">
-                <div className="text-[10px] font-mono text-muted-foreground">{formatCommentTime(c.postedAt)} PT</div>
+                <div className="text-[10px] text-muted-foreground">{formatCommentTime(c.postedAt)} PT</div>
                 <p className="text-xs text-surface-foreground mt-1 leading-relaxed">{c.text}</p>
               </li>
             ))}

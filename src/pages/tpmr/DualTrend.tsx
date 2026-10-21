@@ -40,18 +40,18 @@ function StockRow({ s }: { s: DualTrendStock }) {
         <td className="py-1.5 pl-2">
           <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
         </td>
-        <td className="py-1.5 font-mono font-medium">{s.symbol}</td>
+        <td className="py-1.5 font-medium">{s.symbol}</td>
         <td className="py-1.5 truncate max-w-[180px]">{s.name}</td>
-        <td className="py-1.5 font-mono text-[10px] text-muted-foreground">{s.etf}</td>
+        <td className="py-1.5 text-[10px] text-muted-foreground">{s.etf}</td>
         <td className="py-1.5 text-[10px] text-muted-foreground">{s.category}</td>
         <td className="py-1.5"><LevelBar value={s.ltTrend} /></td>
         <td className="py-1.5"><LevelBar value={s.ltRelative} /></td>
         <td className="py-1.5"><SignalBadge value={s.ltSignal} /></td>
-        <td className="py-1.5 text-right font-mono tabular-nums">{s.ltDays}</td>
-        <td className={cn("py-1.5 text-right font-mono tabular-nums", s.ltReturn >= 0 ? "text-success" : "text-destructive")}>
+        <td className="py-1.5 text-right tabular-nums">{s.ltDays}</td>
+        <td className={cn("py-1.5 text-right tabular-nums", s.ltReturn >= 0 ? "text-success" : "text-destructive")}>
           {s.ltReturn > 0 ? "+" : ""}{s.ltReturn}%
         </td>
-        <td className={cn("py-1.5 text-right font-mono tabular-nums pr-2", s.ltNet >= 0 ? "text-success" : "text-destructive")}>
+        <td className={cn("py-1.5 text-right tabular-nums pr-2", s.ltNet >= 0 ? "text-success" : "text-destructive")}>
           {s.ltNet > 0 ? "+" : ""}{s.ltNet}%
         </td>
       </tr>
@@ -81,19 +81,19 @@ function StockRow({ s }: { s: DualTrendStock }) {
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                       <div className="text-muted-foreground">Trend Level</div>
-                      <div className="text-right font-mono tabular-nums">{data.trend}</div>
+                      <div className="text-right tabular-nums">{data.trend}</div>
                       <div className="text-muted-foreground">Relative Level</div>
-                      <div className="text-right font-mono tabular-nums">{data.rel}</div>
+                      <div className="text-right tabular-nums">{data.rel}</div>
                       <div className="text-muted-foreground">Days in Signal</div>
-                      <div className="text-right font-mono tabular-nums">{data.days}</div>
+                      <div className="text-right tabular-nums">{data.days}</div>
                       <div className="text-muted-foreground">Signal Date</div>
-                      <div className="text-right font-mono tabular-nums">{data.date}</div>
+                      <div className="text-right tabular-nums">{data.date}</div>
                       <div className="text-muted-foreground">Return</div>
-                      <div className={cn("text-right font-mono tabular-nums", data.ret >= 0 ? "text-success" : "text-destructive")}>
+                      <div className={cn("text-right tabular-nums", data.ret >= 0 ? "text-success" : "text-destructive")}>
                         {data.ret > 0 ? "+" : ""}{data.ret}%
                       </div>
                       <div className="text-muted-foreground">Net Return</div>
-                      <div className={cn("text-right font-mono tabular-nums", data.net >= 0 ? "text-success" : "text-destructive")}>
+                      <div className={cn("text-right tabular-nums", data.net >= 0 ? "text-success" : "text-destructive")}>
                         {data.net > 0 ? "+" : ""}{data.net}%
                       </div>
                     </div>
@@ -150,12 +150,12 @@ export default function DualTrendPage({ slug }: { slug: string }) {
                 {u.summary.map((r) => (
                   <tr key={r.etf} className="border-t border-border/50">
                     <td className="py-1.5">{r.etf}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{r.total}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums text-success">{r.bullishLT}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBullishLT}%</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.total}</td>
+                    <td className="py-1.5 text-right tabular-nums text-success">{r.bullishLT}</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.pctBullishLT}%</td>
                     <td className="py-1.5 text-right"><DeltaCell value={r.fiveDayChg} /></td>
-                    <td className="py-1.5 text-right font-mono tabular-nums text-destructive">{r.bearishLT}</td>
-                    <td className="py-1.5 text-right font-mono tabular-nums">{r.pctBearishLT}%</td>
+                    <td className="py-1.5 text-right tabular-nums text-destructive">{r.bearishLT}</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.pctBearishLT}%</td>
                   </tr>
                 ))}
               </tbody>

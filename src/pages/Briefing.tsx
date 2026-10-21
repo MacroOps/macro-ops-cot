@@ -145,7 +145,7 @@ export default function Briefing() {
                   <div className="text-[11px] font-semibold uppercase tracking-wider">{h.label}</div>
                   <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary" />
                 </div>
-                <div className="flex items-baseline gap-2 font-mono tabular-nums">
+                <div className="flex items-baseline gap-2 tabular-nums">
                   <span className="text-lg font-semibold">{h.value}{h.unit}</span>
                   <span className={cn("text-[10px] flex items-center", isUp ? "text-success" : "text-destructive")}>
                     {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
