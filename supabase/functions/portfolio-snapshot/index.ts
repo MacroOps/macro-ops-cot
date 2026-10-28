@@ -1,9 +1,10 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { extractPortfolio, parseCSV, parseStatsCSV } from "../_shared/portfolio-parse.ts";
+import { extractPortfolio, extractTpDt, parseCSV, parseStatsCSV } from "../_shared/portfolio-parse.ts";
 
 const SHEET = Deno.env.get("MO_PORTFOLIO_SHEET_ID") ?? "1MfifAOtyX3PVT7-Ilat4cFVQnmfYVtIfE1_bdKc3BZk";
 const GID_PUBLIC = Deno.env.get("MO_PORTFOLIO_GID_PUBLIC") ?? "555635575";
 const GID_STATS = Deno.env.get("MO_PORTFOLIO_GID_STATS") ?? "1741167923";
+const GID_TP_DT = Deno.env.get("MO_PORTFOLIO_GID_TP_DT") ?? "28861058";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -38,15 +39,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const [portCsv, statsCsv] = await Promise.all([
+    const [portCsv, statsCsv, tpCsv] = await Promise.all([
       fetchSheetCsv(GID_PUBLIC),
       fetchSheetCsv(GID_STATS).catch(() => ""),
+      fetchSheetCsv(GID_TP_DT).catch(() => ""),
     ]);
     const portfolio = extractPortfolio(parseCSV(portCsv));
     const stats = statsCsv ? parseStatsCSV(statsCsv) : [];
+    const tpDt = tpCsv ? extractTpDt(parseCSV(tpCsv)) : null;
     return json({
       portfolio,
       stats,
+      tpDt,
       fetchedAt: new Date().toISOString(),
       holdingsCadence: "weekly",
       statsCadence: "daily",

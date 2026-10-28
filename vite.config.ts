@@ -3,11 +3,27 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { loadPublicPortfolioSnapshot } from "./src/lib/portfolio/parse";
+import { loadTpDtPortfolio } from "./src/lib/tpDtPortfolio";
 
 function portfolioDevApi(): Plugin {
   return {
     name: "portfolio-snapshot-dev",
     configureServer(server) {
+      server.middlewares.use("/api/tp-dt-portfolio", (req, res, next) => {
+        if (req.method !== "GET" && req.method !== "POST") return next();
+        void (async () => {
+          try {
+            const payload = await loadTpDtPortfolio();
+            res.setHeader("Content-Type", "application/json");
+            res.setHeader("Cache-Control", "no-store");
+            res.end(JSON.stringify(payload));
+          } catch (e) {
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: (e as Error).message }));
+          }
+        })();
+      });
       server.middlewares.use("/api/portfolio-snapshot", (req, res, next) => {
         if (req.method !== "GET" && req.method !== "POST") return next();
         void (async () => {

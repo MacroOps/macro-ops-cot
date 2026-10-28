@@ -242,3 +242,70 @@ export function parseStatsCSV(text: string): StatsPoint[] {
   for (const d of data) seen[d.iso] = { date: d.iso, ytd: d.ytd };
   return Object.values(seen).sort((a, b) => a.date.localeCompare(b.date));
 }
+
+function tpStance(v: unknown): "Bullish" | "Bearish" | "Neutral" {
+  const s = String(v || "").trim().toLowerCase();
+  if (s.startsWith("bear")) return "Bearish";
+  if (s.startsWith("bull")) return "Bullish";
+  return "Neutral";
+}
+
+/** TP DT - PUBLIC: Dean's shared book table. */
+export function extractTpDt(rows: string[][]) {
+  const header = rows.findIndex(
+    (r) => /^Holdings$/i.test((r?.[0] || "").trim()) && /symbol/i.test(r?.[1] || ""),
+  );
+  const at = (re: RegExp) => {
+    const i = rows.findIndex((r) => re.test((r?.[0] || "").trim()));
+    return i >= 0 ? rows[i] : null;
+  };
+  const groups: Array<{
+    name: string;
+    portfolioPct: number | null;
+    benchmarkPct: number | null;
+    positioning: string;
+    holdings: Array<{
+      symbol: string;
+      name: string;
+      weightPct: number;
+      subIndustry: string;
+      lt: "Bullish" | "Bearish" | "Neutral";
+      st: "Bullish" | "Bearish" | "Neutral";
+    }>;
+  }> = [];
+  let current: (typeof groups)[number] | null = null;
+  for (let i = header + 1; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const name = (row[0] || "").trim();
+    const symbol = (row[1] || "").trim();
+    if (!name && !symbol) continue;
+    if (!symbol) {
+      current = {
+        name,
+        benchmarkPct: num(row[6]),
+        portfolioPct: num(row[7]),
+        positioning: (row[8] || "").trim(),
+        holdings: [],
+      };
+      groups.push(current);
+      continue;
+    }
+    if (!current) continue;
+    current.holdings.push({
+      symbol,
+      name,
+      weightPct: num(row[2]) ?? 0,
+      subIndustry: (row[3] || "").trim(),
+      lt: tpStance(row[4]),
+      st: tpStance(row[5]),
+    });
+  }
+  return {
+    asOf: (at(/^Holdings As Of$/i)?.[1] || "").trim(),
+    holdings: num(at(/^Total Holdings$/i)?.[1]),
+    sectors: num(at(/^Total Sectors$/i)?.[1]),
+    spxWeightPct: num(at(/^S&P 500 Weight$/i)?.[1]),
+    cashWeightPct: num(at(/^Cash Weight$/i)?.[1]),
+    groups,
+  };
+}
