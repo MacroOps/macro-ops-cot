@@ -192,7 +192,7 @@ export default function Alerts() {
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Indicator</label>
                   <Select value={indicatorKey} onValueChange={setIndicatorKey}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 rounded-sm text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {REGISTRY.map((r) => (
                         <SelectItem key={r.key} value={r.key}>{r.label} <span className="text-muted-foreground">· {r.category}</span></SelectItem>
@@ -203,7 +203,7 @@ export default function Alerts() {
                 <div>
                   <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Operator</label>
                   <Select value={operator} onValueChange={(v) => setOperator(v as AlertRule["operator"])}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 rounded-sm text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {OPS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { isValidElement, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,14 +12,17 @@ import {
   Line,
   ReferenceArea,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { AlertTriangle, ArrowLeft, ArrowUpRight, ArrowDownRight, ExternalLink, Newspaper, PanelRightClose, PanelRightOpen, Maximize2 } from "lucide-react";
 import { AppShell } from "@/components/hud/AppShell";
+import { HudLoader } from "@/components/hud/HudLoader";
+import { PageHeader } from "@/components/hud/PageHeader";
 import { PercentileGauge } from "@/components/hud/PercentileGauge";
 import { computeForwardPerformance, useAssetData, type AssetSeriesPoint } from "@/hooks/useAssetData";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -69,6 +72,7 @@ function ChartPanel({
   children,
   height = 200,
   onExpand,
+  exportTitle,
 }: {
   title: string;
   sub?: string;
@@ -76,9 +80,10 @@ function ChartPanel({
   children: React.ReactNode;
   height?: number;
   onExpand?: () => void;
+  exportTitle?: string;
 }) {
   return (
-    <div className="hud-chart flex flex-col">
+    <div className="hud-chart flex flex-col" data-chart-export="">
       <div className="hud-chart-header flex items-center justify-between gap-2 px-3 py-2 flex-wrap">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
@@ -88,6 +93,11 @@ function ChartPanel({
         </div>
         <div className="flex items-center gap-2">
           {right}
+          <ChartExportButton
+            compact
+            title={exportTitle ?? title}
+            className="h-auto w-auto px-1.5 py-1 border border-chart-grid text-chart-axis hover:text-chart-ink hover:border-chart-ink hover:bg-transparent"
+          />
           {onExpand && (
             <button
               onClick={onExpand}
@@ -99,8 +109,10 @@ function ChartPanel({
           )}
         </div>
       </div>
-      <div className="p-1.5" style={{ height }}>
-        <ResponsiveContainer width="100%" height="100%">{children as any}</ResponsiveContainer>
+      <div className="p-1.5" style={{ height }} data-chart-body="">
+        {isValidElement(children) && (
+          <ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer>
+        )}
       </div>
     </div>
   );
@@ -541,6 +553,7 @@ export default function AssetDetail() {
 
   return (
     <AppShell title={`Asset · ${symbol}`}>
+      <PageHeader eyebrow="Positioning · Asset detail" title={data?.name ?? symbol} />
       <div className="px-4 py-3 space-y-3">
         {/* Header bar */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -569,7 +582,6 @@ export default function AssetDetail() {
 
             </select>
             <span className="hud-label">{data?.sector ?? "—"}</span>
-            <span className="text-xs text-muted-foreground truncate hidden md:inline">{data?.name}</span>
             {data?.exchange && (
               <span className="hud-label border border-border px-1.5 py-0.5 rounded-sm">{data.exchange}</span>
             )}
@@ -639,7 +651,7 @@ export default function AssetDetail() {
         <div className={`grid grid-cols-1 gap-3 ${showNews ? "lg:grid-cols-3" : ""}`}>
           <div className={showNews ? "lg:col-span-2 space-y-0" : "space-y-0"}>
             {/* Price chart (top) */}
-            <ChartPanel title={`${symbol} Price`} sub="Underlying spot/futures · log scale" height={340} onExpand={() => openExpand("price")}>
+            <ChartPanel title={`${symbol} Price`} exportTitle={`${symbol} price ${timeframe}`} sub="Underlying spot/futures · log scale" height={340} onExpand={() => openExpand("price")}>
               {renderPriceChart(timeframe)}
             </ChartPanel>
 
@@ -647,6 +659,7 @@ export default function AssetDetail() {
             <div className="mt-3" />
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
+              exportTitle={`${symbol} positioning ${METRIC_LABEL[metric]} ${timeframe}`}
               sub={
                 metric === "netSpec"
                   ? "Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
@@ -802,13 +815,13 @@ export default function AssetDetail() {
           )}
         </div>
 
-        {isLoading && <div className="text-xs text-muted-foreground">Loading…</div>}
+        {isLoading && <HudLoader />}
         {error && <div className="text-xs text-destructive">Failed to load asset data.</div>}
         {!isLoading && !data && <div className="text-xs text-muted-foreground">Asset not found.</div>}
       </div>
 
       <Dialog open={expanded !== null} onOpenChange={(o) => !o && setExpanded(null)}>
-        <DialogContent className="max-w-[96vw] w-[96vw] h-[92vh] p-0 flex flex-col bg-background border-border">
+        <DialogContent className="max-w-[96vw] w-[96vw] h-[92vh] p-0 flex flex-col bg-background border-border" data-chart-export="">
           <div className="sr-only">
             <DialogTitle>
               {expanded === "price" ? `${symbol} Price` : expanded === "positioning" ? `Positioning · ${METRIC_LABEL[expMetric]}` : "Disaggregated Net Positioning"}
@@ -831,9 +844,13 @@ export default function AssetDetail() {
                 </>
               )}
               {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
+              <ChartExportButton
+                className="mr-8"
+                title={`${symbol} ${expanded === "price" ? "price" : expanded === "positioning" ? `positioning ${METRIC_LABEL[expMetric]}` : "disaggregated net positioning"} ${expTimeframe}`}
+              />
             </div>
           </div>
-          <div className="flex-1 min-h-0 p-3">
+          <div className="flex-1 min-h-0 p-3" data-chart-body="">
             <ResponsiveContainer width="100%" height="100%">
               {expanded === "price"
                 ? renderPriceChart(expTimeframe)

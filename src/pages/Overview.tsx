@@ -233,7 +233,9 @@ export default function Overview() {
                 points={90}
                 thresholds={{ hi: c.trigger }}
                 unit={`/${status.total}`}
-                actions={<SignalBadge value={status.signal} />}
+                actions={
+                  <SignalBadge value={status.signal} direction={c.key === "RISK" ? "bear" : "bull"} />
+                }
               />
               <Link
                 to={c.to}

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/hud/AppShell";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/hud/PageHeader";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -20,12 +22,13 @@ import {
   Line,
   ReferenceArea,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 // TODO: Optional ATR-scaling layer — would require a separate daily price feed
 // to convert net_contracts into vol-adjusted units. Not in scope: COT data has no prices.
@@ -47,6 +50,22 @@ interface Point {
   n: number;
   src: string;
   lookback: number;
+}
+
+function asPoints(data: unknown): Point[] {
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const r = row as Record<string, unknown>;
+    if (typeof r.d !== "string" || typeof r.net !== "number") return [];
+    return [r as unknown as Point];
+  });
+}
+
+function rowsWritten(data: unknown): number {
+  if (!data || typeof data !== "object") return 0;
+  const rows = (data as Record<string, unknown>).rows_written;
+  return typeof rows === "number" ? rows : 0;
 }
 
 interface MarketRow {
@@ -170,12 +189,12 @@ export default function Offsides() {
     // Fan out RPCs in parallel. Take the last point of each series as "latest".
     const results = await Promise.all(
       mkts.map(async (m) => {
-        const { data, error } = await (supabase as any).rpc("get_cot_normalized", {
+        const { data, error } = await supabase.rpc("get_cot_normalized", {
           p_market_id: m.id,
           p_lookback: lb,
         });
         if (error) return { ...m, latest: null } as MarketRow;
-        const series = (data ?? []) as Point[];
+        const series = asPoints(data);
         const latest = series.length ? series[series.length - 1] : null;
         return {
           id: m.id,
@@ -196,7 +215,7 @@ export default function Offsides() {
 
   async function loadDetail(id: string, lb: Lookback) {
     setDetailSeries(null);
-    const { data, error } = await (supabase as any).rpc("get_cot_normalized", {
+    const { data, error } = await supabase.rpc("get_cot_normalized", {
       p_market_id: id,
       p_lookback: lb,
     });
@@ -205,7 +224,7 @@ export default function Offsides() {
       setDetailSeries([]);
       return;
     }
-    setDetailSeries((data ?? []) as Point[]);
+    setDetailSeries(asPoints(data));
   }
 
   useEffect(() => {
@@ -224,11 +243,11 @@ export default function Offsides() {
         body: { years: 1 },
       });
       if (error) throw error;
-      toast.success(`COT refresh: ${(data as any)?.rows_written ?? 0} rows`);
+      toast.success(`COT refresh: ${rowsWritten(data)} rows`);
       await loadAll(lookback);
       if (selectedId) await loadDetail(selectedId, lookback);
-    } catch (e: any) {
-      toast.error(e?.message ?? "refresh failed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "refresh failed");
     } finally {
       setRefreshing(false);
     }
@@ -271,59 +290,52 @@ export default function Offsides() {
 
   return (
     <AppShell title="Offsides — COT Extremes">
-      <div className="space-y-6 p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Offsides — COT Extremes
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-3xl">
-              Contrarian read on Leveraged Funds / Managed Money positioning. Extreme
-              long → bearish lean; extreme short → bullish lean.
-              <span className="ml-1 text-xs">
-                Data is weekly (CFTC publishes Fridays 3:30pm ET, as-of the prior
-                Tuesday — ~3 day lag).
-              </span>
-            </p>
-            {asOf && (
-              <p className="text-xs text-muted-foreground mt-1">
-                As of report date{" "}
-                <span className="text-foreground">{asOf}</span> ·{" "}
-                lookback {lookback}w
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Select
-              value={String(lookback)}
-              onValueChange={(v) => setLookback(Number(v) as Lookback)}
-            >
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="52">52w lookback</SelectItem>
-                <SelectItem value="156">156w lookback</SelectItem>
-                <SelectItem value="260">260w lookback</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={norm} onValueChange={(v) => setNorm(v as Norm)}>
-              <SelectTrigger className="w-[160px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="idx">COT Index (0–100)</SelectItem>
-                <SelectItem value="z">Z-score</SelectItem>
-                <SelectItem value="pct">Percentile rank</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={runRefresh} disabled={refreshing} size="sm">
-              {refreshing ? "Refreshing…" : "Refresh COT data"}
-            </Button>
-          </div>
-        </div>
+      <PageHeader
+        eyebrow="Positioning"
+        title="Offsides — COT Extremes"
+        description="Contrarian read on Leveraged Funds / Managed Money positioning. Extreme long → bearish lean; extreme short → bullish lean. Data is weekly (CFTC publishes Fridays 3:30pm ET, as-of the prior Tuesday — ~3 day lag)."
+        actions={
+          <Button onClick={runRefresh} disabled={refreshing} size="sm">
+            {refreshing ? "Refreshing…" : "Refresh COT data"}
+          </Button>
+        }
+      />
 
-        <Tabs defaultValue="extremes" className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border">
+        <span className="hud-label mr-1">Lookback</span>
+        <Select
+          value={String(lookback)}
+          onValueChange={(v) => setLookback(Number(v) as Lookback)}
+        >
+          <SelectTrigger className="w-[130px] h-7 rounded-sm text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="52">52w lookback</SelectItem>
+            <SelectItem value="156">156w lookback</SelectItem>
+            <SelectItem value="260">260w lookback</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="hud-label ml-2 mr-1">Scale</span>
+        <Select value={norm} onValueChange={(v) => setNorm(v as Norm)}>
+          <SelectTrigger className="w-[150px] h-7 rounded-sm text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="idx">COT Index (0–100)</SelectItem>
+            <SelectItem value="z">Z-score</SelectItem>
+            <SelectItem value="pct">Percentile rank</SelectItem>
+          </SelectContent>
+        </Select>
+        {asOf && (
+          <span className="ml-auto text-[10px] tracking-wider text-muted-foreground">
+            As of report date <span className="text-surface-foreground">{asOf}</span> · lookback {lookback}w
+          </span>
+        )}
+      </div>
+
+      <div className="p-3">
+        <Tabs defaultValue="extremes" className="space-y-3">
           <TabsList>
             <TabsTrigger value="extremes">
               Current Extremes ({extremes.length})
@@ -334,36 +346,40 @@ export default function Offsides() {
 
           {/* === EXTREMES TABLE === */}
           <TabsContent value="extremes">
-            <Card className="overflow-hidden">
-              <div className="px-4 py-2 border-b bg-muted/30 text-xs uppercase tracking-wider font-semibold flex justify-between">
-                <span>Markets with COT Index ≥ 90 or ≤ 10</span>
+            <div className="hud-panel overflow-hidden">
+              <div className="px-3 py-2 border-b border-border flex justify-between">
+                <span className="hud-label">Markets with COT Index ≥ 90 or ≤ 10</span>
                 {asOf && (
-                  <span className="text-muted-foreground normal-case font-normal">
+                  <span className="text-[10px] tracking-wider text-muted-foreground">
                     as of {asOf}
                   </span>
                 )}
               </div>
               {loading ? (
-                <div className="p-6 text-sm text-muted-foreground">Loading…</div>
+                <div className="p-3 space-y-1">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-7 w-full" />
+                  ))}
+                </div>
               ) : extremes.length === 0 ? (
-                <div className="p-6 text-sm text-muted-foreground">
+                <div className="p-3 text-xs text-muted-foreground">
                   No markets currently in extreme territory.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-xs uppercase text-muted-foreground">
-                      <tr className="border-b">
-                        <th className="text-left px-4 py-2">Market</th>
-                        <th className="text-left px-4 py-2">Asset Class</th>
-                        <th className="text-right px-4 py-2">COT Index</th>
-                        <th className="text-right px-4 py-2">Z</th>
-                        <th className="text-right px-4 py-2">%ile</th>
-                        <th className="text-left px-4 py-2">Tier</th>
-                        <th className="text-left px-4 py-2">Signal</th>
-                        <th className="text-left px-4 py-2">Regime</th>
-                        <th className="text-right px-4 py-2">Wks in Extreme</th>
-                        <th className="text-right px-4 py-2">Net</th>
+                  <table className="w-full text-xs tabular-nums">
+                    <thead className="bg-surface/40 border-b border-border">
+                      <tr>
+                        <Th>Market</Th>
+                        <Th>Asset Class</Th>
+                        <Th className="text-right">COT Index</Th>
+                        <Th className="text-right">Z</Th>
+                        <Th className="text-right">%ile</Th>
+                        <Th>Tier</Th>
+                        <Th>Signal</Th>
+                        <Th>Regime</Th>
+                        <Th className="text-right">Wks in Extreme</Th>
+                        <Th className="text-right">Net</Th>
                       </tr>
                     </thead>
                     <tbody>
@@ -373,33 +389,27 @@ export default function Offsides() {
                           <tr
                             key={m.id}
                             onClick={() => setSelectedId(m.id)}
-                            className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                            className="border-b border-border/60 last:border-0 hover:bg-surface/40 cursor-pointer transition-colors"
                           >
-                            <td className="px-4 py-2">
-                              <div className="font-semibold">{m.symbol}</div>
-                              <div className="text-xs text-muted-foreground">
+                            <td className="px-3 py-2">
+                              <div className="text-[12px] font-semibold text-surface-foreground">{m.symbol}</div>
+                              <div className="text-[10px] text-muted-foreground">
                                 {m.name}
                               </div>
                             </td>
-                            <td className="px-4 py-2 text-muted-foreground">
-                              {m.sector}
+                            <td className="px-3 py-2">
+                              <span className="hud-label">{m.sector}</span>
                             </td>
-                            <td className="px-4 py-2 text-right font-semibold">
+                            <td className="px-3 py-2 text-right font-semibold text-surface-foreground">
                               {p.idx.toFixed(1)}
                             </td>
-                            <td className="px-4 py-2 text-right text-xs">
-                              {p.z.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-2 text-right text-xs">
-                              {p.pct.toFixed(0)}
-                            </td>
-                            <td className="px-4 py-2">{tierBadge(p)}</td>
-                            <td className="px-4 py-2">{signalBadge(p)}</td>
-                            <td className="px-4 py-2">{regimeBadge(p.regime)}</td>
-                            <td className="px-4 py-2 text-right ">{p.wks}</td>
-                            <td className="px-4 py-2 text-right text-xs">
-                              {fmtNet(p.net)}
-                            </td>
+                            <td className="px-3 py-2 text-right">{p.z.toFixed(2)}</td>
+                            <td className="px-3 py-2 text-right">{p.pct.toFixed(0)}</td>
+                            <td className="px-3 py-2">{tierBadge(p)}</td>
+                            <td className="px-3 py-2">{signalBadge(p)}</td>
+                            <td className="px-3 py-2">{regimeBadge(p.regime)}</td>
+                            <td className="px-3 py-2 text-right">{p.wks}</td>
+                            <td className="px-3 py-2 text-right">{fmtNet(p.net)}</td>
                           </tr>
                         );
                       })}
@@ -407,14 +417,14 @@ export default function Offsides() {
                   </table>
                 </div>
               )}
-            </Card>
+            </div>
           </TabsContent>
 
           {/* === HEATMAP === */}
           <TabsContent value="heatmap">
-            <div className="space-y-4">
-              <Card className="p-3 text-xs text-muted-foreground flex items-center gap-4">
-                <span>Diverging scale, centered at 50:</span>
+            <div className="space-y-3">
+              <div className="hud-panel px-3 py-2 text-xs text-muted-foreground flex items-center gap-4">
+                <span className="hud-label">Diverging scale, centered at 50</span>
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-4" style={{ background: heatColor(0) }} />
                   <span>0 (short)</span>
@@ -427,13 +437,17 @@ export default function Offsides() {
                   <div className="w-4 h-4" style={{ background: heatColor(100) }} />
                   <span>100 (long)</span>
                 </div>
-              </Card>
+              </div>
               {loading ? (
-                <Card className="p-6 text-sm text-muted-foreground">Loading…</Card>
+                <div className="hud-panel p-3 space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
               ) : (
                 grouped.map(([sector, items]) => (
-                  <Card key={sector} className="overflow-hidden">
-                    <div className="px-4 py-2 border-b bg-muted/30 text-xs uppercase tracking-wider font-semibold">
+                  <div key={sector} className="hud-panel overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border hud-label">
                       {sector}
                     </div>
                     <div className="p-3 grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -444,25 +458,25 @@ export default function Offsides() {
                           <button
                             key={m.id}
                             onClick={() => setSelectedId(m.id)}
-                            className={`text-left p-2 rounded border transition hover:ring-2 hover:ring-primary/40 ${
+                            className={`text-left p-2 rounded-sm border transition-colors hover:border-primary ${
                               isExtreme ? "border-foreground/40" : "border-border"
                             }`}
                             style={{ background: heatColor(v) }}
                           >
-                            <div className="text-xs font-semibold">
+                            <div className="text-[12px] font-semibold text-surface-foreground">
                               {m.symbol}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate">
                               {m.name}
                             </div>
-                            <div className="mt-1 text-lg font-semibold">
+                            <div className="mt-1 text-lg font-semibold tabular-nums text-surface-foreground">
                               {v == null ? "—" : v.toFixed(0)}
                             </div>
                           </button>
                         );
                       })}
                     </div>
-                  </Card>
+                  </div>
                 ))
               )}
             </div>
@@ -470,17 +484,15 @@ export default function Offsides() {
 
           {/* === DETAIL === */}
           <TabsContent value="detail">
-            <Card className="p-4 space-y-4">
+            <div className="hud-panel p-3 space-y-3">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Market
-                  </div>
+                  <div className="hud-label mb-1">Market</div>
                   <Select
                     value={selectedId ?? ""}
                     onValueChange={(v) => setSelectedId(v)}
                   >
-                    <SelectTrigger className="w-[280px]">
+                    <SelectTrigger className="w-[280px] h-7 rounded-sm text-xs">
                       <SelectValue placeholder="Select a market" />
                     </SelectTrigger>
                     <SelectContent>
@@ -497,14 +509,14 @@ export default function Offsides() {
                   </Select>
                 </div>
                 {selected?.latest && (
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <div className="text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <div className="text-[10px] tracking-wider text-muted-foreground">
                       as of{" "}
-                      <span className="text-foreground">
+                      <span className="text-surface-foreground">
                         {selected.latest.d}
                       </span>
                     </div>
-                    <span className="text-lg font-semibold">
+                    <span className="text-lg font-semibold tabular-nums text-surface-foreground">
                       {selected.latest.idx.toFixed(1)}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -524,20 +536,24 @@ export default function Offsides() {
               </div>
 
               {!detailSeries ? (
-                <div className="h-[380px] flex items-center justify-center text-sm text-muted-foreground">
+                <div className="h-[380px] flex items-center justify-center text-xs text-muted-foreground">
                   Loading…
                 </div>
               ) : detailSeries.length === 0 ? (
-                <div className="h-[380px] flex items-center justify-center text-sm text-muted-foreground">
+                <div className="h-[380px] flex items-center justify-center text-xs text-muted-foreground">
                   No COT data available for this market.
                 </div>
               ) : (
                 <>
                   {/* Net position area */}
-                  <div className="h-[220px]">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                      Net Position (Leveraged Funds / Managed Money)
+                  <div className="h-[220px] flex flex-col" data-chart-export="">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="hud-label">
+                        Net Position (Leveraged Funds / Managed Money)
+                      </span>
+                      <ChartExportButton compact title={`${selected?.symbol ?? "COT"} net position`} />
                     </div>
+                    <div className="flex-1 min-h-0" data-chart-body="">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={detailSeries}>
                         <CartesianGrid
@@ -577,17 +593,25 @@ export default function Offsides() {
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
+                    </div>
                   </div>
 
                   {/* Normalized index with extreme bands */}
-                  <div className="h-[260px]">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                      {norm === "idx"
-                        ? "COT Index (0–100) with 90/10 and 95/5 bands"
-                        : norm === "z"
-                          ? "Rolling Z-Score"
-                          : "Rolling Percentile Rank"}
+                  <div className="h-[260px] flex flex-col" data-chart-export="">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="hud-label">
+                        {norm === "idx"
+                          ? "COT Index (0–100) with 90/10 and 95/5 bands"
+                          : norm === "z"
+                            ? "Rolling Z-Score"
+                            : "Rolling Percentile Rank"}
+                      </span>
+                      <ChartExportButton
+                        compact
+                        title={`${selected?.symbol ?? "COT"} ${norm === "idx" ? "cot index" : norm === "z" ? "z-score" : "percentile rank"}`}
+                      />
                     </div>
+                    <div className="flex-1 min-h-0" data-chart-body="">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={detailSeries}>
                         <CartesianGrid
@@ -671,13 +695,18 @@ export default function Offsides() {
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
+                    </div>
                   </div>
                 </>
               )}
-            </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
     </AppShell>
   );
+}
+
+function Th({ children, className }: { children?: ReactNode; className?: string }) {
+  return <th className={cn("px-3 py-2 text-left hud-label font-medium", className)}>{children}</th>;
 }

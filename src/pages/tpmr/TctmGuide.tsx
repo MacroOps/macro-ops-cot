@@ -86,7 +86,10 @@ export default function TctmGuide({ slug }: { slug: keyof typeof TCTM_GUIDES }) 
                       {h.triggered}/{h.total}
                     </td>
                     <td className="py-1.5 px-3 text-right">
-                      <SignalBadge value={h.signal ? "Triggered" : "Neutral"} />
+                      <SignalBadge
+                        value={h.signal ? "Triggered" : "Neutral"}
+                        direction={g.slug === "risk-off" ? "bear" : "bull"}
+                      />
                     </td>
                   </tr>
                 ))}

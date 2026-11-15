@@ -10,9 +10,11 @@ import { persistRun, listRuns, deleteRun, type BtRunRow } from "@/lib/backtest/p
 import { useOutseta } from "@outseta/react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine, Cell, Customized,
+  ReferenceLine, Cell, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { ArrowUpRight, ArrowDownRight, Target, TrendingUp, Hash, Percent, Zap, Save, Trash2, History, GitCompare, FlaskConical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -442,14 +444,17 @@ const Backtests = () => {
           </div>
 
           {/* Spaghetti */}
-          <div className="hud-chart m-px p-3">
+          <div className="hud-chart m-px p-3" data-chart-export="">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis">
                 Forward Returns · each line = one past instance
               </div>
-              <div className="text-[10px] text-chart-axis">{unified?.count ?? 0} paths</div>
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] text-chart-axis">{unified?.count ?? 0} paths</div>
+                <ChartExportButton compact title="Backtest forward returns" />
+              </div>
             </div>
-            <div className="h-[28rem]">
+            <div className="h-[28rem]" data-chart-body="">
               {isLoading ? (
                 <div className="h-full w-full animate-pulse bg-chart-grid/40" />
               ) : unified && unified.paths.length > 1 && unified.tradesCount ? (
@@ -505,11 +510,14 @@ const Backtests = () => {
 
           {/* Histogram + Trades */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-px bg-border p-px">
-            <div className="hud-chart p-3">
-              <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis mb-2">
-                Return Distribution
+            <div className="hud-chart p-3" data-chart-export="">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis">
+                  Return Distribution
+                </div>
+                <ChartExportButton compact title="Backtest return distribution" />
               </div>
-              <div className="h-64">
+              <div className="h-64" data-chart-body="">
                 {histogram.length ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={histogram} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

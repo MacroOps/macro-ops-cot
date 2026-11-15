@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsSignal } from "@/hooks/useMops";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Customized, ReferenceLine } from "recharts";
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis, Customized, ReferenceLine } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
 
@@ -57,9 +59,9 @@ export default function TpBreadth() {
       {err && <div className="px-3 py-3 text-xs text-destructive border-b border-border">{(err as Error).message}</div>}
 
       <div className="p-3 space-y-4">
-        <Panel title="% Members above 50D / 200D MA">
+        <Panel title="% Members above 50D / 200D MA" exportTitle={`${entity} breadth above 50D 200D MA`} height={280}>
           {loading ? <Skeleton /> : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
@@ -74,9 +76,9 @@ export default function TpBreadth() {
           )}
         </Panel>
 
-        <Panel title="New 52W Highs vs Lows (count)">
+        <Panel title="New 52W Highs vs Lows (count)" exportTitle={`${entity} new 52W highs vs lows`} height={240}>
           {loading ? <Skeleton /> : (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
@@ -95,12 +97,17 @@ export default function TpBreadth() {
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, exportTitle, height, children }: { title: string; exportTitle?: string; height: number; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-sm bg-surface/30">
-      <div className="px-3 py-2 border-b border-border hud-label">{title}</div>
-      <div className="p-3">{children}</div>
+    <div className="border border-border rounded-sm bg-surface/30" data-chart-export="">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
+        <span className="hud-label">{title}</span>
+        <ChartExportButton title={exportTitle ?? title} />
+      </div>
+      <div className="p-3" data-chart-body="">
+        <div style={{ height }} data-chart-body="">{children}</div>
+      </div>
     </div>
   );
 }
-function Skeleton() { return <div className="h-[260px] animate-pulse bg-surface/40 rounded-sm" />; }
+function Skeleton() { return <div className="h-full animate-pulse bg-surface/40 rounded-sm" />; }

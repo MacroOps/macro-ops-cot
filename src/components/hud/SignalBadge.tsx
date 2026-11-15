@@ -2,20 +2,32 @@ import { cn } from "@/lib/utils";
 
 type Variant = "BULLISH" | "BEARISH" | "NEUTRAL" | "Triggered" | "Neutral";
 
+const BULL = "bg-success/10 text-success border-success/30";
+const BEAR = "bg-destructive/10 text-destructive border-destructive/30";
+
 export function SignalBadge({
   value,
+  direction,
   className,
 }: {
   value: Variant | string;
+  /** Direction of the TCTM composite; colors a "Triggered" badge. */
+  direction?: "bull" | "bear";
   className?: string;
 }) {
   const v = value as Variant;
   const styles =
-    v === "BULLISH" || v === "Triggered"
-      ? "bg-primary/10 text-primary border-primary/30"
+    v === "BULLISH"
+      ? BULL
       : v === "BEARISH"
-        ? "bg-destructive/10 text-destructive border-destructive/30"
-        : "bg-muted text-muted-foreground border-border";
+        ? BEAR
+        : v === "Triggered"
+          ? direction === "bear"
+            ? BEAR
+            : direction === "bull"
+              ? BULL
+              : "bg-primary/10 text-primary border-primary/30"
+          : "bg-muted text-muted-foreground border-border";
   return (
     <span
       className={cn(

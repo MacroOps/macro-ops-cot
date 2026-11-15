@@ -22,7 +22,7 @@ function stanceTone(value: string) {
 
 function StancePill({ value }: { value: TpDtStance }) {
   return (
-    <span className={`inline-flex text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full border ${stanceTone(value)}`}>
+    <span className={`inline-flex text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm border ${stanceTone(value)}`}>
       {value}
     </span>
   );
@@ -89,7 +89,7 @@ function SectorBlock({ sector, defaultOpen }: { sector: TpDtSector; defaultOpen:
           <span className="text-muted-foreground">Portfolio {pct(sector.portfolioPct)}</span>
           <span className="text-muted-foreground text-right">Benchmark {pct(sector.benchmarkPct)}</span>
           <span className="col-span-2 inline-flex sm:col-span-1 sm:justify-end">
-            <span className={`uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full border ${stanceTone(label)}`}>
+            <span className={`uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm border ${stanceTone(label)}`}>
               {label}
             </span>
           </span>

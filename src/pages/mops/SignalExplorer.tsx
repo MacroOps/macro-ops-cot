@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsSignal, useMopsPercentile, useSignalKeys, useMopsEntities } from "@/hooks/useMops";
 import {
-  CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Customized, ReferenceLine,
+  CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis, Customized, ReferenceLine,
 } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { breadthScopeWarning, symbolEquivalent } from "@/lib/mops/signalScope";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
@@ -115,9 +117,10 @@ export default function SignalExplorer() {
       )}
 
       <div className="p-3 space-y-4">
-        <Panel title={`${key} · ${entity} (365D)`}>
-          {isLoading ? <Skeleton /> : (
-            <ResponsiveContainer width="100%" height={320}>
+        <Panel title={`${key} · ${entity} (365D)`} exportable>
+          <div className="h-[320px]" data-chart-body="">
+          {isLoading ? <div className="h-full animate-pulse bg-surface/40 rounded-sm" /> : (
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series}>
                 <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
@@ -129,6 +132,7 @@ export default function SignalExplorer() {
               </LineChart>
             </ResponsiveContainer>
           )}
+          </div>
         </Panel>
 
         <Panel title="Related signals">
@@ -164,12 +168,14 @@ function Stat({ label, value, sub, tone, mono }: { label: string; value: string;
     </div>
   );
 }
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, exportable, children }: { title: string; exportable?: boolean; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-sm bg-surface/30">
-      <div className="px-3 py-2 border-b border-border hud-label">{title}</div>
-      <div className="p-3">{children}</div>
+    <div className="border border-border rounded-sm bg-surface/30" data-chart-export={exportable ? "" : undefined}>
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
+        <span className="hud-label">{title}</span>
+        {exportable && <ChartExportButton title={title} />}
+      </div>
+      <div className="p-3" data-chart-body={exportable ? "" : undefined}>{children}</div>
     </div>
   );
 }
-function Skeleton() { return <div className="h-[280px] animate-pulse bg-surface/40 rounded-sm" />; }

@@ -9,13 +9,14 @@ import {
   AreaChart,
   ReferenceArea,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
   Customized,
 } from "recharts";
 import { mockSeries } from "@/lib/mockSeries";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { HudTooltip, EndLabelLayer, HudCrosshairCursor, HudCrosshairOverlay, computePercentiles } from "@/components/charts/HudChartPrimitives";
 
 type Regime = "risk-on" | "risk-off" | "neutral";
@@ -104,7 +105,7 @@ export function RegimeTimeline({
   );
 
   return (
-    <div className="hud-panel">
+    <div className="hud-panel" data-chart-export="">
       <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate">
@@ -137,9 +138,10 @@ export function RegimeTimeline({
             </span>
             <span className="tabular-nums text-surface-foreground">{last.toFixed(1)}</span>
           </div>
+          <ChartExportButton compact title={title} />
         </div>
       </div>
-      <div className="hud-chart rounded-none p-1" style={{ height }}>
+      <div className="hud-chart rounded-none p-1" style={{ height }} data-chart-body="">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 18 }}>
             <defs>

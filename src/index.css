@@ -305,3 +305,22 @@
     animation: hud-ledger 1.8s ease-in-out infinite;
   }
 }
+
+/* Chart PNG export: the panel is re-flowed to 16:9 and the plot area fills the spare height. */
+[data-exporting] {
+  display: flex !important;
+  flex-direction: column;
+}
+[data-exporting] [data-chart-body] {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0;
+}
+[data-exporting] [data-chart-body] > .recharts-responsive-container,
+[data-exporting] [data-chart-body] > [data-chart-remount] > .recharts-responsive-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}

@@ -6,10 +6,12 @@ import { useSectorHistory } from "@/hooks/useSectorHistory";
 import { SECTORS } from "@/lib/mockData";
 import type { Sector } from "@/lib/mockData";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine,
   LineChart, Line, ReferenceArea, Customized,
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const fmtInt = new Intl.NumberFormat("en-US");
@@ -103,7 +105,7 @@ const SectorAggregates = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-px bg-border p-px">
         {/* Comparison bar chart — white surface */}
-        <div className="hud-chart lg:col-span-2 p-3">
+        <div className="hud-chart lg:col-span-2 p-3" data-chart-export="">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
               Sector Comparison · Net Speculators (Large + Small)
@@ -122,9 +124,13 @@ const SectorAggregates = () => {
                   {o.label}
                 </button>
               ))}
+              <ChartExportButton
+                compact
+                title={`Sector comparison ${METRIC_OPTIONS.find(o => o.key === metric)?.label ?? metric}`}
+              />
             </div>
           </div>
-          <div className="h-72">
+          <div className="h-72" data-chart-body="">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="hsl(var(--chart-grid))" strokeDasharray="2 4" vertical={false} />
@@ -197,7 +203,7 @@ const SectorAggregates = () => {
       </div>
 
       {/* Historical sector positioning */}
-      <div className="hud-chart m-px p-3">
+      <div className="hud-chart m-px p-3" data-chart-export="">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
             Historical Sector Positioning · {histSector} · {histMeta.l}
@@ -248,9 +254,10 @@ const SectorAggregates = () => {
                 </button>
               ))}
             </div>
+            <ChartExportButton compact title={`${histSector} ${histMeta.l} ${histTF}`} />
           </div>
         </div>
-        <div className="h-80">
+        <div className="h-80" data-chart-body="">
           {histLoading ? (
             <div className="h-full animate-pulse bg-chart-grid/30 rounded-sm" />
           ) : histData.length === 0 ? (
@@ -312,7 +319,7 @@ const SectorAggregates = () => {
       </div>
 
       {/* Heatmap on white surface */}
-      <div className="hud-chart m-px p-3">
+      <div className="hud-chart m-px p-3" data-chart-export="">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
             Positioning Heatmap · Net Speculators
@@ -341,6 +348,7 @@ const SectorAggregates = () => {
               <Legend swatch="hsl(var(--chart-ink-muted))" label="Neutral" />
               <Legend swatch="hsl(var(--pos-long))" label="≥85 Long" />
             </div>
+            <ChartExportButton compact title={`Positioning heatmap ${heatWindow === "netSpecPct3y" ? "3Y" : "6M"}`} />
           </div>
         </div>
         <div className="flex flex-col gap-3">

@@ -49,7 +49,6 @@ import SignalExplorer from "./pages/mops/SignalExplorer.tsx";
 import Scanner from "./pages/mops/Scanner.tsx";
 import Rankings from "./pages/mops/Rankings.tsx";
 import CommunityAlpha from "./pages/CommunityAlpha.tsx";
-
 const queryClient = new QueryClient();
 
 const App = () => (

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/hud/AppShell";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/hud/PageHeader";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -16,6 +18,12 @@ interface Row {
   oi_change: number | null;
   observed_on: string | null;
   oi_pct_52w: number | null;
+}
+
+function rowsWritten(data: unknown): number {
+  if (!data || typeof data !== "object") return 0;
+  const rows = (data as Record<string, unknown>).rows_written;
+  return typeof rows === "number" ? rows : 0;
 }
 
 function pct(x: number | null) {
@@ -53,7 +61,7 @@ export default function EurexPositioning() {
       .in("market_id", ids)
       .order("observed_on", { ascending: false });
 
-    const latestByMarket = new Map<string, any>();
+    const latestByMarket = new Map<string, NonNullable<typeof hist>[number]>();
     const seriesByMarket = new Map<string, number[]>();
     for (const h of hist ?? []) {
       if (!latestByMarket.has(h.market_id)) latestByMarket.set(h.market_id, h);
@@ -98,10 +106,10 @@ export default function EurexPositioning() {
         body: {},
       });
       if (error) throw error;
-      toast.success(`Eurex snapshot: ${(data as any)?.rows_written ?? 0} rows`);
+      toast.success(`Eurex snapshot: ${rowsWritten(data)} rows`);
       await load();
-    } catch (e: any) {
-      toast.error(e?.message ?? "ingest failed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "ingest failed");
     } finally {
       setIngesting(false);
     }
@@ -119,50 +127,51 @@ export default function EurexPositioning() {
 
   return (
     <AppShell title="Eurex Positioning">
-      <div className="space-y-6 p-6">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Eurex Positioning</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Daily open interest and volume snapshots for the most liquid Eurex futures.
-              Eurex does not publish a CoT-style trader-category breakdown, so we accumulate
-              OI / volume history daily and rank by 52-week percentile.
-            </p>
-          </div>
+      <PageHeader
+        eyebrow="Positioning"
+        title="Eurex Positioning"
+        description="Daily open interest and volume snapshots for the most liquid Eurex futures. Eurex does not publish a CoT-style trader-category breakdown, so we accumulate OI / volume history daily and rank by 52-week percentile."
+        actions={
           <Button onClick={runIngest} disabled={ingesting} size="sm">
             {ingesting ? "Running…" : "Run snapshot"}
           </Button>
-        </div>
+        }
+      />
 
+      <div className="p-3 space-y-3">
         {loading ? (
-          <Card className="p-6 text-sm text-muted-foreground">Loading…</Card>
+          <div className="hud-panel p-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
         ) : (
           grouped.map(([sector, items]) => (
-            <Card key={sector} className="overflow-hidden">
-              <div className="px-4 py-2 border-b bg-muted/30 text-xs uppercase tracking-wider font-semibold">
+            <div key={sector} className="hud-panel overflow-hidden">
+              <div className="px-3 py-2 border-b border-border hud-label">
                 {sector}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs uppercase text-muted-foreground">
-                    <tr className="border-b">
-                      <th className="text-left px-4 py-2">Symbol</th>
-                      <th className="text-left px-4 py-2">Name</th>
-                      <th className="text-right px-4 py-2">Open Interest</th>
-                      <th className="text-right px-4 py-2">Δ OI</th>
-                      <th className="text-right px-4 py-2">OI 52w %ile</th>
-                      <th className="text-right px-4 py-2">Volume</th>
-                      <th className="text-right px-4 py-2">As of</th>
+                <table className="w-full text-xs tabular-nums">
+                  <thead className="bg-surface/40 border-b border-border">
+                    <tr>
+                      <Th>Symbol</Th>
+                      <Th>Name</Th>
+                      <Th className="text-right">Open Interest</Th>
+                      <Th className="text-right">Δ OI</Th>
+                      <Th className="text-right">OI 52w %ile</Th>
+                      <Th className="text-right">Volume</Th>
+                      <Th className="text-right">As of</Th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((r) => (
-                      <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-4 py-2 font-semibold">{r.symbol}</td>
-                        <td className="px-4 py-2 text-muted-foreground">{r.name}</td>
-                        <td className="px-4 py-2 text-right ">{num(r.open_interest)}</td>
+                      <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-surface/40 transition-colors">
+                        <td className="px-3 py-2 text-[12px] font-semibold text-surface-foreground">{r.symbol}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{r.name}</td>
+                        <td className="px-3 py-2 text-right text-surface-foreground">{num(r.open_interest)}</td>
                         <td
-                          className={`px-4 py-2 text-right ${
+                          className={`px-3 py-2 text-right ${
                             r.oi_change == null
                               ? ""
                               : r.oi_change > 0
@@ -176,7 +185,7 @@ export default function EurexPositioning() {
                             ? "—"
                             : `${r.oi_change > 0 ? "+" : ""}${num(r.oi_change)}`}
                         </td>
-                        <td className="px-4 py-2 text-right">
+                        <td className="px-3 py-2 text-right">
                           {r.oi_pct_52w != null && (
                             <Badge
                               variant={
@@ -194,8 +203,8 @@ export default function EurexPositioning() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-right ">{num(r.volume)}</td>
-                        <td className="px-4 py-2 text-right text-xs text-muted-foreground">
+                        <td className="px-3 py-2 text-right text-surface-foreground">{num(r.volume)}</td>
+                        <td className="px-3 py-2 text-right text-[10px] text-muted-foreground">
                           {r.observed_on ?? "—"}
                         </td>
                       </tr>
@@ -203,18 +212,22 @@ export default function EurexPositioning() {
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </div>
           ))
         )}
 
         {!loading && rows.every((r) => r.open_interest == null) && (
-          <Card className="p-4 text-xs text-muted-foreground">
+          <div className="hud-panel p-3 text-xs text-muted-foreground">
             No snapshots yet. Click <span className="font-semibold">Run snapshot</span> to
             pull today's open interest and volume from the upstream feed. Re-run daily to
             build history and unlock 52-week percentile ranking.
-          </Card>
+          </div>
         )}
       </div>
     </AppShell>
   );
+}
+
+function Th({ children, className }: { children?: ReactNode; className?: string }) {
+  return <th className={cn("px-3 py-2 text-left hud-label font-medium", className)}>{children}</th>;
 }

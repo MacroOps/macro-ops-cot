@@ -7,6 +7,7 @@ import { Circle } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
 import { AlertsInbox } from "./AlertsInbox";
 import { GlobalScrubber } from "./GlobalScrubber";
+import { HudLoader } from "./HudLoader";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { canAccessPath, homePath, type ViewAsMode } from "@/lib/outseta/entitlements";
 
@@ -78,8 +79,8 @@ export function AppShell({
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
         <ShellHeader title={title} showSidebarTrigger={false} showAlerts={false} />
-        <div className="flex-1 flex items-center justify-center text-[10px] uppercase tracking-wider text-muted-foreground">
-          Loading
+        <div className="flex-1 flex items-center justify-center">
+          <HudLoader />
         </div>
       </div>
     );

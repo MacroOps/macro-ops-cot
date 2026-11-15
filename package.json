@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "design:check": "node scripts/design-check.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -50,6 +51,7 @@
     "date-fns": "^3.6.0",
     "echarts": "^5.5.1",
     "embla-carousel-react": "^8.6.0",
+    "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jose": "^5.10.0",

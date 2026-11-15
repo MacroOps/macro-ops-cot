@@ -60,7 +60,7 @@ const News = () => {
   return (
     <AppShell title="News & Divergence Feed">
       {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border p-px">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border p-px border-b border-border">
         <Stat label="Headlines" value={stats.total} />
         <Stat label="Divergences" value={stats.divergences} accent />
         <Stat label="High Severity" value={stats.high} accent />
@@ -69,8 +69,8 @@ const News = () => {
       </div>
 
       {/* Filters */}
-      <div className="hud-chart border-b border-border px-4 py-3 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-chart-ink-muted">
+      <div className="border-b border-border px-3 py-2 flex flex-wrap items-center gap-3">
+        <div className="hud-label flex items-center gap-2">
           <Filter className="h-3 w-3" /> Filters
         </div>
 
@@ -79,11 +79,7 @@ const News = () => {
             <button
               key={s}
               onClick={() => setSector(s)}
-              className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
-                sector === s
-                  ? "bg-chart-ink text-chart-surface border-chart-ink"
-                  : "bg-chart-surface text-chart-surface-foreground border-chart-grid hover:border-chart-ink"
-              }`}
+              className={`${CHIP} ${sector === s ? CHIP_ON : CHIP_OFF}`}
             >
               {s}
             </button>
@@ -92,12 +88,12 @@ const News = () => {
 
         <div className="h-4 w-px bg-border" />
 
-        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-chart-surface-foreground cursor-pointer">
+        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-surface-foreground cursor-pointer">
           <input
             type="checkbox"
             checked={onlyDivergence}
             onChange={(e) => setOnlyDivergence(e.target.checked)}
-            className="accent-[hsl(var(--chart-accent))]"
+            className="accent-[hsl(var(--primary))]"
           />
           Divergences Only
         </label>
@@ -105,16 +101,12 @@ const News = () => {
         <div className="h-4 w-px bg-border" />
 
         <div className="flex items-center gap-1">
-          <span className="text-[10px] uppercase tracking-wider text-chart-ink-muted">Severity ≥</span>
+          <span className="hud-label mr-1">Severity ≥</span>
           {(["any", "low", "medium", "high"] as const).map(s => (
             <button
               key={s}
               onClick={() => setMinSeverity(s)}
-              className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors ${
-                minSeverity === s
-                  ? "bg-chart-ink text-chart-surface border-chart-ink"
-                  : "bg-chart-surface text-chart-surface-foreground border-chart-grid hover:border-chart-ink"
-              }`}
+              className={`${CHIP} ${minSeverity === s ? CHIP_ON : CHIP_OFF}`}
             >
               {s}
             </button>
@@ -207,11 +199,15 @@ function FeedRow({ item }: { item: NewsItem }) {
   );
 }
 
+const CHIP = "text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition-colors";
+const CHIP_ON = "border-primary bg-primary text-primary-foreground";
+const CHIP_OFF = "border-border text-muted-foreground hover:text-surface-foreground hover:border-muted-foreground";
+
 function Stat({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className="hud-chart px-4 py-3">
-      <div className="text-[9px] uppercase tracking-[0.14em] text-chart-ink-muted">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${accent ? "text-[hsl(var(--chart-accent-2))]" : "text-chart-ink"}`}>
+    <div className="bg-background px-4 py-3">
+      <div className="hud-label">{label}</div>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${accent ? "text-accent-deep" : "text-surface-foreground"}`}>
         {value}
       </div>
     </div>

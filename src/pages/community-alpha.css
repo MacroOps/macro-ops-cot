@@ -208,10 +208,10 @@
 .ca-page h2.day-title {
   margin: 0;
   color: hsl(var(--surface-foreground));
-  font-family: "Newsreader", Georgia, serif;
-  font-size: 24px;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -366,10 +366,10 @@
   gap: 10px;
   margin: 0 0 10px;
   color: hsl(var(--surface-foreground));
-  font-family: "Newsreader", Georgia, serif;
-  font-size: 20px;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 .ca-page .search-week-count { color: hsl(var(--accent-deep));  font-size: 9px; font-weight: 600; }
 
@@ -415,7 +415,7 @@
   .ca-page .main { overflow-y: visible; padding: 16px 12px 32px; }
   .ca-page .main-inner { max-width: none; }
   .ca-page .main-header { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .ca-page h2.day-title { font-size: 21px; }
+  .ca-page h2.day-title { font-size: 13px; }
   .ca-page .top-tickers-row { padding: 9px 10px; }
   .ca-page .search-active-banner { padding-bottom: 36px; padding-right: 12px; }
   .ca-page .banner-close { top: auto; right: 6px; bottom: 6px; }

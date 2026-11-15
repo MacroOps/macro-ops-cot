@@ -11,12 +11,13 @@ import {
   ComposedChart,
   Line,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis, Customized,
 } from "recharts";
 import { HudTooltip, HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 export default function Analogs() {
   const [indKey, setIndKey] = useState(REGISTRY[0].key);
@@ -81,7 +82,7 @@ export default function Analogs() {
           <div>
             <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Indicator</label>
             <Select value={indKey} onValueChange={setIndKey}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 rounded-sm text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {REGISTRY.map((r) => (
                   <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
@@ -120,7 +121,7 @@ export default function Analogs() {
           </div>
         </div>
 
-        <div className="hud-panel lg:col-span-3">
+        <div className="hud-panel lg:col-span-3" data-chart-export="">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
             <div className="text-[11px] uppercase tracking-wider font-semibold">
               Forward path fan · {result.top.length} analogs · {horizon}w
@@ -138,9 +139,10 @@ export default function Analogs() {
                 <span className="inline-block w-3 h-[2px]" style={{ background: "hsl(var(--chart-accent))" }} />
                 Median
               </div>
+              <ChartExportButton compact title={`Analogs ${result.ind.label} ${horizon}w`} />
             </div>
           </div>
-          <div className="hud-chart rounded-none p-1" style={{ height: 380 }}>
+          <div className="hud-chart rounded-none p-1" style={{ height: 380 }} data-chart-body="">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={result.points} margin={{ top: 8, right: 48, left: 0, bottom: 8 }}>
                 <defs>

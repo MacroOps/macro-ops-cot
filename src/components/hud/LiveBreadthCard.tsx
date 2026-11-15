@@ -5,7 +5,6 @@ import {
   Line,
   XAxis,
   YAxis,
-  ResponsiveContainer,
   Tooltip,
   ReferenceLine,
   CartesianGrid, Customized,
@@ -13,6 +12,8 @@ import {
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { useBreadthSeries, type BreadthField } from "@/hooks/tp/useBreadthSeries";
 import type { TpBreadthRow } from "@/lib/tp/types";
 import { Loader2 } from "lucide-react";
@@ -68,7 +69,7 @@ export function LiveBreadthCard({
   const yDomain: [number, number] = [resolvedMin - yPad, resolvedMax + yPad];
 
   return (
-    <div className="hud-panel flex flex-col relative">
+    <div className="hud-panel flex flex-col relative" data-chart-export="">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate flex items-center gap-1.5">
@@ -92,10 +93,11 @@ export function LiveBreadthCard({
               </span>
             )}
           </div>
+          <ChartExportButton compact title={resolvedTitle} />
           {component && <ConstructionPopover spec={component} />}
         </div>
       </div>
-      <div style={{ height }} className="p-1">
+      <div style={{ height }} className="p-1" data-chart-body="">
         {isLoading ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />

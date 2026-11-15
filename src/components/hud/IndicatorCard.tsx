@@ -10,7 +10,6 @@ import {
   Customized,
   ReferenceLine,
   ReferenceDot,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -26,6 +25,8 @@ import {
 } from "@/components/charts/HudChartPrimitives";
 import { mockSeries, lastValue, type MockOptions } from "@/lib/mockSeries";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { useCopilot } from "@/components/copilot/CopilotContext";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
@@ -161,7 +162,7 @@ function IndicatorCardInner({
 
   return (
     <>
-      <div className="hud-panel flex flex-col group/card relative">
+      <div className="hud-panel flex flex-col group/card relative" data-chart-export="">
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground truncate">
@@ -205,7 +206,7 @@ function IndicatorCardInner({
             {component && <ConstructionPopover spec={component} />}
           </div>
         </div>
-        <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }}>
+        <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }} data-chart-body="">
           <ChartBody
             data={data}
             variant={variant}
@@ -581,6 +582,7 @@ function ChartToolbar(props: {
           indicatorKey: props.indicatorKey,
         }}
       />
+      <ChartExportButton compact title={props.title} />
       <IconBtn title="Fullscreen" onClick={props.onFullscreen}>
         <Maximize2 className="h-3 w-3" />
       </IconBtn>

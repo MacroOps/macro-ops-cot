@@ -7,12 +7,13 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { Loader2, RefreshCw } from "lucide-react";
+import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 const fp = (v: number | null | undefined) =>
   v === null || v === undefined || Number.isNaN(v) ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -336,13 +337,17 @@ function ChartPanel({
   }, [data, pad]);
 
   return (
-    <div className="hud-panel p-3">
-      <div className="text-[11px] font-semibold uppercase tracking-wider">{title}</div>
+    <div className="hud-panel p-3" data-chart-export="">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wider">{title}</div>
+        <ChartExportButton compact title={`Portfolio ${title}`} />
+      </div>
       <div className="text-[10px] text-muted-foreground mb-2">{sub}</div>
+      <div className="h-[220px]" data-chart-body="">
       {data.length < 2 ? (
-        <div className="h-[220px] grid place-items-center text-[11px] text-muted-foreground">No chart data</div>
+        <div className="h-full grid place-items-center text-[11px] text-muted-foreground">No chart data</div>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
             <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 9 }} minTickGap={28} />
@@ -361,6 +366,7 @@ function ChartPanel({
           </LineChart>
         </ResponsiveContainer>
       )}
+      </div>
     </div>
   );
 }
