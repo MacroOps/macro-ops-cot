@@ -36,9 +36,7 @@ import Portfolio from "./pages/Portfolio.tsx";
 import ClassicHud from "./pages/ClassicHud.tsx";
 import MarketOverview from "./pages/tpmr/MarketOverview.tsx";
 import DualTrendPage from "./pages/tpmr/DualTrend.tsx";
-import TctmGuide from "./pages/tpmr/TctmGuide.tsx";
 import TctmLive from "./pages/tpmr/TctmLive.tsx";
-import TctmGlossary from "./pages/tpmr/TctmGlossary.tsx";
 import EurexPositioning from "./pages/EurexPositioning.tsx";
 import Briefing from "./pages/Briefing.tsx";
 import Offsides from "./pages/Offsides.tsx";
@@ -107,12 +105,12 @@ const App = () => (
             <Route path="/tpmr/dual-trend/large-cap-cyclical" element={<DualTrendPage slug="large-cap-cyclical" />} />
             <Route path="/tpmr/dual-trend/thematic" element={<DualTrendPage slug="thematic" />} />
             <Route path="/tpmr/tctm-live" element={<TctmLive />} />
-            <Route path="/tpmr/tctm/risk-off" element={<TctmGuide slug="risk-off" />} />
-            <Route path="/tpmr/tctm/capitulation" element={<TctmGuide slug="capitulation" />} />
-            <Route path="/tpmr/tctm/bottom" element={<TctmGuide slug="bottom" />} />
-            <Route path="/tpmr/tctm/thrust" element={<TctmGuide slug="thrust" />} />
-            <Route path="/tpmr/tctm/confirmation" element={<TctmGuide slug="confirmation" />} />
-            <Route path="/tpmr/tctm/glossary" element={<TctmGlossary />} />
+            <Route path="/tpmr/tctm/risk-off" element={<Navigate to="/tpmr/tctm-live#riskoff" replace />} />
+            <Route path="/tpmr/tctm/capitulation" element={<Navigate to="/tpmr/tctm-live#capitulation" replace />} />
+            <Route path="/tpmr/tctm/bottom" element={<Navigate to="/tpmr/tctm-live#bottom" replace />} />
+            <Route path="/tpmr/tctm/thrust" element={<Navigate to="/tpmr/tctm-live#thrust" replace />} />
+            <Route path="/tpmr/tctm/confirmation" element={<Navigate to="/tpmr/tctm-live#confirmation" replace />} />
+            <Route path="/tpmr/tctm/glossary" element={<Navigate to="/tpmr/tctm-live#glossary" replace />} />
             <Route path="/eurex" element={<EurexPositioning />} />
             <Route path="/offsides" element={<Offsides />} />
             <Route path="/tp/breadth" element={<TpBreadth />} />

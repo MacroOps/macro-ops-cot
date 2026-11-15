@@ -34,11 +34,11 @@ const TCTM_CHARTS: Array<{
   variant: "area" | "bar";
   to: string;
 }> = [
-  { key: "RISK", title: "TCTM Risk-Off", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.1, variant: "bar", to: "/tpmr/tctm/risk-off" },
-  { key: "CAPITULATION", title: "TCTM Capitulation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: -0.2, variant: "bar", to: "/tpmr/tctm/capitulation" },
-  { key: "BOTTOM", title: "TCTM Bottom", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.0, variant: "bar", to: "/tpmr/tctm/bottom" },
-  { key: "THRUST", title: "TCTM Thrust", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.4, variant: "area", to: "/tpmr/tctm/thrust" },
-  { key: "CONFIRMATION", title: "TCTM Confirmation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.3, variant: "area", to: "/tpmr/tctm/confirmation" },
+  { key: "RISK", title: "TCTM Risk-Off", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.1, variant: "bar", to: "/tpmr/tctm-live#riskoff" },
+  { key: "CAPITULATION", title: "TCTM Capitulation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: -0.2, variant: "bar", to: "/tpmr/tctm-live#capitulation" },
+  { key: "BOTTOM", title: "TCTM Bottom", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.0, variant: "bar", to: "/tpmr/tctm-live#bottom" },
+  { key: "THRUST", title: "TCTM Thrust", subtitle: "Components triggered · trigger ≥5", trigger: 5, drift: 0.4, variant: "area", to: "/tpmr/tctm-live#thrust" },
+  { key: "CONFIRMATION", title: "TCTM Confirmation", subtitle: "Components triggered · trigger ≥4", trigger: 4, drift: 0.3, variant: "area", to: "/tpmr/tctm-live#confirmation" },
 ];
 
 const TCTM_SEEDS: Record<string, number> = {

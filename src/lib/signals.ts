@@ -37,9 +37,9 @@ const SOURCES: Source[] = [
   { model: "Breadth & Thrust",      seed: 14, min: 0, max: 15, thresholdHi: 11, thresholdLo: 3, href: "/breadth/overview" },
   { model: "MO Liquidity",          seed: 15, thresholdHi: 85, thresholdLo: 15, drift: 0.2, href: "/macro/liquidity" },
   { model: "Implied Recession 6m",  seed: 16, thresholdHi: 70, thresholdLo: 10, drift: -0.2, href: "/macro/recession" },
-  { model: "TCTM Thrust",           seed: 74, min: 0, max: 7, thresholdHi: 5, drift: 0.4, href: "/tpmr/tctm/thrust", unit: "/7" },
-  { model: "TCTM Capitulation",     seed: 72, min: 0, max: 7, thresholdHi: 4, drift: -0.2, href: "/tpmr/tctm/capitulation", unit: "/7" },
-  { model: "TCTM Risk-Off",         seed: 71, min: 0, max: 7, thresholdHi: 5, drift: 0.1, href: "/tpmr/tctm/risk-off", unit: "/7" },
+  { model: "TCTM Thrust",           seed: 74, min: 0, max: 7, thresholdHi: 5, drift: 0.4, href: "/tpmr/tctm-live#thrust", unit: "/7" },
+  { model: "TCTM Capitulation",     seed: 72, min: 0, max: 7, thresholdHi: 4, drift: -0.2, href: "/tpmr/tctm-live#capitulation", unit: "/7" },
+  { model: "TCTM Risk-Off",         seed: 71, min: 0, max: 7, thresholdHi: 5, drift: 0.1, href: "/tpmr/tctm-live#riskoff", unit: "/7" },
 ];
 
 export function generateSignalsTape(limit = 24): ModelSignal[] {

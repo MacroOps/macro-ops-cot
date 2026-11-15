@@ -64,27 +64,27 @@ export const TCTM_GLOSSARY_COMPONENTS: Array<{ title: string; body: string; href
   {
     title: "Risk-Off Composite",
     body: "Flags deterioration in stock participation, signaling that a broad market countertrend drawdown may be imminent. It captures the narrowing leadership typical of late-stage bull markets.",
-    href: "/tpmr/tctm/risk-off",
+    href: "/tpmr/tctm-live#riskoff",
   },
   {
     title: "Capitulation Composite",
     body: "Identifies extreme selling pressure or oversold conditions consistent with panic selling or market crashes. This model helps detect when the worst of a decline may be occurring.",
-    href: "/tpmr/tctm/capitulation",
+    href: "/tpmr/tctm-live#capitulation",
   },
   {
     title: "Bottom Composite",
     body: "Highlights divergences in downside participation, signaling that fewer and fewer stocks are showing signs of exhaustion in the decline, laying the groundwork for a potential bottom.",
-    href: "/tpmr/tctm/bottom",
+    href: "/tpmr/tctm-live#bottom",
   },
   {
     title: "Thrust Composite",
     body: "Captures robust upside participation, also known as a breadth thrust. These signals often mark the end of bear markets and the start of strong bullish trends.",
-    href: "/tpmr/tctm/thrust",
+    href: "/tpmr/tctm-live#thrust",
   },
   {
     title: "Confirmation Composite",
     body: "Confirms the durability of a recovery by verifying that long-term measures of market breadth have shifted from bearish to bullish conditions, suggesting the new uptrend will persist.",
-    href: "/tpmr/tctm/confirmation",
+    href: "/tpmr/tctm-live#confirmation",
   },
 ];
 

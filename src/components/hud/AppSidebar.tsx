@@ -136,19 +136,7 @@ const NAV: Group[] = [
       { title: "Thematic Stocks", url: "/tpmr/dual-trend/thematic", access: "tp" },
     ],
   },
-  {
-    title: "TCTM",
-    icon: ShieldAlert,
-    children: [
-      { title: "TCTM - Live", url: "/tpmr/tctm-live", access: "tp" },
-      { title: "Risk-Off Guide", url: "/tpmr/tctm/risk-off", access: "tp" },
-      { title: "Capitulation Guide", url: "/tpmr/tctm/capitulation", access: "tp" },
-      { title: "Bottom Guide", url: "/tpmr/tctm/bottom", access: "tp" },
-      { title: "Thrust Guide", url: "/tpmr/tctm/thrust", access: "tp" },
-      { title: "Confirmation Guide", url: "/tpmr/tctm/confirmation", access: "tp" },
-      { title: "Glossary", url: "/tpmr/tctm/glossary", access: "tp" },
-    ],
-  },
+  { title: "TCTM", icon: ShieldAlert, url: "/tpmr/tctm-live", access: "tp" },
   {
     title: "Signals Lab",
     icon: Globe2,
