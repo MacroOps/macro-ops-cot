@@ -3,6 +3,7 @@
 // POST -> generates & upserts today's briefing (force=true to regenerate)
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { claimsFromOutsetaJwt, isStaffPlanUid } from "../_shared/outseta-jwt.ts";
 
 // ---- Indicator snapshot (mirrors src/lib/backtest/registry.ts) ----
 type Ind = { key: string; label: string; category: string; seed: number; min: number; max: number; drift?: number; vol?: number; unit?: string; hi?: number; lo?: number };
@@ -167,6 +168,22 @@ Generate the briefing.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const deny = (error: string, status: number) =>
+    new Response(JSON.stringify({ error }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+    });
+  if (req.method !== "GET" && req.method !== "POST") return deny("Method not allowed", 405);
+
+  // Team Plan only (GET and POST).
+  let planUid: string | null = null;
+  try {
+    ({ planUid } = await claimsFromOutsetaJwt(req));
+  } catch {
+    return deny("Sign in required", 401);
+  }
+  if (!isStaffPlanUid(planUid)) return deny("Team Plan membership required", 403);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
