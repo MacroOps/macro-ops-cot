@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Loader2, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { outsetaEdgeGet, edgeAccessMessage, OutsetaEdgeError } from "@/lib/outseta/edge";
 
 interface SnapshotRow {
   key: string;
@@ -42,11 +42,14 @@ function firstParagraph(md: string): string {
 export function BriefingTile() {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.functions
-      .invoke("daily-briefing", { method: "GET" })
-      .then(({ data }) => setBriefing(data))
+    outsetaEdgeGet<Briefing | null>("daily-briefing")
+      .then((data) => setBriefing(data))
+      .catch((e) => {
+        if (e instanceof OutsetaEdgeError && (e.status === 401 || e.status === 403)) setAccessError(edgeAccessMessage(e));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -89,7 +92,11 @@ export function BriefingTile() {
             </div>
           )}
 
-          {!loading && !briefing && (
+          {!loading && accessError && (
+            <div className="text-xs text-muted-foreground">{accessError}</div>
+          )}
+
+          {!loading && !briefing && !accessError && (
             <div className="text-xs text-muted-foreground">
               No briefing yet for today.
               <span className="ml-2 text-primary group-hover:underline">

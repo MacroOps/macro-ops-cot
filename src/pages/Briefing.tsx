@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { outsetaEdgeGet, outsetaEdgePostStatus, edgeAccessMessage } from "@/lib/outseta/edge";
 import { Loader2, RefreshCw, Sparkles, AlertCircle, TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,19 +48,22 @@ export default function Briefing() {
   async function load() {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.functions.invoke("daily-briefing", { method: "GET" });
-    if (error) setError(error.message);
-    else setBriefing(data);
+    try {
+      setBriefing(await outsetaEdgeGet<Briefing | null>("daily-briefing"));
+    } catch (e) {
+      setError(edgeAccessMessage(e));
+    }
     setLoading(false);
   }
 
   async function generate(force = false) {
     setGenerating(true);
     setError(null);
-    const { data, error } = await supabase.functions.invoke("daily-briefing", { body: { force } });
-    if (error) setError(error.message);
-    else if (data?.error) setError(data.error);
-    else setBriefing(data);
+    try {
+      setBriefing(await outsetaEdgePostStatus<Briefing>("daily-briefing", { force }));
+    } catch (e) {
+      setError(edgeAccessMessage(e));
+    }
     setGenerating(false);
   }
 
