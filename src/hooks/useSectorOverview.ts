@@ -1,9 +1,8 @@
 // S&P 500 / 400 / 600 sector overview: long/short-term relative-trend breadth per GICS sector.
-// Built from live Macro Ops Signal API data (symbol-level trend_rel_*_state),
-// aggregated client-side against sector membership.
+// Built from saved daily data (dual_trend_members / dual_trend_signals), aggregated
+// client-side; 5-day change compares with the saved day 5 trading days earlier.
 import { useQuery } from "@tanstack/react-query";
-import { mopsGet } from "@/lib/mops/client";
-import { signalAll, signalSnapshot, toValueMap } from "@/lib/mops/paginate";
+import { latestFullDay, priorSavedDay, readMembers, readSignalDays, readSignals } from "@/lib/dualTrend/saved";
 import { INDEX_LABELS, sectorGroups, type IndexCode } from "@/lib/dualTrend/config";
 
 export const SECTOR_NAMES: Record<string, string> = {
@@ -45,7 +44,6 @@ export interface SectorOverview {
   sectors: SectorOverviewRow[];
 }
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function pct(n: number, d: number) {
   return d > 0 ? Math.round((n / d) * 1000) / 10 : 0;
@@ -94,46 +92,37 @@ function countRow(
 }
 
 async function fetchSectorOverview(index: IndexCode): Promise<SectorOverview> {
-  // 1. Recent trading dates (latest + 5 sessions back).
-  const from = new Date();
-  from.setDate(from.getDate() - 25);
-  const calendar = await signalAll({ key: "trend_rel_lt_state", entity: "AAPL", from_date: iso(from) });
-  const dates = Array.from(new Set(calendar.map((r) => r.date))).sort().reverse();
-  const asOf = dates[0];
-  const priorDate = dates[Math.min(5, dates.length - 1)];
-
-  // 2. Index + sector membership from the API.
+  // Saved data only: newest full day, and the saved day 5 trading days earlier.
+  const days = await readSignalDays();
+  const asOf = latestFullDay(days);
+  const priorDate = priorSavedDay(days, asOf, 5);
   const groups = sectorGroups(index);
-  const [indexMembers, ...memberLists] = await Promise.all([
-    mopsGet<string[]>("/v1/members", { parent: index }),
-    ...groups.map((g) => mopsGet<string[]>("/v1/members", { parent: g.group })),
+  const empty = new Map<string, number>();
+  const [members, now, prev] = await Promise.all([
+    asOf ? readMembers(asOf, [index, ...groups.map((g) => g.group)]) : Promise.resolve([]),
+    asOf ? readSignals(asOf) : Promise.resolve(null),
+    priorDate ? readSignals(priorDate) : Promise.resolve(null),
   ]);
-
-  // 3. Symbol-level trend states, current + 5 sessions ago (paged, shared cache).
-  const [ltRows, ltPrevRows, stRows, stPrevRows] = await Promise.all([
-    signalSnapshot("trend_rel_lt_state", asOf),
-    signalSnapshot("trend_rel_lt_state", priorDate),
-    signalSnapshot("trend_rel_st_state", asOf),
-    signalSnapshot("trend_rel_st_state", priorDate),
-  ]);
-  const lt = toValueMap(ltRows);
-  const ltPrev = toValueMap(ltPrevRows);
-  const st = toValueMap(stRows);
-  const stPrev = toValueMap(stPrevRows);
+  const of = (u: string) => members.filter((m) => m.universe === u).map((m) => m.symbol.toUpperCase());
+  const lt = now?.trend_rel_lt_state ?? empty;
+  const st = now?.trend_rel_st_state ?? empty;
+  // No saved day 5 back -> change reads 0 against the current day, not a guess.
+  const ltPrev = prev?.trend_rel_lt_state ?? lt;
+  const stPrev = prev?.trend_rel_st_state ?? st;
 
   const sectors = groups
-    .map((g, i) => countRow(g.group, g.name, memberLists[i] ?? [], lt, ltPrev, st, stPrev))
+    .map((g) => countRow(g.group, g.name, of(g.group), lt, ltPrev, st, stPrev))
     .filter((r) => r.total > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const total = countRow(index, INDEX_LABELS[index], indexMembers ?? [], lt, ltPrev, st, stPrev);
+  const total = countRow(index, INDEX_LABELS[index], of(index), lt, ltPrev, st, stPrev);
 
   return { asOf, priorDate, total, sectors };
 }
 
 export const useSectorOverview = (index: IndexCode = "SPX") =>
   useQuery({
-    queryKey: ["mops", "sector-overview", index],
+    queryKey: ["saved", "sector-overview", index],
     queryFn: () => fetchSectorOverview(index),
     staleTime: 15 * 60_000,
     gcTime: 60 * 60_000,
