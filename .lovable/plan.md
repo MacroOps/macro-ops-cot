@@ -24,20 +24,22 @@ One table, one data loader. Each section only passes its universe.
 1. Verify first (read-only): call /v1/custom-list-signals for one list and /v1/members for SPX, MID, SML to confirm response field names, which signal keys custom lists return, and whether _start is epoch days or an ISO date. Adjust step 3 mapping to what the API returns.
 2. Allow /v1/custom-list-signals (and /v1/custom-lists if needed for dates) in the app's API proxy allow-list, then redeploy the proxy.
 3. Shared loader `useDualTrendUniverse(universe)`:
-   - members: get symbols from /v1/members, then fetch the 8 trend_rel lt/st keys (value1, value2, state, days, start) for the latest date with paged /v1/signal calls, filter to members.
+   - members: get symbols from /v1/members, then fetch 10 keys: trend_rel_lt_ and trend_rel_st_ value1, value2, state, days, start for the latest date with paged /v1/signal calls, filter to members.
    - custom lists: one /v1/custom-list-signals call per list; tag each row with its list as category.
+   - Section labels (S&P 500, S&P 400, S&P 600, ETFs, ...) and each section's universe live in one config file, so renaming is a one-line change.
+   - Returns: LT and ST return and net vs benchmark load for all rows in batched calls (many symbols per request) to the returns function, cached per symbol + start date so repeat visits don't refetch.
    - Output one row shape: symbol, name, sub-industry/category, LT and ST (trend, relative, signal, days, start date).
-4. Shared `DualTrendTable` component built from the current S&P 500 table (same look, search, sort, CSV, row expand). Category column/filter appears only when the universe has categories (ETFs).
+4. Shared `DualTrendTable` component built from the current S&P 500 table (same look, search, sort, CSV, row expand). LT/ST return and net-vs-benchmark show as columns on every row. Category column/filter appears only when the universe has categories (ETFs).
 5. Wire DualTrend page: sp500, sp400, sp600, etfs, gold-silver-miners, thematic use the shared table; large-cap-cyclical keeps its current content.
-6. Remove x10 scaling in useTpmrSystems; add paging to useSectorOverview signal calls.
-7. Retire SpxDualTrendTable, EtfDualTrendTable, useSpxDualTrend, useEtfDualTrend once nothing uses them. Row expand keeps its price-return-since-signal figure, using the API start date.
-8. Update the AGENTS.md rule for Dual Trend data.
+6. Sector breadth table shows on S&P 500, 400 and 600 using the SPX, MID and SML sector groups, with a total row for the whole index on top.
+7. Remove x10 scaling in useTpmrSystems; add paging to useSectorOverview signal calls.
+8. Retire SpxDualTrendTable, EtfDualTrendTable, useSpxDualTrend, useEtfDualTrend once nothing uses them. Row expand keeps its price-return-since-signal figure, using the API start date.
+9. Update the AGENTS.md rule for Dual Trend data.
 
 ## Checks
 - Unit tests: pagination stops on a short page and ignores has_more; values not rescaled; days/start passed through; SPX_UNIVERSE doesn't add or drop members.
 - Browser: each of the six sections loads live rows; ETF categories show; Large Cap Cyclical unchanged; TPMR Overview levels are 0-100 and match the API.
+- Returns columns filled on every row; a second visit makes no new returns requests.
+- Breadth table on 400/600 shows sector rows plus index total.
 - npm run design:check ends with OK.
 
-## Open questions
-- Do the existing return / net-vs-S&P columns stay for all universes (they rely on the Yahoo returns function per symbol), or only on row expand?
-- Should the sector breadth table above the S&P 500 list stay S&P 500 only, or also show for S&P 400/600?
