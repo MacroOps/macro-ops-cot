@@ -88,7 +88,7 @@ async function latestDate(): Promise<string> {
 async function upsertChunks(sb: any, table: string, rows: any[], onConflict: string) {
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await sb.from(table).upsert(rows.slice(i, i + 500), { onConflict });
-    if (error) throw error;
+    if (error) throw new Error(`${table}: ${error.message}`);
   }
 }
 
@@ -130,7 +130,8 @@ async function phaseMembers(sb: any, asOf: string) {
   }
   await upsertChunks(sb, "dual_trend_members", rows, "as_of,universe,symbol");
   // List values are a fallback; the keys phase overwrites symbols it covers.
-  await upsertChunks(sb, "dual_trend_signals", listVals, "as_of,symbol");
+  const uniq = [...new Map(listVals.map((r) => [r.symbol, r])).values()];
+  await upsertChunks(sb, "dual_trend_signals", uniq, "as_of,symbol");
 }
 
 async function phaseKeys(sb: any, asOf: string) {
@@ -222,7 +223,7 @@ async function chunk(token: string) {
       EdgeRuntime.waitUntil(kick(token));
       return { status: "phase_done", phase: run.phase };
     } catch (e) {
-      await sb.from("dual_trend_return_runs").update({ status: "failed", error: `${run.phase}: ${String(e)}` }).eq("as_of", asOf);
+      await sb.from("dual_trend_return_runs").update({ status: "failed", error: `${run.phase}: ${e instanceof Error ? e.message : JSON.stringify(e)}` }).eq("as_of", asOf);
       return { status: "failed", error: String(e) };
     }
   }
