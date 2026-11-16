@@ -54,3 +54,39 @@ export function makeThrottle(perMinute: number, now: () => number = Date.now, sl
     last = Math.max(now(), last + gap);
   };
 }
+
+export const DT_KEYS = [
+  "trend_rel_lt_value1", "trend_rel_lt_value2", "trend_rel_lt_state", "trend_rel_lt_days", "trend_rel_lt_start",
+  "trend_rel_st_value1", "trend_rel_st_value2", "trend_rel_st_state", "trend_rel_st_days", "trend_rel_st_start",
+] as const;
+
+/** Merge paged /v1/signal snapshots (by key) into symbol -> values, as-is (no rescaling). */
+export function mergeSnapshots(snaps: Record<string, { entity: string; value: unknown }[]>) {
+  const out = new Map<string, Record<string, number>>();
+  for (const [key, rows] of Object.entries(snaps)) {
+    for (const r of rows) {
+      const n = Number(r.value);
+      if (r.value === null || r.value === undefined || !Number.isFinite(n)) continue;
+      const s = String(r.entity).toUpperCase();
+      const v = out.get(s) ?? {};
+      v[key] = n;
+      out.set(s, v);
+    }
+  }
+  return out;
+}
+
+/** Returns work list from SAVED members + SAVED signal start dates (signals are saved first). */
+export function workListFromSaved(symbols: string[], vals: Map<string, Record<string, number>>) {
+  return buildWorkList(symbols.map((s) => {
+    const v = vals.get(s.toUpperCase()) ?? {};
+    return { symbol: s, starts: [epochDaysToIso(v.trend_rel_lt_start), epochDaysToIso(v.trend_rel_st_start)] };
+  })).filter((e) => e.starts.length);
+}
+
+/** Trading days before asOf still missing a saved snapshot, newest first, up to n. */
+export function backfillDates(calendar: string[], saved: string[], asOf: string, n = 5): string[] {
+  const before = [...new Set(calendar)].filter((d) => d < asOf).sort().reverse().slice(0, n);
+  const have = new Set(saved);
+  return before.filter((d) => !have.has(d));
+}
