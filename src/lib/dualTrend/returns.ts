@@ -1,102 +1,94 @@
-// Since-signal returns for whole tables: batched calls to the symbol-returns
-// function, cached by symbol + start date + as-of date (memory + localStorage),
-// so returns refresh each trading day and repeat visits that day refetch nothing.
+// Since-signal returns for Dual Trend tables. The daily dual-trend-returns-job
+// saves return + net per symbol + start date + as-of date in dual_trend_returns;
+// the table only reads that table (no price calls on page load). When today's
+// job hasn't run, the newest earlier row for the SAME start date is used and its
+// as-of date is shown; a start date with no saved row stays blank (dash).
 import { supabase } from "@/integrations/supabase/client";
 
-export type Ret = { ret: number | null; net: number | null };
+export type Ret = { ret: number | null; net: number | null; asOf: string };
 export interface ReturnRequest { symbol: string; start: string }
+export interface SavedReturn { symbol: string; start_date: string; as_of: string; ret: number | null; net: number | null }
 
-export const BATCH_SIZE = 50;
-const PARALLEL_BATCHES = 3;
-const LS_PREFIX = "dt-ret:v1:";
+export const BATCH_SIZE = 40;   // symbols per read (≤ 2 starts × ~10 days each, under the 1000-row cap)
+const LOOKBACK_DAYS = 15;
 
 export const returnsCacheKey = (symbol: string, start: string, asOf: string) =>
   `${symbol.toUpperCase()}|${start}|${asOf}`;
 
-const mem = new Map<string, Ret>();
-
-function readLs(k: string): Ret | undefined {
-  try {
-    const raw = localStorage.getItem(LS_PREFIX + k);
-    return raw ? (JSON.parse(raw) as Ret) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-function writeLs(k: string, v: Ret) {
-  try { localStorage.setItem(LS_PREFIX + k, JSON.stringify(v)); } catch { /* quota */ }
-}
-
-/** Drop cached entries from earlier as-of dates. */
-export function pruneReturnsCache(asOf: string) {
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k?.startsWith(LS_PREFIX) && !k.endsWith(`|${asOf}`)) localStorage.removeItem(k);
-    }
-  } catch { /* ignore */ }
-}
+const mem = new Map<string, Ret | null>();
 
 export function getCachedReturn(symbol: string, start: string, asOf: string): Ret | undefined {
-  const k = returnsCacheKey(symbol, start, asOf);
-  const m = mem.get(k);
-  if (m) return m;
-  const l = readLs(k);
-  if (l) mem.set(k, l);
-  return l;
+  return mem.get(returnsCacheKey(symbol, start, asOf)) ?? undefined;
 }
 
-export type BatchFetcher = (items: { symbol: string; dates: string[] }[]) =>
-  Promise<Record<string, Record<string, Ret>>>;
+/** Newest saved row on or before asOf for each symbol + start date. Never crosses start dates. */
+export function pickLatest(rows: SavedReturn[], asOf: string): Map<string, Ret> {
+  const out = new Map<string, Ret>();
+  for (const r of rows) {
+    if (r.as_of > asOf) continue;
+    const k = `${r.symbol.toUpperCase()}|${r.start_date}`;
+    const cur = out.get(k);
+    if (!cur || r.as_of > cur.asOf) {
+      out.set(k, {
+        ret: r.ret === null ? null : Number(r.ret),
+        net: r.net === null ? null : Number(r.net),
+        asOf: r.as_of,
+      });
+    }
+  }
+  return out;
+}
 
-const defaultFetcher: BatchFetcher = async (items) => {
-  const { data, error } = await supabase.functions.invoke<{ results: Record<string, Record<string, Ret>> }>(
-    "symbol-returns",
-    { body: { items } },
-  );
+export type ReturnsFetcher = (symbols: string[], from: string, asOf: string) => Promise<SavedReturn[]>;
+
+const defaultFetcher: ReturnsFetcher = async (symbols, from, asOf) => {
+  const { data, error } = await supabase
+    .from("dual_trend_returns")
+    .select("symbol,start_date,as_of,ret,net")
+    .in("symbol", symbols)
+    .gte("as_of", from)
+    .lte("as_of", asOf)
+    .limit(1000);
   if (error) throw error;
-  return data?.results ?? {};
+  return (data ?? []) as SavedReturn[];
 };
 
-/**
- * Load returns for all requests not already cached. Calls onBatch after each
- * batch so tables fill in progressively.
- */
+const minusDays = (iso: string, d: number) =>
+  new Date(Date.parse(iso + "T00:00:00Z") - d * 86_400_000).toISOString().slice(0, 10);
+
+/** Read saved returns for every request not already cached for this as-of date. */
 export async function loadReturns(
   reqs: ReturnRequest[],
   asOf: string,
   onBatch?: () => void,
-  fetcher: BatchFetcher = defaultFetcher,
+  fetcher: ReturnsFetcher = defaultFetcher,
 ): Promise<void> {
-  const bySymbol = new Map<string, Set<string>>();
-  for (const r of reqs) {
-    if (!r.start || getCachedReturn(r.symbol, r.start, asOf)) continue;
-    const s = bySymbol.get(r.symbol) ?? new Set<string>();
-    s.add(r.start);
-    bySymbol.set(r.symbol, s);
-  }
-  const items = [...bySymbol].map(([symbol, dates]) => ({ symbol, dates: [...dates] }));
-  const chunks: typeof items[] = [];
-  for (let i = 0; i < items.length; i += BATCH_SIZE) chunks.push(items.slice(i, i + BATCH_SIZE));
-  let next = 0;
-  const run = async () => {
-    while (next < chunks.length) {
-      const chunk = chunks[next++];
-      let res: Record<string, Record<string, Ret>> = {};
-      try { res = await fetcher(chunk); } catch { continue; }
-    for (const it of chunk) {
-      for (const d of it.dates) {
-        const v = res[it.symbol.toUpperCase()]?.[d];
-        if (!v) continue;
-        const k = returnsCacheKey(it.symbol, d, asOf);
-        mem.set(k, v);
-        writeLs(k, v);
-      }
+  const pending = reqs.filter((r) => r.start && !mem.has(returnsCacheKey(r.symbol, r.start, asOf)));
+  const symbols = [...new Set(pending.map((r) => r.symbol.toUpperCase()))];
+  const chunks: string[][] = [];
+  for (let i = 0; i < symbols.length; i += BATCH_SIZE) chunks.push(symbols.slice(i, i + BATCH_SIZE));
+  const from = minusDays(asOf, LOOKBACK_DAYS);
+  await Promise.all(chunks.map(async (chunk) => {
+    let rows: SavedReturn[] = [];
+    try { rows = await fetcher(chunk, from, asOf); } catch { return; }
+    const picked = pickLatest(rows, asOf);
+    const inChunk = new Set(chunk);
+    for (const r of pending) {
+      if (!inChunk.has(r.symbol.toUpperCase())) continue;
+      mem.set(returnsCacheKey(r.symbol, r.start, asOf), picked.get(`${r.symbol.toUpperCase()}|${r.start}`) ?? null);
     }
     onBatch?.();
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(PARALLEL_BATCHES, chunks.length) }, run));
+  }));
+}
+
+/** Newest as-of date among the returns shown (for the "returns as of" label). */
+export function returnsAsOf(reqs: ReturnRequest[], asOf: string): string {
+  let best = "";
+  for (const r of reqs) {
+    const v = getCachedReturn(r.symbol, r.start, asOf);
+    if (v && v.asOf > best) best = v.asOf;
+  }
+  return best;
 }
 
 export function __resetReturnsMemory() { mem.clear(); }
