@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SectorOverviewTable } from "@/components/hud/SectorOverviewTable";
-import { SpxDualTrendTable } from "@/components/hud/SpxDualTrendTable";
-import { EtfDualTrendTable } from "@/components/hud/EtfDualTrendTable";
+import { DualTrendTable } from "@/components/hud/DualTrendTable";
+import { DUAL_TREND_SECTIONS } from "@/lib/dualTrend/config";
 import { DUAL_TREND_UNIVERSES, type DualTrendStock } from "@/lib/turningPointSpecs";
 
 
@@ -109,6 +109,27 @@ function StockRow({ s }: { s: DualTrendStock }) {
 }
 
 export default function DualTrendPage({ slug }: { slug: string }) {
+  const section = DUAL_TREND_SECTIONS[slug];
+  if (section) {
+    return (
+      <AppShell title={`TPMR · Dual Trend — ${section.label}`}>
+        <PageHeader eyebrow="TurningPoint · Dual Trend" title={`Dual Trend — ${section.label}`} description={section.description} />
+        {(section.breadth || slug === "etfs") && (
+          <div className="p-3">
+            <SectorOverviewTable index={section.breadth ?? "SPX"} />
+          </div>
+        )}
+        <div className={section.breadth || slug === "etfs" ? "px-3 pb-6" : "p-3 pb-6"}>
+          <DualTrendTable section={section} />
+        </div>
+      </AppShell>
+    );
+  }
+  return <MockDualTrendPage slug={slug} />;
+}
+
+// Large Cap Cyclical: unchanged seeded content until its universe is defined.
+function MockDualTrendPage({ slug }: { slug: string }) {
   const u = DUAL_TREND_UNIVERSES[slug];
   const [q, setQ] = useState("");
   const filtered = useMemo(
@@ -126,9 +147,6 @@ export default function DualTrendPage({ slug }: { slug: string }) {
       <PageHeader eyebrow="TurningPoint · Dual Trend" title={u.title} description={u.description} />
 
       <div className="p-3">
-        {slug === "sp500" || slug === "etfs" ? (
-          <SectorOverviewTable />
-        ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
             Sector Overview Summary
@@ -162,16 +180,10 @@ export default function DualTrendPage({ slug }: { slug: string }) {
             </table>
           </div>
         </div>
-        )}
       </div>
 
 
       <div className="px-3 pb-6">
-        {slug === "sp500" ? (
-          <SpxDualTrendTable />
-        ) : slug === "etfs" ? (
-          <EtfDualTrendTable />
-        ) : (
         <div className="hud-panel">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
@@ -222,7 +234,6 @@ export default function DualTrendPage({ slug }: { slug: string }) {
             </table>
           </div>
         </div>
-        )}
       </div>
 
     </AppShell>
