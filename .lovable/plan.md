@@ -16,13 +16,13 @@
 
 ## What the table reads
 - For each row, the saved return and net for that symbol, start date and the newest as-of date that has data.
-- If a symbol's signal changed today, its new start date has no saved return until today's job runs. That cell shows the last saved return for that symbol's previous start date, labeled with its date. Otherwise it stays blank. This is the one case where a blank can still appear.
+- If a symbol's signal changed and its new start date has no saved return yet, the cell shows a dash. A return from a previous start date is never shown.
 - "Returns as of" sits in the table header next to the signal date.
 
 ## Tests
 - Return and net math with fixed closes, including the fallback to the prior close and a missing series (blank).
 - Throttle never goes over 40 requests in any 60-second window.
-- Reading returns: today's row is used when it exists. Otherwise the previous day's row is used, and its as-of date is shown.
+- Reading returns: today's row is used when it exists. Otherwise the previous day's row for the same start date is used, and its as-of date is shown. A start date with no saved row shows a dash, never a return from another start date.
 - The work list includes each symbol from the six universes once.
 
 ## Technical details
