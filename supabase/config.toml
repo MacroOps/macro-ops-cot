@@ -15,3 +15,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.community-alpha-read]
 verify_jwt = false
+
+[functions.dual-trend-read]
+verify_jwt = false

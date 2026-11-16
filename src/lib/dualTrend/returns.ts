@@ -3,7 +3,7 @@
 // the table only reads that table (no price calls on page load). When today's
 // job hasn't run, the newest earlier row for the SAME start date is used and its
 // as-of date is shown; a start date with no saved row stays blank (dash).
-import { supabase } from "@/integrations/supabase/client";
+import { outsetaEdgePostStatus } from "@/lib/outseta/edge";
 
 export type Ret = { ret: number | null; net: number | null; asOf: string };
 export interface ReturnRequest { symbol: string; start: string }
@@ -42,15 +42,8 @@ export function pickLatest(rows: SavedReturn[], asOf: string): Map<string, Ret> 
 export type ReturnsFetcher = (symbols: string[], from: string, asOf: string) => Promise<SavedReturn[]>;
 
 const defaultFetcher: ReturnsFetcher = async (symbols, from, asOf) => {
-  const { data, error } = await supabase
-    .from("dual_trend_returns")
-    .select("symbol,start_date,as_of,ret,net")
-    .in("symbol", symbols)
-    .gte("as_of", from)
-    .lte("as_of", asOf)
-    .limit(1000);
-  if (error) throw error;
-  return (data ?? []) as SavedReturn[];
+  const { rows } = await outsetaEdgePostStatus<{ rows: SavedReturn[] }>("dual-trend-read", { op: "returns", symbols, from, asOf });
+  return rows ?? [];
 };
 
 const minusDays = (iso: string, d: number) =>
