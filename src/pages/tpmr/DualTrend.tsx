@@ -114,12 +114,12 @@ export default function DualTrendPage({ slug }: { slug: string }) {
     return (
       <AppShell title={`TPMR · Dual Trend — ${section.label}`}>
         <PageHeader eyebrow="TurningPoint · Dual Trend" title={`Dual Trend — ${section.label}`} description={section.description} />
-        {(section.breadth || slug === "etfs") && (
+        {section.breadth && (
           <div className="p-3">
-            <SectorOverviewTable index={section.breadth ?? "SPX"} />
+            <SectorOverviewTable index={section.breadth} />
           </div>
         )}
-        <div className={section.breadth || slug === "etfs" ? "px-3 pb-6" : "p-3 pb-6"}>
+        <div className={section.breadth ? "px-3 pb-6" : "p-3 pb-6"}>
           <DualTrendTable section={section} />
         </div>
       </AppShell>
