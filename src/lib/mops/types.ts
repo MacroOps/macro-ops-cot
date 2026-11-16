@@ -101,6 +101,7 @@ export interface MopsEntityMeta {
 export type MopsPath =
   | "/v1/signal-keys"
   | "/v1/signal"
+  | "/v1/custom-list-signals"
   | "/v1/signals"
   | "/v1/signal/where"
   | "/v1/scan"
