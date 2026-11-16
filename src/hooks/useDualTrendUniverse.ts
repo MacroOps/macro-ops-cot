@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SPX_UNIVERSE } from "@/lib/spxUniverse";
+import { MIDSML_UNIVERSE } from "@/lib/midSmlUniverse";
 import { sectorGroups, type DualTrendUniverseSpec, type IndexCode } from "@/lib/dualTrend/config";
 import {
   buildListRows, buildMemberRows, DT_KEYS, type CustomListPayload, type DualTrendRow,
@@ -28,7 +29,7 @@ async function fetchMembers(index: IndexCode): Promise<DualTrendData> {
   const asOf = await savedAsOf();
   if (!asOf) return { asOf, rows: [] };
   const [members, sectors, maps] = await Promise.all([readMembers(asOf, [index]), sectorMap(asOf, index), readSignals(asOf)]);
-  return { asOf, rows: buildMemberRows(members.map((m) => m.symbol.toUpperCase()), maps, sectors, SPX_UNIVERSE) };
+  return { asOf, rows: buildMemberRows(members.map((m) => m.symbol.toUpperCase()), maps, sectors, index === "SPX" ? SPX_UNIVERSE : MIDSML_UNIVERSE) };
 }
 
 async function fetchLists(lists: { id: string; category: string }[]): Promise<DualTrendData> {
