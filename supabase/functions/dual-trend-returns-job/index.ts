@@ -187,6 +187,7 @@ Deno.serve(async (req) => {
   const token = req.headers.get("x-dt-token") ?? "";
   if (!token || (await sha256(token)) !== TOKEN_SHA256) return new Response("unauthorized", { status: 401 });
   if (!BASE || !KEY) return new Response("api not configured", { status: 500 });
+  requests = 0;
   const b = await req.json().catch(() => ({}));
   const out = b?.action === "chunk" ? await chunk(token) : await tick(token);
   return new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json" } });
