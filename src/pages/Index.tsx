@@ -98,7 +98,7 @@ const Index = () => {
   }, [markets, filter, sortKey, ids]);
 
   return (
-    <AppShell title="Terminus Platform">
+    <AppShell title="Global Positioning">
       <div className="grid grid-cols-2 md:grid-cols-5 border-b border-border bg-surface/30">
         <Stat label="Markets" value={stats.tracked.toString()} />
         <Stat label="Euphoric ≥75" value={stats.exLong.toString()} accent="long" />
