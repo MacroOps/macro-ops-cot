@@ -106,3 +106,17 @@ describe("returns cache", () => {
     expect(calls).toHaveLength(6);
   });
 });
+
+describe("index rows come from the member list only", () => {
+  it("row count equals member count even when signals and names include extra symbols", () => {
+    const members = Array.from({ length: 604 }, (_, i) => `M${i}`);
+    const m = Object.fromEntries(DT_KEYS.map((k) => [k, new Map<string, number>(
+      [...members, "EXTRA1", "EXTRA2"].map((s) => [s, 1]),
+    )])) as Record<DtKey, Map<string, number>>;
+    const meta = { EXTRA3: ["Extra", "Tech", "Sub"] as [string, string, string] };
+    const sectors = new Map([["EXTRA4", "Energy"]]);
+    const out = buildMemberRows(members, m, sectors, meta);
+    expect(out).toHaveLength(604);
+    expect(out.some((r) => r.symbol.startsWith("EXTRA"))).toBe(false);
+  });
+});

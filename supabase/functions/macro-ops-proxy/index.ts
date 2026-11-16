@@ -22,6 +22,7 @@ const ALLOWED_PATHS = new Set([
   "/v1/distribution",
   "/v1/members",
   "/v1/custom-list-signals",
+  "/v1/prices",
   "/v1/groups",
   "/v1/entities",
   "/v1/enrich",
