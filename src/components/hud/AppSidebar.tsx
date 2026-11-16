@@ -29,9 +29,11 @@ import {
   Telescope,
   Flame,
   Users,
+  User,
   Briefcase,
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
+import foundationMacroLogo from "@/assets/foundation-macro-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -53,6 +55,7 @@ import { useOutseta } from "@outseta/react";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
 import { signOutOfOutseta } from "@/lib/outseta/session";
 import { useTheme } from "@/components/hud/ThemeProvider";
+import { AlertsInbox } from "@/components/hud/AlertsInbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -179,14 +182,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-medium tracking-wider">
-            FR
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="font-serif italic font-light text-[15px] text-surface-foreground">
-                Foundation Research
-              </span>
+          {collapsed ? (
+            // Collapsed: show only the mark (left part of the logo) by clipping it.
+            <div className="h-7 w-[26px] shrink-0 overflow-hidden">
+              <img src={foundationMacroLogo} alt="Foundation Macro" className="h-7 w-auto max-w-none" />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 leading-tight min-w-0">
+              <img src={foundationMacroLogo} alt="Foundation Macro" className="h-7 w-auto" />
               <span className="text-[9px] text-accent-deep tracking-[0.22em] uppercase">
                 Terminus Platform
               </span>
@@ -269,26 +272,22 @@ function ViewAsControl({ collapsed }: { collapsed: boolean }) {
 
 function AccountFooter({ collapsed }: { collapsed: boolean }) {
   const { user, openProfile, logout } = useOutseta();
+  const { isStaff } = useEntitlements();
   const { theme, toggle } = useTheme();
   const name = user?.FullName || user?.FirstName || user?.Email?.split("@")[0] || "Account";
   const initial = (name.trim()[0] || "U").toUpperCase();
 
   return (
     <div className={`flex items-center gap-0.5 ${collapsed ? "flex-col" : ""}`}>
-      <button
-        type="button"
-        onClick={() => openProfile()}
-        className="flex flex-1 min-w-0 items-center gap-2 rounded-sm px-1.5 py-1.5 hover:bg-sidebar-accent text-left"
-        aria-label="Profile"
-        title="Profile"
-      >
+      <div className="flex flex-1 min-w-0 items-center gap-2 rounded-sm px-1.5 py-1.5 text-left">
         <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold text-surface-foreground">
           {initial}
         </div>
         {!collapsed && (
           <span className="truncate text-xs text-sidebar-foreground">{name}</span>
         )}
-      </button>
+      </div>
+      {isStaff && <AlertsInbox />}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -301,6 +300,10 @@ function AccountFooter({ collapsed }: { collapsed: boolean }) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="end" className="w-44">
+          <DropdownMenuItem className="gap-2 text-xs" onSelect={() => openProfile()}>
+            <User className="h-3.5 w-3.5" />
+            <span>Profile</span>
+          </DropdownMenuItem>
           <DropdownMenuItem className="gap-2 text-xs" onSelect={() => toggle()}>
             {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
             <span>{theme === "light" ? "Dark mode" : "Light mode"}</span>

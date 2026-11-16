@@ -1,4 +1,4 @@
-// Topbar bell with unacknowledged alert events. Polls every 30s; surfaces
+// Sidebar bell with unacknowledged alert events. Polls every 30s; surfaces
 // toast on new fires. Click → /alerts.
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -33,13 +33,13 @@ export function AlertsInbox() {
   return (
     <Link
       to="/alerts"
-      className="relative flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-sm hover:bg-muted transition-colors"
+      className="relative p-1.5 rounded-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
       aria-label={`Alerts (${count})`}
+      title="Alerts"
     >
-      <Bell className="h-3 w-3" />
-      <span className="hidden sm:inline">Alerts</span>
+      <Bell className="h-4 w-4" />
       {count > 0 && (
-        <span className="ml-0.5 px-1 min-w-[16px] h-[14px] rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center tabular-nums">
+        <span className="absolute -top-0.5 -right-0.5 px-1 min-w-[14px] h-[14px] rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center tabular-nums">
           {count > 99 ? "99+" : count}
         </span>
       )}

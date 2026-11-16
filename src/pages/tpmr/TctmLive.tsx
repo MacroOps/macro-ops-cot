@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { AppShell } from "@/components/hud/AppShell";
+import { PageHeader } from "@/components/hud/PageHeader";
 import { mountTctm } from "@/lib/tctm/dashboard.js";
 import "./tctm-live.css";
 
@@ -24,7 +25,11 @@ export default function TctmLive() {
   }, []);
 
   return (
-    <AppShell title="TPMR · TCTM - Live" hideRibbon hideScrubber>
+    <AppShell title="TPMR · TCTM - Live" hideScrubber>
+      <PageHeader
+        eyebrow="TurningPoint · TCTM"
+        title="Tactical Composite Trend Model"
+      />
       <div ref={setHost} className="tctm-app" />
     </AppShell>
   );

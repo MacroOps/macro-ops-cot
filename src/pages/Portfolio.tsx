@@ -172,7 +172,7 @@ export default function Portfolio() {
       <PageHeader
         eyebrow="Macro Ops Book"
         title="Macro Portfolio"
-        description="Public snapshot of the Macro Ops book: performance (daily) and holdings (weekly). Notional weights only — no cost basis, size, or stops."
+        description="Performance (daily) and holdings (weekly)."
         actions={
           <button
             type="button"

@@ -939,7 +939,6 @@ import { TCTM_GLOSSARY } from './glossary.js';
 
 const SHELL = `<header class="top">
   <div class="top-row">
-    <div class="brand">TCTM<small>Tactical Composite Trend Model</small></div>
     <div id="pill" class="status-pill"><span class="meta">Loading…</span></div>
     <div class="spacer"></div>
     <span id="asof" class="meta"></span>

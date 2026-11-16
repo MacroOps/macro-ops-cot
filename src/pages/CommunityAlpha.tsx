@@ -62,13 +62,14 @@ export default function CommunityAlpha() {
   const ready = !!user && !!data && !error;
 
   return (
-    <AppShell title="Community Alpha" hideScrubber hideRibbon fillViewport>
+    <AppShell title="Community Alpha" hideScrubber fillViewport>
       <div className="ca-page">
         <div className="ca-inner">
           {isStaff && mode === "staging" && <div className="ca-staging-banner" role="status">STAGING — test data</div>}
           <PageHeader
             eyebrow="Research"
             title="Community Alpha"
+            description="Weekly digest of long-term ideas from community members."
             actions={(
               <div className="ca-header-actions">
                 <div className="search-side" style={ready ? undefined : { visibility: "hidden" }}>

@@ -15,7 +15,6 @@
   --amber: hsl(var(--warning));
   --cyan: hsl(var(--info));
   --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --serif: Newsreader, Georgia, "Times New Roman", serif;
   background: var(--bg);
   color: var(--fg);
   font: 14px/1.45 var(--sans);
@@ -29,30 +28,14 @@
 .tctm-app th.n,
 .tctm-app .kpi .v { font-variant-numeric: tabular-nums; }
 .tctm-app header.top {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: hsl(var(--background) / 0.96);
-  backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--line);
 }
 .tctm-app .top-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 40px;
+  padding: 10px 12px;
   flex-wrap: wrap;
-  max-width: 1320px;
-  margin: 0 auto;
-}
-.tctm-app .brand { font-weight: 600; letter-spacing: 0.02em; font-size: 15px; }
-.tctm-app .brand small {
-  display: block;
-  font-weight: 500;
-  color: hsl(var(--accent-deep));
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
 }
 .tctm-app .spacer { flex: 1; }
 .tctm-app .status-pill {
@@ -89,11 +72,9 @@
 .tctm-app nav.main {
   display: flex;
   gap: 2px;
-  padding: 0 34px;
+  padding: 0 12px;
   overflow-x: auto;
   scrollbar-width: thin;
-  max-width: 1320px;
-  margin: 0 auto;
 }
 .tctm-app nav.main a {
   color: var(--muted);
@@ -106,12 +87,10 @@
 }
 .tctm-app nav.main a:hover { color: var(--fg); }
 .tctm-app nav.main a.on { color: var(--fg); border-bottom-color: hsl(var(--accent)); }
-.tctm-app main { padding: 18px 40px 60px; max-width: 1320px; margin: 0 auto; }
+.tctm-app main { padding: 12px 12px 60px; }
 .tctm-app h1 {
-  font-family: var(--serif);
-  font-weight: 300;
-  font-size: 22px;
-  letter-spacing: -0.005em;
+  font-size: 15px;
+  font-weight: 600;
   margin: 4px 0 4px;
 }
 .tctm-app h2 { font-size: 15px; margin: 0; font-weight: 600; }
@@ -124,6 +103,20 @@
   margin: 0 0 16px;
 }
 .tctm-app .card-h { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+/* HUD panel header: hairline band with small uppercase title */
+.tctm-app .card > .card-h {
+  align-items: center;
+  margin: -14px -16px 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.tctm-app .card-h h2 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: hsl(var(--surface-foreground));
+}
 .tctm-app .card-h .grow { flex: 1; min-width: 200px; }
 .tctm-app .grid { display: grid; gap: 16px; }
 .tctm-app .g2 { grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); }
@@ -172,9 +165,10 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.tctm-app .b-bull { background: var(--bull); color: #fff; }
-.tctm-app .b-bear { background: var(--bear); color: #fff; }
-.tctm-app .b-neutral { background: var(--panel2); color: var(--muted); }
+/* Signal badges: tinted fill + hairline border, same as SignalBadge */
+.tctm-app .b-bull { background: hsl(var(--success) / 0.1); color: var(--bull-fg); border: 1px solid hsl(var(--success) / 0.3); }
+.tctm-app .b-bear { background: hsl(var(--destructive) / 0.1); color: var(--bear-fg); border: 1px solid hsl(var(--destructive) / 0.3); }
+.tctm-app .b-neutral { background: var(--panel2); color: var(--muted); border: 1px solid var(--line); }
 .tctm-app .b-active { background: hsl(var(--success) / 0.12); color: var(--bull-fg); border: 1px solid hsl(var(--success) / 0.4); }
 .tctm-app .b-expired { background: var(--panel2); color: var(--muted); border: 1px solid var(--line); }
 .tctm-app .link { color: hsl(var(--accent-deep)); cursor: pointer; text-decoration: none; border-bottom: 1px dotted hsl(var(--accent) / 0.7); }

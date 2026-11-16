@@ -135,11 +135,7 @@ export default function TpDeanPortfolio() {
       <PageHeader
         eyebrow="Turning Point"
         title="Dual Trend Portfolio"
-        description={
-          data?.asOf
-            ? `Dean's book. Holdings as of ${data.asOf}.`
-            : "Dean's book, from the TP DT - PUBLIC tab."
-        }
+        description="Sector weights vs. benchmark, holdings and trend status."
         actions={
           <button
             type="button"
@@ -152,6 +148,12 @@ export default function TpDeanPortfolio() {
           </button>
         }
       />
+
+      <div className="px-4 py-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+        <span className="px-1.5 py-0.5 border border-border rounded-sm">
+          Holdings · {data?.asOf ? `as of ${data.asOf}` : "snapshot"}
+        </span>
+      </div>
 
       {isLoading && (
         <div className="p-8 flex items-center justify-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">

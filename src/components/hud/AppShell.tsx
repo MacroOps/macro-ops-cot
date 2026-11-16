@@ -3,9 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { PaywallGate } from "./PaywallGate";
-import { Circle } from "lucide-react";
+import { Circle, ExternalLink, Slack } from "lucide-react";
 import { RegimeRibbon } from "./RegimeRibbon";
-import { AlertsInbox } from "./AlertsInbox";
 import { GlobalScrubber } from "./GlobalScrubber";
 import { HudLoader } from "./HudLoader";
 import { useEntitlements } from "@/hooks/useCollectiveAccess";
@@ -20,13 +19,14 @@ function viewAsLabel(mode: ViewAsMode) {
 function ShellHeader({
   title,
   showSidebarTrigger,
-  showAlerts,
   viewAsHint,
+  showExternalLinks = false,
 }: {
   title: string;
   showSidebarTrigger: boolean;
-  showAlerts: boolean;
   viewAsHint?: ViewAsMode | null;
+  /** Research and Slack stay behind the paywall. */
+  showExternalLinks?: boolean;
 }) {
   return (
     <header className="h-11 flex items-center justify-between border-b border-border bg-surface/40 px-3">
@@ -44,16 +44,34 @@ function ShellHeader({
       </div>
 
       <div className="flex items-center gap-3">
+        {showExternalLinks && (
+          <>
+            <a
+              href="https://foundationmacro.com/research"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-7 items-center gap-1 rounded-sm px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Foundation Macro research"
+            >
+              Research
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            <a
+              href="https://comm-center.slack.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Open Slack workspace"
+              title="Slack"
+            >
+              <Slack className="h-3.5 w-3.5" />
+            </a>
+          </>
+        )}
         <div className="hidden md:flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
           <Circle className="h-2 w-2 fill-success text-success" />
           <span>Live</span>
         </div>
-        {showAlerts && (
-          <>
-            <div className="hidden md:block h-4 w-px bg-border" />
-            <AlertsInbox />
-          </>
-        )}
       </div>
     </header>
   );
@@ -78,7 +96,7 @@ export function AppShell({
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
-        <ShellHeader title={title} showSidebarTrigger={false} showAlerts={false} />
+        <ShellHeader title={title} showSidebarTrigger={false} />
         <div className="flex-1 flex items-center justify-center">
           <HudLoader />
         </div>
@@ -89,7 +107,7 @@ export function AppShell({
   if (!hasAccess) {
     return (
       <div className="min-h-screen flex flex-col w-full bg-background">
-        <ShellHeader title={title} showSidebarTrigger={false} showAlerts={false} />
+        <ShellHeader title={title} showSidebarTrigger={false} />
         <PaywallGate signedIn={signedIn} />
       </div>
     );
@@ -109,8 +127,8 @@ export function AppShell({
           <ShellHeader
             title={title}
             showSidebarTrigger
-            showAlerts={isStaff}
             viewAsHint={canViewAs ? viewAs : null}
+            showExternalLinks
           />
           {isStaff && !hideRibbon && <RegimeRibbon />}
           <main

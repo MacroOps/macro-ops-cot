@@ -58,7 +58,6 @@ const RULES = [
     pattern: /Newsreader/,
     allow: {
       "index.css": "font import and token definition",
-      "pages/tpmr/tctm-live.css": "TCTM Live keeps Dean's typography (AGENTS exceptions)",
     },
   },
 ];

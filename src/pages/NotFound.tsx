@@ -12,7 +12,7 @@ const NotFound = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
       <div className="max-w-md w-full hud-panel p-6 space-y-4">
         <div className="text-[10px] uppercase tracking-[0.22em] text-accent-deep">
-          Foundation Research · 404
+          Foundation Macro · 404
         </div>
         <h1 className="font-serif font-light text-[22px] tracking-[-0.005em] text-surface-foreground">
           Page not found
