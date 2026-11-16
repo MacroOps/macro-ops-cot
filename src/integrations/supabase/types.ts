@@ -515,6 +515,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dual_trend_members: {
+        Row: {
+          as_of: string
+          name: string | null
+          sub_group: string | null
+          symbol: string
+          universe: string
+        }
+        Insert: {
+          as_of: string
+          name?: string | null
+          sub_group?: string | null
+          symbol: string
+          universe: string
+        }
+        Update: {
+          as_of?: string
+          name?: string | null
+          sub_group?: string | null
+          symbol?: string
+          universe?: string
+        }
+        Relationships: []
+      }
       dual_trend_return_runs: {
         Row: {
           as_of: string
@@ -522,7 +546,9 @@ export type Database = {
           error: string | null
           finished_at: string | null
           heartbeat_at: string
+          phase: string
           requests: number
+          signals_ready_at: string | null
           started_at: string
           status: string
           symbols: Json
@@ -535,7 +561,9 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           heartbeat_at?: string
+          phase?: string
           requests?: number
+          signals_ready_at?: string | null
           started_at?: string
           status?: string
           symbols?: Json
@@ -548,7 +576,9 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           heartbeat_at?: string
+          phase?: string
           requests?: number
+          signals_ready_at?: string | null
           started_at?: string
           status?: string
           symbols?: Json
@@ -581,6 +611,42 @@ export type Database = {
           ret?: number | null
           start_date?: string
           symbol?: string
+        }
+        Relationships: []
+      }
+      dual_trend_signal_days: {
+        Row: {
+          as_of: string
+          kind: string
+          ready_at: string
+        }
+        Insert: {
+          as_of: string
+          kind?: string
+          ready_at?: string
+        }
+        Update: {
+          as_of?: string
+          kind?: string
+          ready_at?: string
+        }
+        Relationships: []
+      }
+      dual_trend_signals: {
+        Row: {
+          as_of: string
+          symbol: string
+          vals: Json
+        }
+        Insert: {
+          as_of: string
+          symbol: string
+          vals?: Json
+        }
+        Update: {
+          as_of?: string
+          symbol?: string
+          vals?: Json
         }
         Relationships: []
       }
