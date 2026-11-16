@@ -1,6 +1,6 @@
 // S&P 500 / 400 / 600 sector overview: long/short-term relative-trend breadth per GICS sector.
-// Built from live Macro Ops Signal API data (symbol-level trend_rel_*_state),
-// aggregated client-side against sector membership.
+// Built from saved daily data (dual_trend_members / dual_trend_signals), aggregated
+// client-side; 5-day change compares with the saved day 5 trading days earlier.
 import { useQuery } from "@tanstack/react-query";
 import { latestFullDay, priorSavedDay, readMembers, readSignalDays, readSignals } from "@/lib/dualTrend/saved";
 import { INDEX_LABELS, sectorGroups, type IndexCode } from "@/lib/dualTrend/config";

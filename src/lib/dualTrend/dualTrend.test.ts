@@ -180,3 +180,44 @@ describe("index rows come from the member list only", () => {
     expect(out.some((r) => r.symbol.startsWith("EXTRA"))).toBe(false);
   });
 });
+
+import { latestFullDay, priorSavedDay, toKeyMaps } from "./saved";
+import { backfillDates, mergeSnapshots, workListFromSaved } from "../../../supabase/functions/_shared/dual-trend/returns-math";
+
+describe("saved signals", () => {
+  const days = [
+    { as_of: "2026-11-16", kind: "full" }, { as_of: "2026-11-13", kind: "full" },
+    { as_of: "2026-11-12", kind: "states" }, { as_of: "2026-11-11", kind: "states" },
+    { as_of: "2026-11-10", kind: "states" }, { as_of: "2026-11-09", kind: "states" },
+    { as_of: "2026-11-06", kind: "states" },
+  ];
+  it("uses the newest fully saved day", () => {
+    expect(latestFullDay(days)).toBe("2026-11-16");
+  });
+  it("falls back to the previous saved day when today isn't fully saved (half-saved never read)", () => {
+    expect(latestFullDay([{ as_of: "2026-11-17", kind: "states" }, ...days])).toBe("2026-11-16");
+  });
+  it("5-day change compares with the saved day 5 trading days earlier", () => {
+    expect(priorSavedDay(days, "2026-11-16", 5)).toBe("2026-11-09");
+  });
+  it("first-run backfill saves the 5 prior trading days that are missing", () => {
+    const cal = ["2026-11-16", "2026-11-13", "2026-11-12", "2026-11-11", "2026-11-10", "2026-11-09", "2026-11-06"];
+    expect(backfillDates(cal, [], "2026-11-16")).toEqual(["2026-11-13", "2026-11-12", "2026-11-11", "2026-11-10", "2026-11-09"]);
+    expect(backfillDates(cal, ["2026-11-13", "2026-11-12"], "2026-11-16")).toEqual(["2026-11-11", "2026-11-10", "2026-11-09"]);
+  });
+  it("saved values are stored and read as-is (no x10)", () => {
+    const merged = mergeSnapshots({ trend_rel_lt_value1: [{ entity: "aapl", value: 73.4 }] });
+    expect(merged.get("AAPL")).toEqual({ trend_rel_lt_value1: 73.4 });
+    expect(toKeyMaps([{ symbol: "AAPL", vals: merged.get("AAPL")! }]).trend_rel_lt_value1.get("AAPL")).toBe(73.4);
+  });
+  it("returns work list uses start dates from saved signals", () => {
+    const vals = new Map([["AAPL", { trend_rel_lt_start: 20580, trend_rel_st_start: 20400 }]]);
+    expect(workListFromSaved(["AAPL", "NEW"], vals)).toEqual([
+      { symbol: "AAPL", starts: [epochDaysToIso(20400), epochDaysToIso(20580)].sort() },
+    ]);
+  });
+  it("row count equals saved member count", () => {
+    const maps = toKeyMaps([{ symbol: "A", vals: { trend_rel_lt_state: 1 } }, { symbol: "EXTRA", vals: { trend_rel_lt_state: 1 } }]);
+    expect(buildMemberRows(["A", "B"], maps, new Map(), {})).toHaveLength(2);
+  });
+});
