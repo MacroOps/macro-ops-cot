@@ -135,6 +135,7 @@ async function tick(token: string) {
   } else {
     await sb.from("dual_trend_return_runs").update({ status: "running", error: null, heartbeat_at: new Date().toISOString() }).eq("as_of", asOf);
   }
+  // @ts-ignore EdgeRuntime is provided by the runtime
   EdgeRuntime.waitUntil(kick(token));
   return { status: run ? "resumed" : "started", asOf };
 }
@@ -172,6 +173,7 @@ async function chunk(token: string) {
     if (done) {
       await sb.from("dual_trend_returns").delete().lt("as_of", minus(asOf, KEEP_DAYS));
     } else {
+      // @ts-ignore EdgeRuntime is provided by the runtime
       EdgeRuntime.waitUntil(kick(token));
     }
     return { status: done ? "done" : "continuing", cursor, total: items.length };
