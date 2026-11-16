@@ -15,6 +15,7 @@ Dual Trend tables and sector breadth open from saved data only. The daily job fe
    - The 33 sector groups (11 per index, from `sectorGroups()`), so breadth needs no API.
    - The 8 custom lists via `/v1/custom-list-signals` (membership + category).
 2. **Signals phase**: the 10 keys (value1, value2, state, days, start for lt and st) via paged `/v1/signal` (offset += limit until a short page). Custom-list symbols not covered by the paged reads take their values from the custom-list payload. Saved per symbol + as-of date.
+2b. **First-run backfill**: if fewer than 5 earlier trading days are saved, also save the lt/st state signals (`trend_rel_lt_state`, `trend_rel_st_state`) for the 5 trading days before the as-of date (~20 extra calls), so the 5-day change works from day one. Membership for those days uses the as-of date list.
 3. **Returns phase**: unchanged math, but the work list is built from the saved signals (start dates) and saved members, not refetched.
 4. Run is marked done only after all three phases. Each phase is resumable from where it stopped (the 12:00 UTC check still resumes).
 
@@ -23,7 +24,7 @@ Request budget: about 10 keys x ~3 pages + 3 + 33 + 8 = ~75 extra calls, under 2
 ## Fallback rule
 - Pages read the newest as-of date whose members and signals phases are both complete (a "signals ready" mark on the run row). A half-saved day is never shown.
 - Returns keep their own fallback (previous day, then dash for new start dates).
-- Sector breadth "change vs prior day" uses the previous saved as-of date.
+- Sector breadth "5-day change" compares against the saved as-of date 5 trading days earlier (the 5th older saved as-of date), not the previous day.
 
 ## Storage
 - `dual_trend_members`: universe (SPX, MID, SML, sector group code, or list id), symbol, category, as_of. One row per member.
@@ -33,7 +34,7 @@ Request budget: about 10 keys x ~3 pages + 3 + 33 + 8 = ~75 extra calls, under 2
 
 ## Frontend
 - `useDualTrendUniverse`: reads members + signals for the chosen as-of from the database; row builders (`buildMemberRows`, `buildListRows`) unchanged, so row count still equals member count.
-- `useSectorOverview`: reads sector-group members + states for as-of and prior saved day from the database.
+- `useSectorOverview`: reads sector-group members + states for as-of and the saved day 5 trading days earlier from the database.
 - Remove the page-load `/v1/signal`, `/v1/members`, `/v1/custom-list-signals` calls from Dual Trend and breadth. Other pages (TPMR Overview, Signals Lab) are untouched.
 - Large Cap Cyclical stays mock.
 
@@ -43,7 +44,7 @@ Request budget: about 10 keys x ~3 pages + 3 + 33 + 8 = ~75 extra calls, under 2
 - Half-saved day is never read.
 - Row count equals member count from saved members.
 - Values saved and read as-is (no x10).
-- Breadth change uses previous saved as-of.
+- Breadth 5-day change uses the saved as-of 5 trading days earlier; backfill fills it on the first run.
 
 ## Verification
 - Run the job once by hand; confirm counts (S&P 500 503, 400 401, 600 604, ETFs 260, miners 60, thematic 344) match the live pages today.
