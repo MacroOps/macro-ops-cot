@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { listWorkspaces, createWorkspace } from "@/lib/workspaces";
 import foundationMacroLogo from "@/assets/foundation-macro-logo.png";
+import foundationMacroLogoDark from "@/assets/foundation-macro-logo-dark.png";
 import {
   Sidebar,
   SidebarContent,
@@ -166,6 +167,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { isCollective, isTurningPoint, isStaff } = useEntitlements();
+  const { theme } = useTheme();
+  const logoSrc = theme === "dark" ? foundationMacroLogoDark : foundationMacroLogo;
   const flags: AccessFlags = { isCollective, isTurningPoint, isStaff };
   const nav = NAV.map((item) => {
     if (item.children) {
@@ -185,11 +188,11 @@ export function AppSidebar() {
           {collapsed ? (
             // Collapsed: show only the mark (left part of the logo) by clipping it.
             <div className="h-7 w-[26px] shrink-0 overflow-hidden">
-              <img src={foundationMacroLogo} alt="Foundation Macro" className="h-7 w-auto max-w-none" />
+              <img src={logoSrc} alt="Foundation Macro" className="h-7 w-auto max-w-none" />
             </div>
           ) : (
             <div className="flex flex-col gap-1 leading-tight min-w-0">
-              <img src={foundationMacroLogo} alt="Foundation Macro" className="h-7 w-auto" />
+              <img src={logoSrc} alt="Foundation Macro" className="h-7 w-auto" />
               <span className="text-[9px] text-accent-deep tracking-[0.22em] uppercase">
                 Terminus Platform
               </span>
