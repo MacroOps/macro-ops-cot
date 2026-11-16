@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { signalAll } from "@/lib/mops/paginate";
 import type { MopsSignalRow } from "@/lib/mops/types";
 import { buildListRows, buildMemberRows, DT_KEYS, epochDaysToIso, type DtKey } from "./build";
-import { loadReturns, getCachedReturn, returnsCacheKey, __resetReturnsMemory } from "./returns";
+import { loadReturns, getCachedReturn, pickLatest, returnsCacheKey, __resetReturnsMemory } from "./returns";
+import { buildWorkList, computeReturn, makeThrottle } from "../../../supabase/functions/_shared/dual-trend/returns-math";
 
 const rows = (n: number, offset = 0): MopsSignalRow[] =>
   Array.from({ length: n }, (_, i) => ({ entity: `S${offset + i}`, date: "2026-11-13", value: 1 }));
@@ -83,27 +84,86 @@ describe("custom list rows", () => {
   });
 });
 
-describe("returns cache", () => {
-  beforeEach(() => { localStorage.clear(); __resetReturnsMemory(); });
+describe("saved returns", () => {
+  beforeEach(() => { __resetReturnsMemory(); });
 
   it("cache key is symbol + start date + as-of date", () => {
     expect(returnsCacheKey("aapl", "2026-05-08", "2026-11-13")).toBe("AAPL|2026-05-08|2026-11-13");
   });
 
-  it("batches and does not refetch on the same as-of date, but refetches on a new one", async () => {
-    const calls: number[] = [];
-    const fetcher = async (items: { symbol: string; dates: string[] }[]) => {
-      calls.push(items.length);
-      return Object.fromEntries(items.map((it) => [it.symbol, Object.fromEntries(it.dates.map((d) => [d, { ret: 1, net: 0.5 }]))]));
-    };
-    const reqs = Array.from({ length: 120 }, (_, i) => ({ symbol: `S${i}`, start: "2026-10-01" }));
-    await loadReturns(reqs, "2026-11-13", undefined, fetcher);
-    expect(calls).toEqual([50, 50, 20]);
-    await loadReturns(reqs, "2026-11-13", undefined, fetcher);
-    expect(calls).toHaveLength(3);
-    expect(getCachedReturn("S0", "2026-10-01", "2026-11-13")).toEqual({ ret: 1, net: 0.5 });
-    await loadReturns(reqs, "2026-11-16", undefined, fetcher);
-    expect(calls).toHaveLength(6);
+  it("uses today's row when it exists", () => {
+    const m = pickLatest([
+      { symbol: "AAPL", start_date: "2026-05-08", as_of: "2026-11-12", ret: 20, net: 18 },
+      { symbol: "AAPL", start_date: "2026-05-08", as_of: "2026-11-13", ret: 21.46, net: 19.27 },
+    ], "2026-11-13");
+    expect(m.get("AAPL|2026-05-08")).toEqual({ ret: 21.46, net: 19.27, asOf: "2026-11-13" });
+  });
+
+  it("falls back to the previous day's row for the same start date, with its as-of date", async () => {
+    await loadReturns([{ symbol: "AAPL", start: "2026-05-08" }], "2026-11-13", undefined, async () => [
+      { symbol: "AAPL", start_date: "2026-05-08", as_of: "2026-11-12", ret: 20, net: 18 },
+    ]);
+    expect(getCachedReturn("AAPL", "2026-05-08", "2026-11-13")).toEqual({ ret: 20, net: 18, asOf: "2026-11-12" });
+  });
+
+  it("a new start date with no saved row shows a dash, never a return from another start date", async () => {
+    await loadReturns([{ symbol: "AAPL", start: "2026-11-10" }], "2026-11-13", undefined, async () => [
+      { symbol: "AAPL", start_date: "2026-05-08", as_of: "2026-11-13", ret: 21.46, net: 19.27 },
+    ]);
+    expect(getCachedReturn("AAPL", "2026-11-10", "2026-11-13")).toBeUndefined();
+  });
+
+  it("does not re-read on the same as-of date", async () => {
+    let calls = 0;
+    const f = async () => { calls++; return []; };
+    const reqs = Array.from({ length: 100 }, (_, i) => ({ symbol: `S${i}`, start: "2026-10-01" }));
+    await loadReturns(reqs, "2026-11-13", undefined, f);
+    expect(calls).toBe(3); // 40 + 40 + 20 symbols
+    await loadReturns(reqs, "2026-11-13", undefined, f);
+    expect(calls).toBe(3);
+  });
+});
+
+describe("daily job math", () => {
+  const sym = [{ date: "2026-05-07", close: 100 }, { date: "2026-05-11", close: 110 }, { date: "2026-11-13", close: 121 }];
+  const spx = [{ date: "2026-05-07", close: 1000 }, { date: "2026-11-13", close: 1100 }];
+
+  it("return = as-of close / start close - 1; net = minus benchmark", () => {
+    const r = computeReturn(sym, spx, "2026-05-11", "2026-11-13");
+    expect(r.ret).toBeCloseTo(10, 6);
+    expect(r.net).toBeCloseTo(0, 6);
+  });
+
+  it("a start date with no trading row uses the prior close", () => {
+    const r = computeReturn(sym, spx, "2026-05-09", "2026-11-13"); // Saturday -> May 7 close 100
+    expect(r.ret).toBeCloseTo(21, 6);
+    expect(r.net).toBeCloseTo(11, 6);
+  });
+
+  it("a missing series is blank, not 0", () => {
+    expect(computeReturn([], spx, "2026-05-09", "2026-11-13")).toEqual({ ret: null, net: null });
+  });
+
+  it("throttle never exceeds 40 requests in any 60s window", async () => {
+    let t = 0;
+    const th = makeThrottle(40, () => t, async (ms) => { t += ms; });
+    const times: number[] = [];
+    for (let i = 0; i < 200; i++) { await th(); times.push(t); }
+    for (let i = 0; i < times.length; i++) {
+      expect(times.filter((x) => x >= times[i] && x < times[i] + 60_000).length).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it("work list has each symbol once across universes", () => {
+    const w = buildWorkList([
+      { symbol: "aapl", starts: ["2026-05-08"] },
+      { symbol: "AAPL ", starts: ["2026-11-01", "2026-05-08"] },
+      { symbol: "XLK", starts: ["2026-10-01", ""] },
+    ]);
+    expect(w).toEqual([
+      { symbol: "AAPL", starts: ["2026-05-08", "2026-11-01"] },
+      { symbol: "XLK", starts: ["2026-10-01"] },
+    ]);
   });
 });
 

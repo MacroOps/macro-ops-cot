@@ -515,6 +515,75 @@ export type Database = {
         }
         Relationships: []
       }
+      dual_trend_return_runs: {
+        Row: {
+          as_of: string
+          cursor: number
+          error: string | null
+          finished_at: string | null
+          heartbeat_at: string
+          requests: number
+          started_at: string
+          status: string
+          symbols: Json
+          symbols_done: number
+          symbols_total: number
+        }
+        Insert: {
+          as_of: string
+          cursor?: number
+          error?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string
+          requests?: number
+          started_at?: string
+          status?: string
+          symbols?: Json
+          symbols_done?: number
+          symbols_total?: number
+        }
+        Update: {
+          as_of?: string
+          cursor?: number
+          error?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string
+          requests?: number
+          started_at?: string
+          status?: string
+          symbols?: Json
+          symbols_done?: number
+          symbols_total?: number
+        }
+        Relationships: []
+      }
+      dual_trend_returns: {
+        Row: {
+          as_of: string
+          computed_at: string
+          net: number | null
+          ret: number | null
+          start_date: string
+          symbol: string
+        }
+        Insert: {
+          as_of: string
+          computed_at?: string
+          net?: number | null
+          ret?: number | null
+          start_date: string
+          symbol: string
+        }
+        Update: {
+          as_of?: string
+          computed_at?: string
+          net?: number | null
+          ret?: number | null
+          start_date?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
       eurex_oi_history: {
         Row: {
           block_volume: number | null

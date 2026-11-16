@@ -10,7 +10,7 @@ import { sectorGroups, type DualTrendUniverseSpec, type IndexCode } from "@/lib/
 import {
   buildListRows, buildMemberRows, DT_KEYS, type CustomListPayload, type DtKey, type DualTrendRow,
 } from "@/lib/dualTrend/build";
-import { getCachedReturn, loadReturns, pruneReturnsCache, type Ret } from "@/lib/dualTrend/returns";
+import { getCachedReturn, loadReturns, returnsAsOf, type Ret } from "@/lib/dualTrend/returns";
 
 export interface DualTrendData { asOf: string; rows: DualTrendRow[] }
 
@@ -67,7 +67,6 @@ export function useDualTrendReturns(data: DualTrendData | undefined) {
   useEffect(() => {
     if (!data?.asOf || !data.rows.length) return;
     let cancelled = false;
-    pruneReturnsCache(data.asOf);
     const reqs = data.rows.flatMap((r) => [
       { symbol: r.symbol, start: r.lt.start },
       { symbol: r.symbol, start: r.st.start },
@@ -82,6 +81,8 @@ export function useDualTrendReturns(data: DualTrendData | undefined) {
   return useMemo(() => {
     const get = (symbol: string, start: string): Ret | undefined =>
       data?.asOf && start ? getCachedReturn(symbol, start, data.asOf) : undefined;
-    return { get, loading, tick };
+    const reqs = data?.rows.flatMap((r) => [{ symbol: r.symbol, start: r.lt.start }, { symbol: r.symbol, start: r.st.start }]) ?? [];
+    const asOf = data?.asOf ? returnsAsOf(reqs, data.asOf) : "";
+    return { get, loading, tick, asOf };
   }, [data, loading, tick]);
 }

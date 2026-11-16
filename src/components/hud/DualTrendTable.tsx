@@ -194,6 +194,9 @@ export function DualTrendTable({ section }: { section: DualTrendSection }) {
             </span>
           )}
           {returns.loading && <span className="ml-2 font-normal text-muted-foreground">· loading returns…</span>}
+          {!returns.loading && returns.asOf && (
+            <span className="ml-2 font-normal text-muted-foreground">· returns as of {returns.asOf}</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {groups.length > 1 && (
