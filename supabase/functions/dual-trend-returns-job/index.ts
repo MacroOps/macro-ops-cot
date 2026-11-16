@@ -216,7 +216,7 @@ async function chunk(token: string) {
         const earliest = items.reduce((m, i) => (i.starts[0] < m ? i.starts[0] : m), asOf);
         const spx = await prices("SPX", minus(earliest, 10), asOf, { entity_type: "index" });
         await sb.from("dual_trend_return_runs").update({
-          ...beat, phase: "returns", cursor: 0, symbols: { items, spx }, symbols_total: items.length, requests: run.requests + requests,
+          ...beat, phase: "returns", cursor: 0, symbols_done: 0, symbols: { items, spx }, symbols_total: items.length, requests: run.requests + requests,
         }).eq("as_of", asOf);
       }
       // @ts-ignore EdgeRuntime is provided by the runtime
