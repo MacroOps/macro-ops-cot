@@ -1,7 +1,7 @@
 // Saved Dual Trend data (written daily by dual-trend-returns-job). Pages read
 // members and signals from the database only; no Macro Ops calls on page load.
 // Only days marked "full" in dual_trend_signal_days are shown (never a half-saved day).
-import { supabase } from "@/integrations/supabase/client";
+import { outsetaEdgePostStatus } from "@/lib/outseta/edge";
 import type { DtKey } from "./build";
 
 export interface SignalDay { as_of: string; kind: string }
@@ -17,33 +17,19 @@ export function priorSavedDay(days: SignalDay[], asOf: string, n = 5): string {
 }
 
 export async function readSignalDays(): Promise<SignalDay[]> {
-  const { data, error } = await supabase.from("dual_trend_signal_days").select("as_of,kind").order("as_of", { ascending: false }).limit(60);
-  if (error) throw error;
-  return (data ?? []) as SignalDay[];
-}
-
-async function readAll<T>(q: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
-  const out: T[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await q(from, from + 999);
-    if (error) throw error;
-    out.push(...(data ?? []));
-    if ((data ?? []).length < 1000) break;
-  }
-  return out;
+  const { rows } = await outsetaEdgePostStatus<{ rows: SignalDay[] }>("dual-trend-read", { op: "days" });
+  return rows ?? [];
 }
 
 export interface SavedMember { universe: string; symbol: string; name: string | null; sub_group: string | null }
 
-export const readMembers = (asOf: string, universes: string[]) =>
-  readAll<SavedMember>((a, b) =>
-    supabase.from("dual_trend_members").select("universe,symbol,name,sub_group")
-      .eq("as_of", asOf).in("universe", universes).order("universe").order("symbol").range(a, b));
+export const readMembers = async (asOf: string, universes: string[]) =>
+  (await outsetaEdgePostStatus<{ rows: SavedMember[] }>("dual-trend-read", { op: "members", asOf, universes })).rows ?? [];
 
 /** symbol -> key -> value, exactly as the API returned them. */
 export async function readSignals(asOf: string): Promise<Record<DtKey, Map<string, number>>> {
-  const rows = await readAll<{ symbol: string; vals: Record<string, number> }>((a, b) =>
-    supabase.from("dual_trend_signals").select("symbol,vals").eq("as_of", asOf).order("symbol").range(a, b) as never);
+  const { rows } = await outsetaEdgePostStatus<{ rows: { symbol: string; vals: Record<string, number> }[] }>(
+    "dual-trend-read", { op: "signals", asOf });
   return toKeyMaps(rows);
 }
 

@@ -120,6 +120,13 @@
       "when": 1794840327505,
       "tag": "0016_dual_trend_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794844485523,
+      "tag": "0017_lock_dual_trend_tables",
+      "breakpoints": true
     }
   ]
 }
