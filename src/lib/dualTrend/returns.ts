@@ -7,6 +7,7 @@ export type Ret = { ret: number | null; net: number | null };
 export interface ReturnRequest { symbol: string; start: string }
 
 export const BATCH_SIZE = 50;
+const PARALLEL_BATCHES = 3;
 const LS_PREFIX = "dt-ret:v1:";
 
 export const returnsCacheKey = (symbol: string, start: string, asOf: string) =>
@@ -75,10 +76,14 @@ export async function loadReturns(
     bySymbol.set(r.symbol, s);
   }
   const items = [...bySymbol].map(([symbol, dates]) => ({ symbol, dates: [...dates] }));
-  for (let i = 0; i < items.length; i += BATCH_SIZE) {
-    const chunk = items.slice(i, i + BATCH_SIZE);
-    let res: Record<string, Record<string, Ret>> = {};
-    try { res = await fetcher(chunk); } catch { continue; }
+  const chunks: typeof items[] = [];
+  for (let i = 0; i < items.length; i += BATCH_SIZE) chunks.push(items.slice(i, i + BATCH_SIZE));
+  let next = 0;
+  const run = async () => {
+    while (next < chunks.length) {
+      const chunk = chunks[next++];
+      let res: Record<string, Record<string, Ret>> = {};
+      try { res = await fetcher(chunk); } catch { continue; }
     for (const it of chunk) {
       for (const d of it.dates) {
         const v = res[it.symbol.toUpperCase()]?.[d];
@@ -89,7 +94,9 @@ export async function loadReturns(
       }
     }
     onBatch?.();
-  }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_BATCHES, chunks.length) }, run));
 }
 
 export function __resetReturnsMemory() { mem.clear(); }
