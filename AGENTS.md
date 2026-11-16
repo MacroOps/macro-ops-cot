@@ -33,3 +33,4 @@ Intentional deviations from the HUD rules. Anything not listed here should follo
 - **Radius:** 2px everywhere. Round only avatars and counters. The copilot launcher stays round with a shadow.
 - **Loading:** pages use HudLoader (tan line). Tables use Skeleton gray blocks. Chart areas may keep their own placeholders.
 - **Heatmap meaning** (what high means per indicator) is pending real data. It is not final.
+- Dual Trend sections share one loader (`src/hooks/useDualTrendUniverse.ts`) and one table (`DualTrendTable`); each section's label and universe live only in `src/lib/dualTrend/config.ts`. Values come from the API as-is (trend_rel value1/value2 are 0–100, days/start from `_days`/`_start`), every `/v1/signal` list read pages via `signalAll`, and returns are batched through `symbol-returns` and cached by symbol + start + as-of date — so sections stay consistent and cheap on the API's rate limit.

@@ -1,6 +1,7 @@
 import { DeltaCell } from "@/components/hud/SignalBadge";
 import { useSectorOverview, type SectorOverviewRow } from "@/hooks/useSectorOverview";
 import { cn } from "@/lib/utils";
+import { INDEX_LABELS, type IndexCode } from "@/lib/dualTrend/config";
 
 function Row({ r, emphasis }: { r: SectorOverviewRow; emphasis?: boolean }) {
   return (
@@ -23,14 +24,14 @@ function Row({ r, emphasis }: { r: SectorOverviewRow; emphasis?: boolean }) {
   );
 }
 
-export function SectorOverviewTable() {
-  const { data, isLoading, error } = useSectorOverview();
+export function SectorOverviewTable({ index = "SPX" }: { index?: IndexCode }) {
+  const { data, isLoading, error } = useSectorOverview(index);
 
   return (
     <div className="hud-panel">
       <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-foreground">
-          S&P 500 Sector Overview
+          {INDEX_LABELS[index]} Sector Overview
         </div>
         <div className="text-[10px] text-muted-foreground">
           {data ? `as of ${data.asOf} · 5-day chg vs ${data.priorDate}` : ""}

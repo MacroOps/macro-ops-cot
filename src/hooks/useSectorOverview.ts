@@ -1,9 +1,10 @@
-// S&P 500 sector overview: long/short-term relative-trend breadth per GICS sector.
+// S&P 500 / 400 / 600 sector overview: long/short-term relative-trend breadth per GICS sector.
 // Built from live Macro Ops Signal API data (symbol-level trend_rel_*_state),
 // aggregated client-side against sector membership.
 import { useQuery } from "@tanstack/react-query";
 import { mopsGet } from "@/lib/mops/client";
-import type { MopsSignalRow } from "@/lib/mops/types";
+import { signalAll, signalSnapshot, toValueMap } from "@/lib/mops/paginate";
+import { INDEX_LABELS, sectorGroups, type IndexCode } from "@/lib/dualTrend/config";
 
 export const SECTOR_NAMES: Record<string, string> = {
   S5TELS: "Communication Services",
@@ -18,8 +19,6 @@ export const SECTOR_NAMES: Record<string, string> = {
   S5RLST: "Real Estate",
   S5UTIL: "Utilities",
 };
-
-const SECTOR_CODES = Object.keys(SECTOR_NAMES);
 
 export interface SectorOverviewRow {
   code: string;
@@ -50,15 +49,6 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function pct(n: number, d: number) {
   return d > 0 ? Math.round((n / d) * 1000) / 10 : 0;
-}
-
-function toMap(rows: MopsSignalRow[]): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const r of rows) {
-    const v = typeof r.value === "number" ? r.value : Number(r.value);
-    if (!Number.isNaN(v)) m.set(r.entity, v);
-  }
-  return m;
 }
 
 function countRow(
@@ -103,57 +93,48 @@ function countRow(
   };
 }
 
-async function fetchSectorOverview(): Promise<SectorOverview> {
+async function fetchSectorOverview(index: IndexCode): Promise<SectorOverview> {
   // 1. Recent trading dates (latest + 5 sessions back).
   const from = new Date();
   from.setDate(from.getDate() - 25);
-  const calendar = await mopsGet<MopsSignalRow[]>("/v1/signal", {
-    key: "trend_rel_lt_state",
-    entity: "AAPL",
-    from_date: iso(from),
-    limit: 40,
-  });
+  const calendar = await signalAll({ key: "trend_rel_lt_state", entity: "AAPL", from_date: iso(from) });
   const dates = Array.from(new Set(calendar.map((r) => r.date))).sort().reverse();
   const asOf = dates[0];
   const priorDate = dates[Math.min(5, dates.length - 1)];
 
-  // 2. Sector membership.
-  const memberLists = await Promise.all(
-    SECTOR_CODES.map((code) => mopsGet<string[]>("/v1/members", { parent: code })),
-  );
-  const members: Record<string, string[]> = {};
-  SECTOR_CODES.forEach((code, i) => (members[code] = memberLists[i] ?? []));
-
-  // 3. Symbol-level trend states, current + 5 sessions ago.
-  const signal = (key: string, date: string) =>
-    mopsGet<MopsSignalRow[]>("/v1/signal", { key, date, entity_type: "symbol", limit: 1000 });
-
-  const [ltRows, ltPrevRows, stRows, stPrevRows] = await Promise.all([
-    signal("trend_rel_lt_state", asOf),
-    signal("trend_rel_lt_state", priorDate),
-    signal("trend_rel_st_state", asOf),
-    signal("trend_rel_st_state", priorDate),
+  // 2. Index + sector membership from the API.
+  const groups = sectorGroups(index);
+  const [indexMembers, ...memberLists] = await Promise.all([
+    mopsGet<string[]>("/v1/members", { parent: index }),
+    ...groups.map((g) => mopsGet<string[]>("/v1/members", { parent: g.group })),
   ]);
 
-  const lt = toMap(ltRows);
-  const ltPrev = toMap(ltPrevRows);
-  const st = toMap(stRows);
-  const stPrev = toMap(stPrevRows);
+  // 3. Symbol-level trend states, current + 5 sessions ago (paged, shared cache).
+  const [ltRows, ltPrevRows, stRows, stPrevRows] = await Promise.all([
+    signalSnapshot("trend_rel_lt_state", asOf),
+    signalSnapshot("trend_rel_lt_state", priorDate),
+    signalSnapshot("trend_rel_st_state", asOf),
+    signalSnapshot("trend_rel_st_state", priorDate),
+  ]);
+  const lt = toValueMap(ltRows);
+  const ltPrev = toValueMap(ltPrevRows);
+  const st = toValueMap(stRows);
+  const stPrev = toValueMap(stPrevRows);
 
-  const sectors = SECTOR_CODES.map((code) =>
-    countRow(code, SECTOR_NAMES[code], members[code], lt, ltPrev, st, stPrev),
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  const sectors = groups
+    .map((g, i) => countRow(g.group, g.name, memberLists[i] ?? [], lt, ltPrev, st, stPrev))
+    .filter((r) => r.total > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  const all = Array.from(new Set(SECTOR_CODES.flatMap((c) => members[c])));
-  const total = countRow("SPX", "S&P 500", all, lt, ltPrev, st, stPrev);
+  const total = countRow(index, INDEX_LABELS[index], indexMembers ?? [], lt, ltPrev, st, stPrev);
 
   return { asOf, priorDate, total, sectors };
 }
 
-export const useSectorOverview = () =>
+export const useSectorOverview = (index: IndexCode = "SPX") =>
   useQuery({
-    queryKey: ["mops", "sector-overview"],
-    queryFn: fetchSectorOverview,
+    queryKey: ["mops", "sector-overview", index],
+    queryFn: () => fetchSectorOverview(index),
     staleTime: 15 * 60_000,
     gcTime: 60 * 60_000,
     refetchOnWindowFocus: false,
