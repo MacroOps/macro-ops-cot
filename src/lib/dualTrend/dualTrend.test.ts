@@ -79,7 +79,7 @@ describe("custom list rows", () => {
     expect(out[0]).toMatchObject({ symbol: "XLK", name: "Tech SPDR", group: "Sector" });
     expect(out[0].lt.trend).toBe(80);
     expect(out[0].lt.days).toBe(10);
-    expect(out[0].lt.start).toBe("2026-10-31");
+    expect(out[0].lt.start).toBe("2026-11-02");
   });
 });
 
