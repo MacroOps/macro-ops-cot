@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { mopsGet } from "@/lib/mops/client";
 import type { MopsSignalRow } from "@/lib/mops/types";
 import { SECTOR_NAMES } from "@/hooks/useSectorOverview";
+import { signalAll } from "@/lib/mops/paginate";
 
 export type Dir = "BULLISH" | "BEARISH" | "NEUTRAL";
 
@@ -59,8 +60,10 @@ function epochDaysToLabel(v: number | undefined): string {
 const dir = (v: number | undefined): Dir =>
   v === undefined || v === 0 ? "NEUTRAL" : v > 0 ? "BULLISH" : "BEARISH";
 
-// score/value fields arrive on a 0-10 scale; the published tables show 0-100.
+// risk_*_score arrives on a 0-10 scale; the published tables show 0-100.
 const level = (v: number | undefined) => (v === undefined ? 0 : Math.round(v * 10));
+// trend_rel_*_value1/value2 are already 0-100: use as-is.
+const trendLevel = (v: number | undefined) => (v === undefined ? 0 : v);
 
 function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
   return {
@@ -79,21 +82,21 @@ function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
       days: Math.round(m.risk_lt_days.get(code) ?? 0),
     },
     trend: {
-      level: level(m.trend_rel_lt_value1.get(code)),
+      level: trendLevel(m.trend_rel_lt_value1.get(code)),
       signal: dir(m.trend_rel_lt_state.get(code)),
       date: epochDaysToLabel(m.trend_rel_lt_start.get(code)),
       days: Math.round(m.trend_rel_lt_days.get(code) ?? 0),
-      tLevel: level(m.trend_rel_lt_value1.get(code)),
-      rLevel: level(m.trend_rel_lt_value2.get(code)),
+      tLevel: trendLevel(m.trend_rel_lt_value1.get(code)),
+      rLevel: trendLevel(m.trend_rel_lt_value2.get(code)),
     },
   };
 }
 
 async function fetchTpmrSystems(): Promise<TpmrSystems> {
+  const latest = await mopsGet<MopsSignalRow[]>("/v1/signal", { key: "risk_lt_state", entity: "SPX", limit: 1 });
+  const date = latest[0]?.date;
   const results = await Promise.all(
-    KEYS.map((key) =>
-      mopsGet<MopsSignalRow[]>("/v1/signal", { key, entity_type: "index", limit: 100 }),
-    ),
+    KEYS.map((key) => signalAll({ key, entity_type: "index", date })),
   );
   const asOf = results.flat().find((r) => r?.date)?.date ?? "";
   const maps = {} as KeyMaps;
