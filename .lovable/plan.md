@@ -27,7 +27,7 @@ One table, one data loader. Each section only passes its universe.
    - members: get symbols from /v1/members, then fetch 10 keys: trend_rel_lt_ and trend_rel_st_ value1, value2, state, days, start for the latest date with paged /v1/signal calls, filter to members.
    - custom lists: one /v1/custom-list-signals call per list; tag each row with its list as category.
    - Section labels (S&P 500, S&P 400, S&P 600, ETFs, ...) and each section's universe live in one config file, so renaming is a one-line change.
-   - Returns: LT and ST return and net vs benchmark load for all rows in batched calls (many symbols per request) to the returns function, cached per symbol + start date so repeat visits don't refetch.
+   - Returns: LT and ST return and net vs benchmark load for all rows in batched calls (many symbols per request) to the returns function, cached by symbol + start date + as-of date, so returns refresh every trading day and repeat visits the same day do not refetch.
    - Output one row shape: symbol, name, sub-industry/category, LT and ST (trend, relative, signal, days, start date).
 4. Shared `DualTrendTable` component built from the current S&P 500 table (same look, search, sort, CSV, row expand). LT/ST return and net-vs-benchmark show as columns on every row. Category column/filter appears only when the universe has categories (ETFs).
 5. Wire DualTrend page: sp500, sp400, sp600, etfs, gold-silver-miners, thematic use the shared table; large-cap-cyclical keeps its current content.
