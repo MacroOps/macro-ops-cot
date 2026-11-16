@@ -30,7 +30,7 @@ Report the final counts for S&P 500, 400 and 600 (each must equal its member cou
 ## Tests
 - Return/net math with fixed closes, including a missing start date (falls back to the prior close) and a missing series (blank).
 - Cache key still includes the as-of date.
-- Members paging + dedupe (Part 1).
+- Row count equals member count (Part 1).
 
 ## Technical details
 - Files: `src/lib/dualTrend/build.ts` or the members loader in `src/hooks/useDualTrendUniverse.ts` (rows from the member list only), `src/lib/dualTrend/returns.ts` (unchanged key, fetcher unchanged shape), `supabase/functions/symbol-returns/index.ts` (call `/v1/prices` through the same API key secret, Yahoo only for the benchmark if needed), `supabase/functions/macro-ops-proxy/index.ts` (add `/v1/prices` if browser needs them), `src/lib/dualTrend/dualTrend.test.ts`.
