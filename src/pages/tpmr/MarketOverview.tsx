@@ -1,20 +1,18 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
-import { SignalBadge, LevelBar, DeltaCell } from "@/components/hud/SignalBadge";
-import { MockBadge } from "@/components/hud/MockBadge";
+import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
 import { useTpmrSystems } from "@/hooks/useTpmrSystems";
-import {
-  TCTM_STATUS,
-  PERF_RISK_LT,
-  PERF_RISK_ST,
-  PERF_TCTM_LT,
-  TCTM_THRESHOLDS,
-  type ModelPerfRow,
-} from "@/lib/turningPointSpecs";
+import { useTpDtPortfolio } from "@/hooks/useTpDtPortfolio";
+import { useTctmStatus } from "@/hooks/useTctmStatus";
+import { formatShortDate } from "@/lib/tctm/status";
+
+function cashText(n: number | null) {
+  return n == null || Number.isNaN(n) ? "—" : `${n.toFixed(2)}%`;
+}
 
 function Panel({ title, eyebrow, badge, children }: { title: string; eyebrow?: string; badge?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="hud-panel">
+    <div className="hud-panel flex flex-col">
       <div className="px-3 py-2 border-b border-border flex items-start justify-between gap-2">
         <div>
           {eyebrow && (
@@ -28,54 +26,26 @@ function Panel({ title, eyebrow, badge, children }: { title: string; eyebrow?: s
         </div>
         {badge}
       </div>
-      <div className="p-3">{children}</div>
+      <div className="p-3 flex-1 flex flex-col">{children}</div>
     </div>
-  );
-}
-
-function PerfTable({ rows }: { rows: ModelPerfRow[] }) {
-  return (
-    <table className="w-full text-xs">
-      <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
-        <tr>
-          <th className="text-left font-medium py-1">Signal</th>
-          <th className="text-right font-medium py-1">Ann. Return</th>
-          <th className="text-right font-medium py-1">% of Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.signal} className="border-t border-border/50">
-            <td className="py-1.5">{r.signal}</td>
-            <td className={`py-1.5 text-right tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
-              {r.annReturn > 0 ? "+" : ""}
-              {r.annReturn.toFixed(1)}%
-            </td>
-            <td className="py-1.5 text-right tabular-nums">{r.pctTime}%</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
 export default function MarketOverview() {
   const { data, isLoading, error } = useTpmrSystems();
+  const dtBook = useTpDtPortfolio();
+  const tctm = useTctmStatus();
   const spx = data?.spx;
-  const houseView = spx
-    ? [
-        { type: "Short-Term", direction: spx.riskST.signal, signalDate: spx.riskST.date },
-        { type: "Long-Term", direction: spx.riskLT.signal, signalDate: spx.riskLT.date },
-      ]
-    : [];
-  const indexRows = spx ? [spx] : [];
+  const cashRaw = dtBook.data?.cashWeightPct;
+  const cash = cashRaw == null || Number.isNaN(cashRaw) ? null : Math.max(0, Math.min(100, cashRaw));
+  const invested = cash == null ? null : 100 - cash;
 
   return (
     <AppShell title="TPMR · Market Overview">
       <PageHeader
         eyebrow="TurningPoint"
         title="Market Overview"
-        description="Top-level directional call, TCTM composite status, and cross-system breakdown by index and sector."
+        description="Dual Trend cash level, TCTM composite status, and cross-system breakdown by index and sector."
       />
 
       {error && (
@@ -86,88 +56,152 @@ export default function MarketOverview() {
 
       <div className="p-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Panel
-          title="House View"
+          title="Cash Level"
           eyebrow="1A"
           badge={
-            data?.asOf ? (
-              <span className="text-[9px] text-muted-foreground">{data.asOf}</span>
+            dtBook.data?.asOf ? (
+              <span className="text-[9px] text-muted-foreground">{dtBook.data.asOf}</span>
             ) : null
           }
         >
-          <table className="w-full text-xs">
-            <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="text-left font-medium py-1">Horizon</th>
-                <th className="text-left font-medium py-1">Direction</th>
-                <th className="text-right font-medium py-1">Signal Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
-                <tr><td colSpan={3} className="py-3 text-muted-foreground">Loading…</td></tr>
-              )}
-              {houseView.map((r) => (
-                <tr key={r.type} className="border-t border-border/50">
-                  <td className="py-2">{r.type}</td>
-                  <td className="py-2"><SignalBadge value={r.direction} /></td>
-                  <td className="py-2 text-right tabular-nums">{r.signalDate}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Panel>
-
-        <Panel title="TCTM 5-Component Status" eyebrow="1B" badge={<MockBadge reason="TCTM component detail is not exposed by the Signal API yet." />}>
-          <div className="grid grid-cols-5 gap-2">
-            {TCTM_STATUS.map((c) => (
-              <div key={c.name} className="border border-border/60 rounded-sm p-2">
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">
-                  {c.name}
+          {dtBook.isLoading ? (
+            <div className="py-3 text-xs text-muted-foreground">Loading…</div>
+          ) : dtBook.error ? (
+            <div className="py-3 text-xs text-destructive">Cash level unavailable</div>
+          ) : (
+            <div className="flex flex-1 flex-col justify-between gap-4">
+              <div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Dual Trend Portfolio · Cash weight
                 </div>
-                <div className="mt-1"><SignalBadge value={c.signal} /></div>
-                <div className="mt-1 text-[10px] text-muted-foreground">{c.signalDate}</div>
-                <div className="mt-1 text-xs tabular-nums">
-                  {c.count}/{c.total}
+                <div className="mt-1 text-4xl font-semibold tabular-nums text-surface-foreground">
+                  {cashText(cash)}
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div>
+                <div className="flex h-2 overflow-hidden rounded-sm bg-muted/40">
+                  <div className="h-full bg-primary" style={{ width: `${cash ?? 0}%` }} />
+                </div>
+                <div className="mt-1.5 flex justify-between text-[10px] tabular-nums text-muted-foreground">
+                  <span>Cash {cashText(cash)}</span>
+                  <span>Invested {cashText(invested)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 border-t border-border/60 pt-2">
+                <div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Holdings</div>
+                  <div className="text-sm tabular-nums text-surface-foreground">
+                    {dtBook.data?.holdings ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Sectors</div>
+                  <div className="text-sm tabular-nums text-surface-foreground">
+                    {dtBook.data?.sectors ?? "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </Panel>
 
-        <Panel title="Systems Overview by Index" eyebrow="1C">
-          <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[420px]">
-            <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="text-left py-1 font-medium">Index</th>
-                <th className="text-left py-1 font-medium">Risk ST</th>
-                <th className="text-left py-1 font-medium">Risk LT</th>
-                <th className="text-left py-1 font-medium">Trend</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
-                <tr><td colSpan={4} className="py-3 text-muted-foreground">Loading…</td></tr>
-              )}
-              {indexRows.map((r) => (
-                <tr key={r.code} className="border-t border-border/50">
-                  <td className="py-1.5 font-medium">{r.label}</td>
-                  {[r.riskST, r.riskLT, r.trend].map((s, i) => (
-                    <td key={i} className="py-1.5">
-                      <div className="flex items-center gap-2">
-                        <SignalBadge value={s.signal} />
-                        <LevelBar value={s.level} />
-                      </div>
-                      <div className="text-[9px] text-muted-foreground mt-0.5">
-                        {s.date} · {s.days}d
-                      </div>
-                    </td>
-                  ))}
-                </tr>
+        <Panel
+          title="TCTM 5-Component Status"
+          eyebrow="1B"
+          badge={
+            tctm.data?.asOf ? (
+              <span className="text-[9px] text-muted-foreground">{formatShortDate(tctm.data.asOf)}</span>
+            ) : null
+          }
+        >
+          {tctm.isLoading ? (
+            <div className="py-3 text-xs text-muted-foreground">Loading…</div>
+          ) : tctm.error || !tctm.data ? (
+            <div className="py-3 text-xs text-destructive">TCTM status unavailable</div>
+          ) : (
+            <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 gap-y-0">
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Model</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Status</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Last signal</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground text-right">Active</div>
+              {tctm.data.rows.map((c) => (
+                <div key={c.id} className="contents">
+                  <div className="py-1.5 border-t border-border/60 text-[11px] text-surface-foreground">
+                    {c.name}
+                  </div>
+                  <div className="py-1.5 border-t border-border/60">
+                    <SignalBadge
+                      value={c.state === "neutral" ? "Neutral" : "Triggered"}
+                      direction={c.state === "neutral" ? undefined : c.state}
+                    />
+                  </div>
+                  <div className="py-1.5 border-t border-border/60 text-[10px] tabular-nums text-muted-foreground">
+                    {formatShortDate(c.signalDate)}
+                  </div>
+                  <div
+                    className="py-1.5 border-t border-border/60 flex items-center justify-end gap-1.5"
+                    title={`${c.count} of ${c.total} components active`}
+                  >
+                    <div className="h-1.5 w-8 rounded-sm bg-muted/40 overflow-hidden">
+                      <div
+                        className={
+                          c.state === "bear"
+                            ? "h-full bg-destructive"
+                            : c.state === "bull"
+                              ? "h-full bg-success"
+                              : "h-full bg-muted-foreground/40"
+                        }
+                        style={{ width: `${c.total ? (c.count / c.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-right text-[10px] tabular-nums text-surface-foreground">
+                      {c.count}/{c.total}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-          </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel
+          title="Systems Overview by Index"
+          eyebrow="1C"
+          badge={spx ? <span className="text-[9px] text-muted-foreground">{spx.label}</span> : null}
+        >
+          {isLoading || !spx ? (
+            <div className="py-3 text-xs text-muted-foreground">{isLoading ? "Loading…" : "No data"}</div>
+          ) : (
+            <div className="grid flex-1 grid-cols-[1fr_auto_auto_auto] grid-rows-[auto_repeat(3,1fr)] items-center gap-x-3">
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">System</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Status</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Level</div>
+              <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground text-right">Since</div>
+              {[
+                { key: "riskST", label: "Risk ST", s: spx.riskST },
+                { key: "riskLT", label: "Risk LT", s: spx.riskLT },
+                { key: "trend", label: "Trend", s: spx.trend },
+              ].map(({ key, label, s }) => (
+                <div key={key} className="contents">
+                  <div className="flex h-full items-center border-t border-border/60 text-[11px] text-surface-foreground">
+                    {label}
+                  </div>
+                  <div className="flex h-full items-center border-t border-border/60">
+                    <SignalBadge value={s.signal} />
+                  </div>
+                  <div className="flex h-full items-center border-t border-border/60">
+                    <LevelBar value={s.level} />
+                  </div>
+                  <div className="flex h-full flex-col items-end justify-center border-t border-border/60 tabular-nums">
+                    <span className="text-[10px] text-surface-foreground">{s.date}</span>
+                    <span className="text-[9px] text-muted-foreground">{s.days}d</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
 
@@ -225,44 +259,6 @@ export default function MarketOverview() {
 
 
 
-      <div className="px-3 pb-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Panel title="Risk On/Off (LT) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_RISK_LT} /></Panel>
-        <Panel title="Risk On/Off (ST) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_RISK_ST} /></Panel>
-        <Panel title="TCTM (LT) Performance" eyebrow="1E" badge={<MockBadge reason="Model backtest statistics are not exposed by the Signal API yet." />}><PerfTable rows={PERF_TCTM_LT} /></Panel>
-      </div>
-
-      <div className="px-3 pb-6">
-        <Panel title="TCTM Threshold Conditions" eyebrow="1E" badge={<MockBadge reason="Threshold study is static reference data." />}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[520px]">
-              <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left py-1 font-medium">Condition</th>
-                  <th className="text-left py-1 font-medium">Threshold</th>
-                  <th className="text-right py-1 font-medium">Ann. Return</th>
-                  <th className="text-right py-1 font-medium">% of Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {TCTM_THRESHOLDS.map((r, i) => (
-                  <tr key={i} className="border-t border-border/50">
-                    <td className="py-1.5">{r.condition}</td>
-                    <td className="py-1.5 ">{r.threshold}</td>
-                    <td className={`py-1.5 text-right tabular-nums ${r.annReturn >= 0 ? "text-success" : "text-destructive"}`}>
-                      {r.annReturn > 0 ? "+" : ""}
-                      {r.annReturn.toFixed(1)}%
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      <DeltaCell value={null} />
-                      <span className="ml-1">{r.pctTime}%</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      </div>
     </AppShell>
   );
 }
