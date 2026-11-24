@@ -99,7 +99,13 @@ const App = () => (
             <Route path="/tpmr/dual-trend/sp500" element={<DualTrendPage slug="sp500" />} />
             <Route path="/tpmr/dual-trend/sp400" element={<DualTrendPage slug="sp400" />} />
             <Route path="/tpmr/dual-trend/sp600" element={<DualTrendPage slug="sp600" />} />
-            <Route path="/tpmr/dual-trend/etfs" element={<DualTrendPage slug="etfs" />} />
+            <Route path="/tpmr/dual-trend/etfs" element={<Navigate to="/tpmr/dual-trend/etf-sector" replace />} />
+            <Route path="/tpmr/dual-trend/etf-sector" element={<DualTrendPage slug="etf-sector" />} />
+            <Route path="/tpmr/dual-trend/etf-industry" element={<DualTrendPage slug="etf-industry" />} />
+            <Route path="/tpmr/dual-trend/etf-thematic" element={<DualTrendPage slug="etf-thematic" />} />
+            <Route path="/tpmr/dual-trend/etf-global" element={<DualTrendPage slug="etf-global" />} />
+            <Route path="/tpmr/dual-trend/etf-style-factor" element={<DualTrendPage slug="etf-style-factor" />} />
+            <Route path="/tpmr/dual-trend/etf-commodity-crypto" element={<DualTrendPage slug="etf-commodity-crypto" />} />
             <Route path="/tpmr/dual-trend/gold-silver-miners" element={<DualTrendPage slug="gold-silver-miners" />} />
             <Route path="/tpmr/dual-trend/thematic" element={<DualTrendPage slug="thematic" />} />
             <Route path="/tpmr/tctm-live" element={<TctmLive />} />
