@@ -1,11 +1,13 @@
 // Breadth — SPX breadth signals from the Macro Ops API. Shows multiple
 // breadth keys overlaid + underlying counts.
+import { CHART_TICK, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsSignal } from "@/hooks/useMops";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis, Customized, ReferenceLine } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ChartLegend, type ChartLegendItem } from "@/components/charts/ChartLegend";
 import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 const INDICES = ["SPX", "S5INFT", "S5FINL", "S5HLTH", "S5INDU", "S5COND", "S5CONS", "S5ENRS", "S5MATR", "S5RLST", "S5TELS", "S5UTIL"];
@@ -59,16 +61,25 @@ export default function TpBreadth() {
       {err && <div className="px-3 py-3 text-xs text-destructive border-b border-border">{(err as Error).message}</div>}
 
       <div className="p-3 space-y-4">
-        <Panel title="% Members above 50D / 200D MA" exportTitle={`${entity} breadth above 50D 200D MA`} height={280}>
+        <Panel
+          title="% Members above 50D / 200D MA"
+          exportTitle={`${entity} breadth above 50D 200D MA`}
+          asOf={String(merged[merged.length - 1]?.date ?? "")}
+          height={280}
+          legend={[
+            { label: "% > 50D", color: "hsl(var(--pos-long))" },
+            { label: "% > 200D", color: "hsl(var(--primary))" },
+          ]}
+        >
           {loading ? <Skeleton /> : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
-                <YAxis domain={[0, 100]} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--chart-grid))" />
+                <XAxis dataKey="date" stroke="hsl(var(--chart-grid))" tick={CHART_TICK} minTickGap={40} />
+                <YAxis domain={[0, 100]} stroke="hsl(var(--chart-grid))" tick={CHART_TICK} />
+                <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} />
                 <Customized component={HudCrosshairOverlay} />
-                <ReferenceLine y={50} stroke="hsl(var(--border))" />
+                <ReferenceLine y={50} stroke="hsl(var(--chart-grid))" />
                 <Line type="monotone" dataKey="pct50" stroke="hsl(var(--pos-long))" dot={false} strokeWidth={1.5} name="% > 50D" />
                 <Line type="monotone" dataKey="pct200" stroke="hsl(var(--primary))" dot={false} strokeWidth={1.5} name="% > 200D" />
               </LineChart>
@@ -76,16 +87,25 @@ export default function TpBreadth() {
           )}
         </Panel>
 
-        <Panel title="New 52W Highs vs Lows (count)" exportTitle={`${entity} new 52W highs vs lows`} height={240}>
+        <Panel
+          title="New 52W Highs vs Lows (count)"
+          exportTitle={`${entity} new 52W highs vs lows`}
+          asOf={String(merged[merged.length - 1]?.date ?? "")}
+          height={240}
+          legend={[
+            { label: "New Highs", color: "hsl(var(--pos-long))" },
+            { label: "New Lows", color: "hsl(var(--pos-short))" },
+          ]}
+        >
           {loading ? <Skeleton /> : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--chart-grid))" />
+                <XAxis dataKey="date" stroke="hsl(var(--chart-grid))" tick={CHART_TICK} minTickGap={40} />
+                <YAxis stroke="hsl(var(--chart-grid))" tick={CHART_TICK} />
+                <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} />
                 <Customized component={HudCrosshairOverlay} />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                 <Line type="monotone" dataKey="nh" stroke="hsl(var(--pos-long))" dot={false} strokeWidth={1.5} name="New Highs" />
                 <Line type="monotone" dataKey="nl" stroke="hsl(var(--pos-short))" dot={false} strokeWidth={1.5} name="New Lows" />
               </LineChart>
@@ -97,14 +117,15 @@ export default function TpBreadth() {
   );
 }
 
-function Panel({ title, exportTitle, height, children }: { title: string; exportTitle?: string; height: number; children: React.ReactNode }) {
+function Panel({ title, exportTitle, asOf, height, legend, children }: { title: string; exportTitle?: string; asOf?: string; height: number; legend?: ChartLegendItem[]; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-sm bg-surface/30" data-chart-export="">
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
+    <div className="hud-chart" data-chart-export="">
+      <div className="hud-chart-header px-3 py-2 flex items-center justify-between gap-2">
         <span className="hud-label">{title}</span>
-        <ChartExportButton title={exportTitle ?? title} />
+        <ChartExportButton title={exportTitle ?? title} asOf={asOf} />
       </div>
       <div className="p-3" data-chart-body="">
+        {legend && <ChartLegend items={legend} className="mb-2" />}
         <div style={{ height }} data-chart-body="">{children}</div>
       </div>
     </div>

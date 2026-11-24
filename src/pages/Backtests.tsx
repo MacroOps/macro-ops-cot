@@ -446,11 +446,11 @@ const Backtests = () => {
           {/* Spaghetti */}
           <div className="hud-chart m-px p-3" data-chart-export="">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis">
+              <div className="text-[10px] uppercase tracking-[0.12em] font-medium text-chart-axis" data-export-keep="">
                 Forward Returns · each line = one past instance
               </div>
               <div className="flex items-center gap-2">
-                <div className="text-[10px] text-chart-axis">{unified?.count ?? 0} paths</div>
+                <div className="text-[10px] text-chart-axis" data-export-keep="">{unified?.count ?? 0} paths</div>
                 <ChartExportButton compact title="Backtest forward returns" />
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { CHART_TICK, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
@@ -337,29 +338,29 @@ function ChartPanel({
   }, [data, pad]);
 
   return (
-    <div className="hud-panel p-3" data-chart-export="">
+    <div className="hud-chart p-3" data-chart-export="">
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] font-semibold uppercase tracking-wider">{title}</div>
-        <ChartExportButton compact title={`Portfolio ${title}`} />
+        <ChartExportButton compact title={`Portfolio ${title}`} asOf={data[data.length - 1]?.date} />
       </div>
-      <div className="text-[10px] text-muted-foreground mb-2">{sub}</div>
+      <div className="text-[10px] text-muted-foreground mb-2" data-export-keep="">{sub}</div>
       <div className="h-[220px]" data-chart-body="">
       {data.length < 2 ? (
         <div className="h-full grid place-items-center text-[11px] text-muted-foreground">No chart data</div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
-            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 9 }} minTickGap={28} />
+            <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--chart-grid))" />
+            <XAxis dataKey="date" stroke="hsl(var(--chart-grid))" tick={{ ...CHART_TICK, fontSize: 9 }} minTickGap={28} />
             <YAxis
               domain={domain}
-              stroke="hsl(var(--muted-foreground))"
-              tick={{ fontSize: 9 }}
+              stroke="hsl(var(--chart-grid))"
+              tick={{ ...CHART_TICK, fontSize: 9 }}
               tickFormatter={(v: number) => `${Number(v).toFixed(1)}%`}
               width={48}
             />
             <Tooltip
-              contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }}
+              contentStyle={CHART_TOOLTIP_STYLE}
               formatter={(v: number) => [`${v.toFixed(2)}%`, "YTD"]}
             />
             <Line type="monotone" dataKey="ytd" stroke="hsl(var(--success))" dot={pad} strokeWidth={1.5} />

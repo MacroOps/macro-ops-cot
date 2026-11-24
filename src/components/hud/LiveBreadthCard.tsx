@@ -13,6 +13,7 @@ import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/Hud
 import type { ComponentSpec } from "@/lib/indicatorSpecs";
 import { ConstructionPopover } from "@/components/hud/ConstructionPopover";
 import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { useBreadthSeries, type BreadthField } from "@/hooks/tp/useBreadthSeries";
 import type { TpBreadthRow } from "@/lib/tp/types";
@@ -78,7 +79,7 @@ export function LiveBreadthCard({
               LIVE · {sector}
             </span>
           </div>
-          <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5 truncate">
+          <div className="text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5 truncate" data-export-keep="" data-export-flush="">
             {hoverPoint ? `@ ${hoverPoint.t}` : subtitle}
           </div>
         </div>
@@ -93,11 +94,18 @@ export function LiveBreadthCard({
               </span>
             )}
           </div>
-          <ChartExportButton compact title={resolvedTitle} />
+          <ChartExportButton compact title={resolvedTitle} asOf={last?.t} />
           {component && <ConstructionPopover spec={component} />}
         </div>
       </div>
-      <div style={{ height }} className="p-1" data-chart-body="">
+      <ChartLegend
+        className="px-3 pt-1.5"
+        items={[
+          { label: "Breadth", color: "hsl(var(--chart-accent))" },
+          ...(showOverlay ? [{ label: sector, color: "hsl(var(--muted-foreground))" }] : []),
+        ]}
+      />
+      <div style={{ height }} className="p-1 hud-chart" data-chart-body="">
         {isLoading ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
@@ -129,10 +137,10 @@ export function LiveBreadthCard({
                   const p = payload[0]?.payload as { v: number; spx: number } | undefined;
                   if (!p) return null;
                   return (
-                    <div className="bg-popover border border-border rounded-sm px-2 py-1.5 text-[10px] space-y-0.5 shadow-lg">
-                      <div className="text-muted-foreground">{String(label)}</div>
-                      <div><span className="text-muted-foreground">val </span><span className="text-surface-foreground">{p.v.toFixed(2)}{unit}</span></div>
-                      <div><span className="text-muted-foreground">{sector} </span><span className="text-surface-foreground">{p.spx.toFixed(2)}</span></div>
+                    <div className="bg-chart-surface border border-chart-grid rounded-sm px-2 py-1.5 text-[10px] space-y-0.5 shadow-lg text-chart-surface-foreground">
+                      <div className="text-chart-axis">{String(label)}</div>
+                      <div><span className="text-chart-axis">val </span><span>{p.v.toFixed(2)}{unit}</span></div>
+                      <div><span className="text-chart-axis">{sector} </span><span>{p.spx.toFixed(2)}</span></div>
                     </div>
                   );
                 }}

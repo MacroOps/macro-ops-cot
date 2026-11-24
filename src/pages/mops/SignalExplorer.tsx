@@ -1,5 +1,6 @@
 // Signal Explorer — pick any signal + entity and inspect its time series,
 // latest value, and percentile rank.
+import { CHART_TICK, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsSignal, useMopsPercentile, useSignalKeys, useMopsEntities } from "@/hooks/useMops";
@@ -117,17 +118,17 @@ export default function SignalExplorer() {
       )}
 
       <div className="p-3 space-y-4">
-        <Panel title={`${key} · ${entity} (365D)`} exportable>
+        <Panel title={`${key} · ${entity} (365D)`} exportable asOf={latest?.date}>
           <div className="h-[320px]" data-chart-body="">
           {isLoading ? <div className="h-full animate-pulse bg-surface/40 rounded-sm" /> : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--chart-grid))" />
+                <XAxis dataKey="date" stroke="hsl(var(--chart-grid))" tick={CHART_TICK} minTickGap={40} />
+                <YAxis stroke="hsl(var(--chart-grid))" tick={CHART_TICK} />
+                <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} />
                 <Customized component={HudCrosshairOverlay} />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                 <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" dot={false} strokeWidth={1.75} />
               </LineChart>
             </ResponsiveContainer>
@@ -168,12 +169,12 @@ function Stat({ label, value, sub, tone, mono }: { label: string; value: string;
     </div>
   );
 }
-function Panel({ title, exportable, children }: { title: string; exportable?: boolean; children: React.ReactNode }) {
+function Panel({ title, exportable, asOf, children }: { title: string; exportable?: boolean; asOf?: string; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-sm bg-surface/30" data-chart-export={exportable ? "" : undefined}>
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
+    <div className="hud-chart" data-chart-export={exportable ? "" : undefined}>
+      <div className="hud-chart-header px-3 py-2 flex items-center justify-between gap-2">
         <span className="hud-label">{title}</span>
-        {exportable && <ChartExportButton title={title} />}
+        {exportable && <ChartExportButton title={title} asOf={asOf} />}
       </div>
       <div className="p-3" data-chart-body={exportable ? "" : undefined}>{children}</div>
     </div>

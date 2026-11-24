@@ -83,6 +83,9 @@
     --chart-band-mid: 36 6% 31%;
     --chart-band-high: 355 67% 54%;
     --chart-halo: 24 37% 60%;
+
+    /* PNG/JPG exports for research reports render on white in both themes. */
+    --export-surface: 0 0% 100%;
   }
 
   .dark {
@@ -153,6 +156,8 @@
     --chart-band-mid: 36 6% 31%;
     --chart-band-high: 355 67% 54%;
     --chart-halo: 24 37% 60%;
+
+    --export-surface: 0 0% 100%;
   }
 }
 
@@ -306,10 +311,67 @@
   }
 }
 
-/* Chart PNG export: the panel is re-flowed to 16:9 and the plot area fills the spare height. */
+/* Chart JPG export: the panel is re-flowed to 800x600 and the plot area fills the spare height.
+ * Surfaces turn white and theme ink is pinned to the theme-invariant chart tokens, so a capture
+ * taken in dark mode still reads dark-on-white. Only the heading and the chart stay: the
+ * exporter hides every other element that is not flagged data-chart-body / data-export-keep. */
 [data-exporting] {
   display: flex !important;
   flex-direction: column;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  --chart-surface: var(--export-surface);
+  --background: var(--export-surface);
+  --surface: var(--export-surface);
+  --card: var(--export-surface);
+  --popover: var(--export-surface);
+  --surface-2: var(--chart-grid);
+  --muted: var(--chart-grid);
+  --foreground: var(--chart-ink);
+  --card-foreground: var(--chart-ink);
+  --surface-foreground: var(--chart-ink);
+  --popover-foreground: var(--chart-ink);
+  --primary: var(--chart-ink);
+  --muted-foreground: var(--chart-axis);
+  --border: var(--chart-grid);
+  background-color: hsl(var(--export-surface));
+}
+[data-exporting] [data-export-hidden] {
+  display: none !important;
+}
+[data-exporting] > .export-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex: none;
+  height: 34px;
+  padding: 10px 12px 0;
+  color: hsl(var(--chart-ink));
+}
+[data-exporting] > .export-heading b {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+[data-exporting] > .export-heading span {
+  font-size: 11px;
+  white-space: nowrap;
+  color: hsl(var(--chart-axis));
+}
+/* Legends and captions kept from the panel header. */
+[data-exporting] [data-export-keep] {
+  flex: none;
+  margin: 0 12px 4px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+/* A kept caption that must sit flush with the title above it (no legend-style gutter). */
+[data-exporting] [data-export-keep][data-export-flush] {
+  margin: 0;
 }
 [data-exporting] [data-chart-body] {
   display: flex;
@@ -317,6 +379,11 @@
   flex: 1 1 auto;
   height: auto !important;
   min-height: 0;
+  padding: 4px 12px 12px;
+}
+/* Some panels nest one plot area inside another; only the outer one carries the margin. */
+[data-exporting] [data-chart-body] [data-chart-body] {
+  padding: 0;
 }
 [data-exporting] [data-chart-body] > .recharts-responsive-container,
 [data-exporting] [data-chart-body] > [data-chart-remount] > .recharts-responsive-container {

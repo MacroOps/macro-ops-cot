@@ -268,13 +268,13 @@
   .tctm-app .top-row { padding: 8px 12px; }
 }
 
-/* Table JPG export is rendered on document.body, on the paper chart surface. */
+/* Table JPG export is rendered on document.body, on the white export surface. */
 .xt-box {
   position: fixed;
   left: -20000px;
   top: 0;
   width: 800px;
-  background: hsl(var(--chart-surface));
+  background: hsl(var(--export-surface));
   padding: 14px;
   box-sizing: border-box;
   font-family: "Hanken Grotesk", system-ui, sans-serif;

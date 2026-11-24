@@ -20,11 +20,7 @@ const RULES = [
     message: "hex color written by hand; use a token from src/index.css",
     exts: [".ts", ".tsx"],
     pattern: /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/,
-    allow: {
-      "pages/AssetDetail.tsx": "pending: asset positioning ramp (audit 3.4, decision 1)",
-      "pages/SectorAggregates.tsx": "pending: sector hex bands (audit 3.4, decision 1)",
-      "lib/exportChart.ts": "chart export colors",
-    },
+    allow: {},
   },
   {
     id: "rounded-full",

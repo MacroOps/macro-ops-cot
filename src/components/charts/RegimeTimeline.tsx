@@ -117,7 +117,7 @@ export function RegimeTimeline({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3 shrink-0 text-[9px] ">
+        <div className="flex items-center gap-3 shrink-0 text-[9px] " data-export-keep="">
           {(["risk-on", "neutral", "risk-off"] as Regime[]).map((r) => (
             <div key={r} className="flex items-center gap-1.5">
               <span
@@ -138,10 +138,10 @@ export function RegimeTimeline({
             </span>
             <span className="tabular-nums text-surface-foreground">{last.toFixed(1)}</span>
           </div>
-          <ChartExportButton compact title={title} />
+          <ChartExportButton compact title={title} asOf={data[data.length - 1]?.t} />
         </div>
       </div>
-      <div className="hud-chart rounded-none p-1" style={{ height }} data-chart-body="">
+      <div className="hud-chart p-1" style={{ height }} data-chart-body="">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 18 }}>
             <defs>

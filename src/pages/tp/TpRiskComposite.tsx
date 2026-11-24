@@ -1,10 +1,12 @@
 // Risk Composite — long-term and short-term risk regime signals.
+import { CHART_TICK, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/hud/AppShell";
 import { useMopsSignal } from "@/hooks/useMops";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis, Customized, ReferenceLine } from "recharts";
 import { HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ChartLegend, type ChartLegendItem } from "@/components/charts/ChartLegend";
 import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 
 const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
@@ -74,16 +76,25 @@ export default function TpRiskComposite() {
       {err && <div className="px-3 py-3 text-xs text-destructive border-b border-border">{(err as Error).message}</div>}
 
       <div className="p-3">
-        <Panel title="Risk score · LT vs ST" exportTitle={`${entity} risk score LT vs ST`} height={340}>
+        <Panel
+          title="Risk score · LT vs ST"
+          exportTitle={`${entity} risk score LT vs ST`}
+          asOf={String(merged[merged.length - 1]?.date ?? "")}
+          height={340}
+          legend={[
+            { label: "LT", color: "hsl(var(--primary))" },
+            { label: "ST", color: "hsl(var(--accent))" },
+          ]}
+        >
           {loading ? <Skeleton /> : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={merged}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} minTickGap={40} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-                <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--chart-grid))" />
+                <XAxis dataKey="date" stroke="hsl(var(--chart-grid))" tick={CHART_TICK} minTickGap={40} />
+                <YAxis stroke="hsl(var(--chart-grid))" tick={CHART_TICK} />
+                <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} />
                 <Customized component={HudCrosshairOverlay} />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                 <Line type="monotone" dataKey="lt" stroke="hsl(var(--primary))" dot={false} strokeWidth={1.75} name="LT" />
                 <Line type="monotone" dataKey="st" stroke="hsl(var(--accent))" dot={false} strokeWidth={1.5} name="ST" />
               </LineChart>
@@ -105,14 +116,15 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
     </div>
   );
 }
-function Panel({ title, exportTitle, height, children }: { title: string; exportTitle?: string; height: number; children: React.ReactNode }) {
+function Panel({ title, exportTitle, asOf, height, legend, children }: { title: string; exportTitle?: string; asOf?: string; height: number; legend?: ChartLegendItem[]; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-sm bg-surface/30" data-chart-export="">
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2">
+    <div className="hud-chart" data-chart-export="">
+      <div className="hud-chart-header px-3 py-2 flex items-center justify-between gap-2">
         <span className="hud-label">{title}</span>
-        <ChartExportButton title={exportTitle ?? title} />
+        <ChartExportButton title={exportTitle ?? title} asOf={asOf} />
       </div>
       <div className="p-3" data-chart-body="">
+        {legend && <ChartLegend items={legend} className="mb-2" />}
         <div style={{ height }} data-chart-body="">{children}</div>
       </div>
     </div>

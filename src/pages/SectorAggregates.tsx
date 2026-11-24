@@ -1,3 +1,4 @@
+import { CHART_EXTREME, CHART_TOOLTIP_STYLE, chartColor } from "@/lib/chartTheme";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "@/components/hud/AppShell";
@@ -11,6 +12,7 @@ import {
 } from "recharts";
 import { HudCrosshairCursor, HudCrosshairOverlay } from "@/components/charts/HudChartPrimitives";
 import { ChartExportButton } from "@/components/charts/ChartExportButton";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import { ResponsiveContainer } from "@/components/charts/ResponsiveContainer";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
@@ -127,6 +129,7 @@ const SectorAggregates = () => {
               <ChartExportButton
                 compact
                 title={`Sector comparison ${METRIC_OPTIONS.find(o => o.key === metric)?.label ?? metric}`}
+                asOf={reportDate}
               />
             </div>
           </div>
@@ -148,13 +151,7 @@ const SectorAggregates = () => {
                   domain={isPctMetric ? [0, 100] : ["auto", "auto"]}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--chart-surface))",
-                    border: "1px solid hsl(var(--chart-grid))",
-                    fontSize: 11,
-                    borderRadius: 2,
-                    color: "hsl(var(--chart-surface-foreground))",
-                  }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   labelStyle={{ color: "hsl(var(--chart-surface-foreground))" }}
                   formatter={(v: number) => (isPctMetric ? `${v}` : fmtInt.format(v))}
                 />
@@ -254,7 +251,7 @@ const SectorAggregates = () => {
                 </button>
               ))}
             </div>
-            <ChartExportButton compact title={`${histSector} ${histMeta.l} ${histTF}`} />
+            <ChartExportButton compact title={`${histSector} ${histMeta.l} ${histTF}`} asOf={histData[histData.length - 1]?.date} />
           </div>
         </div>
         <div className="h-80" data-chart-body="">
@@ -280,22 +277,16 @@ const SectorAggregates = () => {
                   tickFormatter={(v: number) => histMeta.pct ? `${v}` : Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`}
                 />
                 <Tooltip cursor={false}
-                  contentStyle={{
-                    background: "hsl(var(--chart-surface))",
-                    border: "1px solid hsl(var(--chart-grid))",
-                    fontSize: 11,
-                    borderRadius: 2,
-                    color: "hsl(var(--chart-surface-foreground))",
-                  }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   formatter={(v: number) => histMeta.pct ? `${v}` : fmtInt.format(v)}
                 />
                 <Customized component={HudCrosshairOverlay} />
                 {histMeta.pct ? (
                   <>
-                    <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
-                    <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
-                    <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-                    <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceArea y1={85} y2={100} fill={CHART_EXTREME.high} fillOpacity={0.08} />
+                    <ReferenceArea y1={0} y2={15} fill={CHART_EXTREME.low} fillOpacity={0.08} />
+                    <ReferenceLine y={85} stroke={CHART_EXTREME.high} strokeDasharray="2 3" strokeOpacity={0.55} />
+                    <ReferenceLine y={15} stroke={CHART_EXTREME.low} strokeDasharray="2 3" strokeOpacity={0.55} />
                   </>
                 ) : (
                   <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
@@ -343,15 +334,18 @@ const SectorAggregates = () => {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3 text-[10px]" style={{ color: "hsl(var(--chart-axis))" }}>
-              <Legend swatch="hsl(var(--pos-short))" label="≤15 Short" />
-              <Legend swatch="hsl(var(--chart-ink-muted))" label="Neutral" />
-              <Legend swatch="hsl(var(--pos-long))" label="≥85 Long" />
-            </div>
-            <ChartExportButton compact title={`Positioning heatmap ${heatWindow === "netSpecPct3y" ? "3Y" : "6M"}`} />
+            <ChartLegend
+              shape="square"
+              items={[
+                { label: "≤15 Short", color: "hsl(var(--pos-short))" },
+                { label: "Neutral", color: "hsl(var(--chart-ink-muted))" },
+                { label: "≥85 Long", color: "hsl(var(--pos-long))" },
+              ]}
+            />
+            <ChartExportButton compact title={`Positioning heatmap ${heatWindow === "netSpecPct3y" ? "3Y" : "6M"}`} asOf={reportDate} />
           </div>
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-chart-body="">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-10 animate-pulse bg-chart-grid/40 rounded-sm" />
@@ -413,7 +407,7 @@ function SectorHeatmapRow({ r, windowKey }: { r: SectorRollup; windowKey: "netSp
           .map(m => {
             const v = m[windowKey] as number;
             const bg = heatBg(v);
-            const fg = v >= 70 || v <= 30 ? "#f5f0e6" : "hsl(var(--chart-surface-foreground))";
+            const fg = v >= 70 || v <= 30 ? chartColor("--chart-surface") : chartColor("--chart-surface-foreground");
             return (
               <Link
                 key={m.symbol}
@@ -446,15 +440,6 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
     <div className="px-4 py-3 border-r border-border last:border-r-0">
       <div className="hud-label">{label}</div>
       <div className={`mt-1 text-lg font-semibold tabular-nums ${color}`}>{value}</div>
-    </div>
-  );
-}
-
-function Legend({ swatch, label }: { swatch: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1">
-      <div className="h-2.5 w-2.5 rounded-sm" style={{ background: swatch, border: "1px solid hsl(var(--chart-grid))" }} />
-      <span>{label}</span>
     </div>
   );
 }

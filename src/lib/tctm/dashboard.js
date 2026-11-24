@@ -6,6 +6,8 @@ import * as echarts from 'echarts';
 import html2canvas from 'html2canvas';
 import { TCTM as E } from './engine.js';
 import { TCTM_GLOSSARY } from './glossary.js';
+import { readChartToken as hslToken } from '../chartTheme';
+import { exportFilename } from '../exportNaming';
 
   const C = E.CONFIG;
   const SHEET_ID = '14fsrfe_0YRyhVSL9axk7fhQP6kx81zqLRVXK8mS-QNA';
@@ -17,11 +19,6 @@ import { TCTM_GLOSSARY } from './glossary.js';
     slider: 'rgba(228,223,212,.55)', fill: 'rgba(190,145,115,.18)' };
   let themeDark = false;
   let themeObs = null;
-  function hslToken(name, alpha) {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    if (!raw) return alpha == null ? '#888888' : 'rgba(136,136,136,' + alpha + ')';
-    return alpha == null ? 'hsl(' + raw + ')' : 'hsl(' + raw + ' / ' + alpha + ')';
-  }
   function readTheme() {
     themeDark = document.documentElement.classList.contains('dark');
     COL.bull = COL.bullFg = hslToken('--success');
@@ -187,7 +184,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
   function stackChart(host, panels, o = {}) {
     const n = DS.n, dates = DS.dates;
     host.innerHTML = `<div class="ctrl" style="margin-bottom:6px">${Object.keys(rangeYears).map(k => `<button data-r="${k}" class="${k === (o.range || '5Y') ? 'on' : ''}">${k}</button>`).join('')}
-      <span class="sep"></span><button data-log="1" class="${o.log ? 'on' : ''}">Log scale</button><span class="spacer"></span><button class="xjpg" title="Download this chart as an 800×600 JPG">Export JPG</button></div><div class="chart"></div>`;
+      <span class="sep"></span><button data-log="1" class="${o.log ? 'on' : ''}">Log scale</button><span class="spacer"></span><button class="xjpg" title="Download this chart as a 1200×900 JPG">Export JPG</button></div><div class="chart"></div>`;
     host.setAttribute('data-xroot', '');
     const el = host.querySelector('.chart');
     const gap = 24, top0 = 26, slider = 34;
@@ -215,10 +212,10 @@ import { TCTM_GLOSSARY } from './glossary.js';
             if (DS.lt[i] === 1) bull[i] = px[i]; else if (DS.lt[i] === -1) bear[i] = px[i];
             if (i > 0 && DS.lt[i] !== DS.lt[i - 1]) { bull[i - 1] = bull[i - 1] ?? (DS.lt[i] === 1 ? px[i - 1] : null); bear[i - 1] = bear[i - 1] ?? (DS.lt[i] === -1 ? px[i - 1] : null); }
           }
-          series.push({ name: 'S&P 500 (LT bullish)', type: 'line', xAxisIndex: k, yAxisIndex: k, data: bull, showSymbol: false, lineStyle: { width: 1.3, color: COL.bull }, itemStyle: { color: COL.bull }, connectNulls: false, z: 2 });
-          series.push({ name: 'S&P 500 (LT bearish)', type: 'line', xAxisIndex: k, yAxisIndex: k, data: bear, showSymbol: false, lineStyle: { width: 1.3, color: COL.bear }, itemStyle: { color: COL.bear }, connectNulls: false, z: 2 });
+          series.push({ name: 'S&P 500 (LT bullish)', type: 'line', xAxisIndex: k, yAxisIndex: k, data: bull, showSymbol: false, lineStyle: { width: 1.3, color: COL.bull }, itemStyle: { color: COL.bull }, emphasis: { disabled: true }, connectNulls: false, z: 2 });
+          series.push({ name: 'S&P 500 (LT bearish)', type: 'line', xAxisIndex: k, yAxisIndex: k, data: bear, showSymbol: false, lineStyle: { width: 1.3, color: COL.bear }, itemStyle: { color: COL.bear }, emphasis: { disabled: true }, connectNulls: false, z: 2 });
         } else {
-          series.push({ name: 'S&P 500', type: 'line', xAxisIndex: k, yAxisIndex: k, data: px, showSymbol: false, sampling: 'lttb', lineStyle: { width: 1.2, color: COL.price }, itemStyle: { color: COL.price }, z: 2 });
+          series.push({ name: 'S&P 500', type: 'line', xAxisIndex: k, yAxisIndex: k, data: px, showSymbol: false, sampling: 'lttb', lineStyle: { width: 1.2, color: COL.price }, itemStyle: { color: COL.price }, emphasis: { disabled: true }, z: 2 });
         }
         for (const mk of (p.markers || [])) {
           const up = mk.dir > 0;
@@ -264,8 +261,9 @@ import { TCTM_GLOSSARY } from './glossary.js';
     chart.setOption({
       animation: false, backgroundColor: COL.panel, textStyle: { fontFamily: CHART_FONT },
       title, grid, xAxis, yAxis, series,
-      axisPointer: { link: [{ xAxisIndex: 'all' }], lineStyle: { color: COL.accent, width: 1, type: 'dashed' } },
-      tooltip: { trigger: 'axis', axisPointer: { type: 'cross', crossStyle: { color: COL.accent } }, confine: true,
+      // triggerEmphasis:false stops ECharts from highlighting the hovered series, which hid the price line on hover
+      axisPointer: { triggerEmphasis: false, link: [{ xAxisIndex: 'all' }], lineStyle: { color: COL.accent, width: 1, type: 'dashed' } },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross', triggerEmphasis: false, crossStyle: { color: COL.accent } }, confine: true,
         backgroundColor: COL.tipBg, borderColor: COL.tipBorder, extraCssText: 'box-shadow:0 4px 14px rgba(15,23,42,.12)', textStyle: { color: COL.fg, fontSize: 12 },
         formatter: (ps) => { const pp = Array.isArray(ps) ? ps[0] : ps; if (!pp) return ''; const i = pp.dataIndex;
           const mks = (panels[0].markers || []).filter(m => m.idx.includes(i)).map(m => `<div style="color:${m.dir > 0 ? COL.bullFg : COL.bearFg}">▲ ${esc(m.name)} signal</div>`).join('');
@@ -310,7 +308,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
     if (!chart) { chart = echarts.init(el); charts.push(chart); }
     const lastK = DS.n - 1 - sel;
     chart.setOption({
-      animation: false, backgroundColor: COL.panel, textStyle: { fontFamily: CHART_FONT },
+      animation: false, backgroundColor: COL.panel, textStyle: { fontFamily: CHART_FONT }, axisPointer: { triggerEmphasis: false },
       title: { text: `S&P 500 around ${src.label} signals`, subtext: `Selected signal ${fmtDate(DS.dates[sel])} · ${lastK} session(s) elapsed · historical average of ${avg.signals} prior signal(s)`,
         left: 'center', textStyle: { color: COL.fg, fontSize: 14, fontWeight: 600 }, subtextStyle: { color: COL.muted, fontSize: 11.5 } },
       grid: { left: 54, right: 24, top: 66, bottom: 64 },
@@ -325,10 +323,10 @@ import { TCTM_GLOSSARY } from './glossary.js';
           return `<b>Session ${x > 0 ? '+' + x : x}</b><br/>Selected: ${c == null ? 'N/A' : (c - 100).toFixed(2) + '%'}<br/>Historical avg: ${a == null ? 'N/A' : (a - 100).toFixed(2) + '%'} <span style="color:${COL.muted}">(n = ${avg.n[k]})</span>`; } },
       dataZoom: [{ type: 'inside' }],
       series: [
-        { name: 'Historical average', type: 'line', data: pts(avg.avg), showSymbol: false, lineStyle: { width: 2.2, color: COL.accent }, itemStyle: { color: COL.accent }, connectNulls: false,
+        { name: 'Historical average', type: 'line', data: pts(avg.avg), showSymbol: false, lineStyle: { width: 2.2, color: COL.accent }, itemStyle: { color: COL.accent }, emphasis: { disabled: true }, connectNulls: false,
           markLine: { silent: true, symbol: 'none', data: [{ xAxis: 0, lineStyle: { color: COL.bear, width: 1.4, type: 'solid' }, label: { formatter: fmtDate(DS.dates[sel]), color: COL.bear, position: 'end' } },
             { yAxis: 100, lineStyle: { color: COL.bear, type: 'dashed', width: 1 }, label: { show: false } }] } },
-        { name: 'Selected signal', type: 'line', data: pts(path), showSymbol: false, lineStyle: { width: 2, color: COL.ink }, itemStyle: { color: COL.ink }, connectNulls: false }
+        { name: 'Selected signal', type: 'line', data: pts(path), showSymbol: false, lineStyle: { width: 2, color: COL.ink }, itemStyle: { color: COL.ink }, emphasis: { disabled: true }, connectNulls: false }
       ]
     }, true);
     const nMax = Math.max(...avg.n), nPost = avg.n.slice(pre + 1).filter(v => v > 0);
@@ -346,7 +344,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
     const [e1, e2] = host.querySelectorAll('.chart');
     const c1 = echarts.init(e1), c2 = echarts.init(e2); charts.push(c1, c2); host._charts = [c1, c2];
     const labels = stats.long.map(s => s.label);
-    const base = { animation: false, backgroundColor: COL.panel, textStyle: { fontFamily: CHART_FONT }, grid: { left: 50, right: 16, top: 30, bottom: 30 },
+    const base = { animation: false, backgroundColor: COL.panel, textStyle: { fontFamily: CHART_FONT }, axisPointer: { triggerEmphasis: false }, grid: { left: 50, right: 16, top: 30, bottom: 30 },
       legend: { top: 0, left: 0, textStyle: { color: COL.muted, fontSize: 11 } },
       xAxis: { type: 'category', data: labels, axisLabel: { color: COL.muted }, axisLine: { lineStyle: { color: COL.grid } } },
       tooltip: { trigger: 'axis', confine: true, backgroundColor: COL.tipBg, borderColor: COL.tipBorder, extraCssText: 'box-shadow:0 4px 14px rgba(15,23,42,.12)', textStyle: { color: COL.fg, fontSize: 12 }, valueFormatter: v => v == null ? 'N/A' : v.toFixed(1) + '%' } };
@@ -354,14 +352,14 @@ import { TCTM_GLOSSARY } from './glossary.js';
       c1.setOption(Object.assign({}, base, {
         yAxis: { type: 'value', axisLabel: { color: COL.muted, formatter: '{value}%' }, splitLine: { lineStyle: { color: COL.split } } },
         series: [{ name: m === 'mean' ? 'Signal avg.' : 'Signal median', type: 'bar', data: stats.long.map(s => s[m] == null ? null : +(s[m] * 100).toFixed(2)), itemStyle: { color: COL.bull }, barWidth: '50%' },
-          { name: m === 'mean' ? 'All-day avg.' : 'All-day median', type: 'line', data: stats.long.map(s => +(s.base[m] * 100).toFixed(2)), lineStyle: { color: COL.fg }, itemStyle: { color: COL.fg }, symbolSize: 6 }]
+          { name: m === 'mean' ? 'All-day avg.' : 'All-day median', type: 'line', data: stats.long.map(s => +(s.base[m] * 100).toFixed(2)), lineStyle: { color: COL.fg }, itemStyle: { color: COL.fg }, emphasis: { disabled: true }, symbolSize: 6 }]
       }), true);
     }
     draw('mean');
     c2.setOption(Object.assign({}, base, {
       yAxis: { type: 'value', min: 0, max: 100, axisLabel: { color: COL.muted, formatter: '{value}%' }, splitLine: { lineStyle: { color: COL.split } } },
       series: [{ name: 'Signal hit rate', type: 'bar', data: stats.long.map(s => s.hit == null ? null : +(s.hit * 100).toFixed(1)), itemStyle: { color: COL.bull }, barWidth: '50%' },
-        { name: 'All-day hit rate', type: 'line', data: stats.long.map(s => +(s.base.hit * 100).toFixed(1)), lineStyle: { color: COL.fg }, itemStyle: { color: COL.fg }, symbolSize: 6 }]
+        { name: 'All-day hit rate', type: 'line', data: stats.long.map(s => +(s.base.hit * 100).toFixed(1)), lineStyle: { color: COL.fg }, itemStyle: { color: COL.fg }, emphasis: { disabled: true }, symbolSize: 6 }]
     }));
     host.querySelectorAll('button[data-m]').forEach(b => b.onclick = () => { host.querySelectorAll('button[data-m]').forEach(x => x.classList.toggle('on', x === b)); draw(b.dataset.m); });
   }
@@ -642,7 +640,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
     if (v === null || !Number.isFinite(v)) return '<td class="n na">—</td>';
     const x = mode === 'win' ? (v - 0.5) * 2 : Math.max(-1, Math.min(1, v / 0.08));
     const a = Math.min(0.45, Math.abs(x) * 0.45);
-    const bg = x >= 0 ? `rgba(21,128,61,${a})` : `rgba(165,29,29,${a})`;
+    const bg = x >= 0 ? `hsl(var(--success) / ${a})` : `hsl(var(--destructive) / ${a})`;
     return `<td class="n" style="background:${bg}">${mode === 'win' ? (v * 100).toFixed(0) + '%' : (v * 100).toFixed(1)}</td>`;
   }
   function singleBucketTable(m) {
@@ -817,10 +815,11 @@ import { TCTM_GLOSSARY } from './glossary.js';
    * visible date range, and hand the JPG to the viewer.
    */
   const XW = 800, XH = 600;
+  const exportBg = () => hslToken('--export-surface');
   function exportOption(chart, heading) {
     const opt = chart.getOption();
     const dom = chart.getDom();
-    const out = Object.assign({}, opt, { animation: false, backgroundColor: COL.panel, tooltip: { show: false } });
+    const out = Object.assign({}, opt, { animation: false, backgroundColor: exportBg(), tooltip: { show: false } });
     const head = heading ? 34 : 0;
     const grids = opt.grid || [];
     const stacked = grids.length > 1 || (grids[0] && typeof grids[0].height === 'number');
@@ -853,7 +852,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
     let url;
     try {
       off.setOption(exportOption(chart, heading));
-      url = off.getDataURL({ type: 'jpeg', pixelRatio: 1, backgroundColor: COL.panel });
+      url = off.getDataURL({ type: 'jpeg', pixelRatio: 1.5, backgroundColor: exportBg() });
     } finally { off.dispose(); box.remove(); }
     const bin = atob(url.split(',')[1]), bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -862,8 +861,8 @@ import { TCTM_GLOSSARY } from './glossary.js';
     return saveBlob(blob, base);
   }
   function saveBlob(blob, base) {
-    const stem = String(base).toLowerCase().replace(/&amp;/g, 'and').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70);
-    const filename = `${stem || 'tctm'}_${DS.dates[DS.n - 1]}.jpg`;
+    // same naming as every other chart export: <slug>_<last data date>.jpg
+    const filename = exportFilename(base, DS.dates[DS.n - 1], 'jpg', 'tctm');
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
   }
@@ -900,7 +899,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
       fit();
       while (t.scrollWidth > box.clientWidth - 28 && fs > 7.5) { fs -= 0.5; fit(); }
       if (t.scrollWidth > box.clientWidth - 28) box.classList.add('xt-wrap');
-      const canvas = await html2canvas(box, { scale: 1, width: 800, windowWidth: 800, backgroundColor: COL.panel, logging: false });
+      const canvas = await html2canvas(box, { scale: 1.5, width: 800, windowWidth: 800, backgroundColor: exportBg(), logging: false });
       const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
       await saveBlob(blob, title);
     } finally { box.remove(); }
@@ -909,7 +908,7 @@ import { TCTM_GLOSSARY } from './glossary.js';
     root.querySelectorAll('.tbl-wrap[data-xt]').forEach(w => {
       if (w.previousElementSibling && w.previousElementSibling.classList.contains('xt-tools')) return;
       const bar = document.createElement('div'); bar.className = 'xt-tools';
-      bar.innerHTML = '<button class="xtbl" title="Download this table as a JPG (800 px wide)">Export JPG</button>';
+      bar.innerHTML = '<button class="xtbl" title="Download this table as a JPG (1200 px wide)">Export JPG</button>';
       w.parentNode.insertBefore(bar, w);
     });
   }

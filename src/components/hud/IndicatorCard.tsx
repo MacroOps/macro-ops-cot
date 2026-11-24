@@ -206,7 +206,7 @@ function IndicatorCardInner({
             {component && <ConstructionPopover spec={component} />}
           </div>
         </div>
-        <div className="p-1 hud-chart rounded-none" style={{ height: brush ? height + 28 : height }} data-chart-body="">
+        <div className="p-1 hud-chart" style={{ height: brush ? height + 28 : height }} data-chart-body="">
           <ChartBody
             data={data}
             variant={variant}
@@ -582,7 +582,7 @@ function ChartToolbar(props: {
           indicatorKey: props.indicatorKey,
         }}
       />
-      <ChartExportButton compact title={props.title} />
+      <ChartExportButton compact title={props.title} asOf={props.recent[props.recent.length - 1]?.t} />
       <IconBtn title="Fullscreen" onClick={props.onFullscreen}>
         <Maximize2 className="h-3 w-3" />
       </IconBtn>

@@ -1,3 +1,4 @@
+import { CHART_TICK, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/hud/AppShell";
@@ -546,43 +547,39 @@ export default function Offsides() {
               ) : (
                 <>
                   {/* Net position area */}
-                  <div className="h-[220px] flex flex-col" data-chart-export="">
+                  <div className="hud-chart p-3 h-[220px] flex flex-col" data-chart-export="">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="hud-label">
                         Net Position (Leveraged Funds / Managed Money)
                       </span>
-                      <ChartExportButton compact title={`${selected?.symbol ?? "COT"} net position`} />
+                      <ChartExportButton compact title={`${selected?.symbol ?? "COT"} net position`} asOf={detailSeries[detailSeries.length - 1]?.d} />
                     </div>
                     <div className="flex-1 min-h-0" data-chart-body="">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={detailSeries}>
                         <CartesianGrid
                           strokeDasharray="2 2"
-                          stroke="hsl(var(--border))"
+                          stroke="hsl(var(--chart-grid))"
                         />
                         <XAxis
                           dataKey="d"
-                          tick={{ fontSize: 10 }}
-                          stroke="hsl(var(--muted-foreground))"
+                          tick={CHART_TICK}
+                          stroke="hsl(var(--chart-grid))"
                           minTickGap={40}
                         />
                         <YAxis
-                          tick={{ fontSize: 10 }}
-                          stroke="hsl(var(--muted-foreground))"
+                          tick={CHART_TICK}
+                          stroke="hsl(var(--chart-grid))"
                           tickFormatter={fmtNet}
                         />
                         <Tooltip cursor={false}
-                          contentStyle={{
-                            background: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            fontSize: 12,
-                          }}
+                          contentStyle={CHART_TOOLTIP_STYLE}
                           formatter={(v: number, n: string) =>
                             n === "net" ? [fmtNet(v), "Net"] : [v, n]
                           }
                         />
                         <Customized component={HudCrosshairOverlay} />
-                        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+                        <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                         <Area
                           type="monotone"
                           dataKey="net"
@@ -597,7 +594,7 @@ export default function Offsides() {
                   </div>
 
                   {/* Normalized index with extreme bands */}
-                  <div className="h-[260px] flex flex-col" data-chart-export="">
+                  <div className="hud-chart p-3 h-[260px] flex flex-col" data-chart-export="">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="hud-label">
                         {norm === "idx"
@@ -609,6 +606,7 @@ export default function Offsides() {
                       <ChartExportButton
                         compact
                         title={`${selected?.symbol ?? "COT"} ${norm === "idx" ? "cot index" : norm === "z" ? "z-score" : "percentile rank"}`}
+                        asOf={detailSeries[detailSeries.length - 1]?.d}
                       />
                     </div>
                     <div className="flex-1 min-h-0" data-chart-body="">
@@ -616,27 +614,23 @@ export default function Offsides() {
                       <ComposedChart data={detailSeries}>
                         <CartesianGrid
                           strokeDasharray="2 2"
-                          stroke="hsl(var(--border))"
+                          stroke="hsl(var(--chart-grid))"
                         />
                         <XAxis
                           dataKey="d"
-                          tick={{ fontSize: 10 }}
-                          stroke="hsl(var(--muted-foreground))"
+                          tick={CHART_TICK}
+                          stroke="hsl(var(--chart-grid))"
                           minTickGap={40}
                         />
                         <YAxis
-                          tick={{ fontSize: 10 }}
-                          stroke="hsl(var(--muted-foreground))"
+                          tick={CHART_TICK}
+                          stroke="hsl(var(--chart-grid))"
                           domain={
                             norm === "z" ? [-4, 4] : [0, 100]
                           }
                         />
                         <Tooltip cursor={false}
-                          contentStyle={{
-                            background: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            fontSize: 12,
-                          }}
+                          contentStyle={CHART_TOOLTIP_STYLE}
                         />
                         <Customized component={HudCrosshairOverlay} />
                         {norm !== "z" && (
@@ -665,7 +659,7 @@ export default function Offsides() {
                               fill="hsl(var(--success) / 0.18)"
                               stroke="none"
                             />
-                            <ReferenceLine y={50} stroke="hsl(var(--muted-foreground))" />
+                            <ReferenceLine y={50} stroke="hsl(var(--chart-grid))" />
                           </>
                         )}
                         {norm === "z" && (
@@ -682,7 +676,7 @@ export default function Offsides() {
                               fill="hsl(var(--success) / 0.12)"
                               stroke="none"
                             />
-                            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+                            <ReferenceLine y={0} stroke="hsl(var(--chart-grid))" />
                           </>
                         )}
                         <Line

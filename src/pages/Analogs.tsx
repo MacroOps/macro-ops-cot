@@ -126,7 +126,7 @@ export default function Analogs() {
             <div className="text-[11px] uppercase tracking-wider font-semibold">
               Forward path fan · {result.top.length} analogs · {horizon}w
             </div>
-            <div className="flex items-center gap-3 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="flex items-center gap-3 text-[9px] uppercase tracking-[0.12em] text-muted-foreground" data-export-keep="">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-3 h-2 rounded-sm" style={{ background: "hsl(var(--chart-accent) / 0.18)", border: "1px solid hsl(var(--chart-accent) / 0.4)" }} />
                 IQR
@@ -142,7 +142,7 @@ export default function Analogs() {
               <ChartExportButton compact title={`Analogs ${result.ind.label} ${horizon}w`} />
             </div>
           </div>
-          <div className="hud-chart rounded-none p-1" style={{ height: 380 }} data-chart-body="">
+          <div className="hud-chart p-1" style={{ height: 380 }} data-chart-body="">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={result.points} margin={{ top: 8, right: 48, left: 0, bottom: 8 }}>
                 <defs>

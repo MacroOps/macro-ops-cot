@@ -1,3 +1,4 @@
+import { CHART_EXTREME, CHART_TOOLTIP_STYLE } from "@/lib/chartTheme";
 import { isValidElement, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -73,6 +74,7 @@ function ChartPanel({
   height = 200,
   onExpand,
   exportTitle,
+  asOf,
 }: {
   title: string;
   sub?: string;
@@ -81,6 +83,7 @@ function ChartPanel({
   height?: number;
   onExpand?: () => void;
   exportTitle?: string;
+  asOf?: string;
 }) {
   return (
     <div className="hud-chart flex flex-col" data-chart-export="">
@@ -89,13 +92,14 @@ function ChartPanel({
           <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: "hsl(var(--chart-axis))" }}>
             {title}
           </span>
-          {sub && <span className="text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }}>{sub}</span>}
+          {sub && <span className="text-[10px] " style={{ color: "hsl(var(--chart-ink-muted))" }} data-export-keep="">{sub}</span>}
         </div>
         <div className="flex items-center gap-2">
           {right}
           <ChartExportButton
             compact
             title={exportTitle ?? title}
+            asOf={asOf}
             className="h-auto w-auto px-1.5 py-1 border border-chart-grid text-chart-axis hover:text-chart-ink hover:border-chart-ink hover:bg-transparent"
           />
           {onExpand && (
@@ -156,19 +160,19 @@ function PctGradients({ plotTop = 8, plotBottom = 232 }: { plotTop?: number; plo
   return (
     <defs>
       <linearGradient id={PCT_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#7a2818" />
-        <stop offset="15%" stopColor="#a8391f" />
-        <stop offset="30%" stopColor="#c0542e" />
-        <stop offset="45%" stopColor="#c98a3a" />
-        <stop offset="55%" stopColor="#b89048" />
-        <stop offset="70%" stopColor="#8a8a3e" />
-        <stop offset="85%" stopColor="#5e7536" />
-        <stop offset="100%" stopColor="#3f5a2a" />
+        <stop offset="0%" style={{ stopColor: CHART_EXTREME.high }} />
+        <stop offset="15%" style={{ stopColor: CHART_EXTREME.high }} />
+        <stop offset="30%" style={{ stopColor: CHART_EXTREME.mid }} />
+        <stop offset="45%" style={{ stopColor: CHART_EXTREME.mid }} />
+        <stop offset="55%" style={{ stopColor: CHART_EXTREME.mid }} />
+        <stop offset="70%" style={{ stopColor: CHART_EXTREME.mid }} />
+        <stop offset="85%" style={{ stopColor: CHART_EXTREME.low }} />
+        <stop offset="100%" style={{ stopColor: CHART_EXTREME.low }} />
       </linearGradient>
       <linearGradient id={PCT_FILL_GRADIENT_ID} gradientUnits="userSpaceOnUse" x1="0" y1={plotTop} x2="0" y2={plotBottom}>
-        <stop offset="0%" stopColor="#a8391f" stopOpacity={0.22} />
-        <stop offset="50%" stopColor="#c98a3a" stopOpacity={0.05} />
-        <stop offset="100%" stopColor="#5e7536" stopOpacity={0.22} />
+        <stop offset="0%" style={{ stopColor: CHART_EXTREME.high }} stopOpacity={0.22} />
+        <stop offset="50%" style={{ stopColor: CHART_EXTREME.mid }} stopOpacity={0.05} />
+        <stop offset="100%" style={{ stopColor: CHART_EXTREME.low }} stopOpacity={0.22} />
       </linearGradient>
     </defs>
   );
@@ -307,6 +311,10 @@ export default function AssetDetail() {
     { k: "extremity", l: "Extremity" },
   ];
 
+  // Last data point of each source, printed on exported charts.
+  const lastPriceDate = data?.priceSeries?.[data.priceSeries.length - 1]?.date;
+  const lastCotDate = data?.series?.[data.series.length - 1]?.date;
+
   // Shared [startMs, endMs] domain so all charts align vertically on the same time axis.
   const sharedDomain = useMemo(() => {
     return (tf: TimeframeKey): [number, number] | null => {
@@ -394,7 +402,7 @@ export default function AssetDetail() {
         <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis yAxisId="px" orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} scale="log" domain={[(dMin: number) => dMin * 0.94, (dMax: number) => dMax * 1.06]} allowDataOverflow tickFormatter={(v) => fmt.format(v)} />
         <YAxis yAxisId="wow" orientation="left" hide domain={[-wowMax * 1.8, wowMax * 1.8]} />
-        <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
+        <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} labelFormatter={fmtTooltipLabel} formatter={(value: number | string, name) => name === "WoW Net Spec Δ" ? [fmtInt.format(Number(value)), name] : [value, name]} />
         <Customized component={HudCrosshairOverlay} />
         <Bar yAxisId="wow" dataKey="wowSpec" name="WoW Net Spec Δ" isAnimationActive={false} barSize={tf === "all" ? 3 : tf === "10y" ? 4 : tf === "5y" ? 5 : 7} fillOpacity={1}>
           {pd.map((d, i) => (
@@ -418,7 +426,7 @@ export default function AssetDetail() {
     );
     const tooltip = (
       <>
-        <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+        <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} labelFormatter={fmtTooltipLabel} />
         <Customized component={HudCrosshairOverlay} />
       </>
     );
@@ -431,10 +439,10 @@ export default function AssetDetail() {
           {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} />
           {tooltip}
-          <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.06} />
-          <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.06} />
-          <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.45} />
-          <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.45} />
+          <ReferenceArea y1={85} y2={100} fill={CHART_EXTREME.high} fillOpacity={0.06} />
+          <ReferenceArea y1={0} y2={15} fill={CHART_EXTREME.low} fillOpacity={0.06} />
+          <ReferenceLine y={85} stroke={CHART_EXTREME.high} strokeDasharray="2 3" strokeOpacity={0.45} />
+          <ReferenceLine y={15} stroke={CHART_EXTREME.low} strokeDasharray="2 3" strokeOpacity={0.45} />
           <Line type="monotone" dataKey={largeKey} name="Large Specs %ile" stroke="hsl(152 85% 38%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
           <Line type="monotone" dataKey={smallKey} name="Small Specs %ile" stroke="hsl(38 95% 52%)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
@@ -445,23 +453,23 @@ export default function AssetDetail() {
         <ComposedChart data={cd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <defs>
             <linearGradient id="extremityLineGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7a2818" />
-              <stop offset="15%" stopColor="#a8391f" />
-              <stop offset="35%" stopColor="#c0542e" />
-              <stop offset="50%" stopColor="#c98a3a" />
-              <stop offset="65%" stopColor="#8a8a3e" />
-              <stop offset="85%" stopColor="#5e7536" />
-              <stop offset="100%" stopColor="#3f5a2a" />
+              <stop offset="0%" style={{ stopColor: CHART_EXTREME.high }} />
+              <stop offset="15%" style={{ stopColor: CHART_EXTREME.high }} />
+              <stop offset="35%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="50%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="65%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="85%" style={{ stopColor: CHART_EXTREME.low }} />
+              <stop offset="100%" style={{ stopColor: CHART_EXTREME.low }} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           {xAxis}
           <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[-100, 100]} width={56} ticks={[-100, -70, -30, 0, 30, 70, 100]} />
           {tooltip}
-          <ReferenceArea y1={70} y2={100} fill="#a8391f" fillOpacity={0.08} />
-          <ReferenceArea y1={-100} y2={-70} fill="#5e7536" fillOpacity={0.08} />
-          <ReferenceLine y={70} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-          <ReferenceLine y={-70} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceArea y1={70} y2={100} fill={CHART_EXTREME.high} fillOpacity={0.08} />
+          <ReferenceArea y1={-100} y2={-70} fill={CHART_EXTREME.low} fillOpacity={0.08} />
+          <ReferenceLine y={70} stroke={CHART_EXTREME.high} strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={-70} stroke={CHART_EXTREME.low} strokeDasharray="2 3" strokeOpacity={0.55} />
           <ReferenceLine y={0} stroke={gridColor} />
           <Line type="monotone" dataKey="extremityScore" name="Extremity" stroke="url(#extremityLineGradient)" strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
@@ -472,23 +480,23 @@ export default function AssetDetail() {
         <ComposedChart data={cd} margin={{ top: 8, right: 32, left: 0, bottom: 0 }} syncId="assetDetail" syncMethod="value">
           <defs>
             <linearGradient id={PCT_GRADIENT_ID} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7a2818" />
-              <stop offset="15%" stopColor="#a8391f" />
-              <stop offset="35%" stopColor="#c0542e" />
-              <stop offset="50%" stopColor="#c98a3a" />
-              <stop offset="65%" stopColor="#8a8a3e" />
-              <stop offset="85%" stopColor="#5e7536" />
-              <stop offset="100%" stopColor="#3f5a2a" />
+              <stop offset="0%" style={{ stopColor: CHART_EXTREME.high }} />
+              <stop offset="15%" style={{ stopColor: CHART_EXTREME.high }} />
+              <stop offset="35%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="50%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="65%" style={{ stopColor: CHART_EXTREME.mid }} />
+              <stop offset="85%" style={{ stopColor: CHART_EXTREME.low }} />
+              <stop offset="100%" style={{ stopColor: CHART_EXTREME.low }} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
           {xAxis}
           <YAxis tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} domain={[0, 100]} width={56} ticks={[0, 15, 50, 85, 100]} orientation="right" />
           {tooltip}
-          <ReferenceArea y1={85} y2={100} fill="#a8391f" fillOpacity={0.08} />
-          <ReferenceArea y1={0} y2={15} fill="#5e7536" fillOpacity={0.08} />
-          <ReferenceLine y={85} stroke="#a8391f" strokeDasharray="2 3" strokeOpacity={0.55} />
-          <ReferenceLine y={15} stroke="#5e7536" strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceArea y1={85} y2={100} fill={CHART_EXTREME.high} fillOpacity={0.08} />
+          <ReferenceArea y1={0} y2={15} fill={CHART_EXTREME.low} fillOpacity={0.08} />
+          <ReferenceLine y={85} stroke={CHART_EXTREME.high} strokeDasharray="2 3" strokeOpacity={0.55} />
+          <ReferenceLine y={15} stroke={CHART_EXTREME.low} strokeDasharray="2 3" strokeOpacity={0.55} />
           <Line type="monotone" dataKey={m} name={METRIC_LABEL[m]} stroke={`url(#${PCT_GRADIENT_ID})`} strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls />
         </ComposedChart>
       );
@@ -517,7 +525,7 @@ export default function AssetDetail() {
         <CartesianGrid stroke={gridColor} strokeDasharray="2 4" vertical={false} />
         <XAxis dataKey="ts" type="number" scale="time" domain={rightPaddedDomain(dom)} padding={xAxisRightPadding} allowDataOverflow tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} minTickGap={48} tickFormatter={fmtTick} />
         <YAxis orientation="right" tick={{ fontSize: 9, fill: tickColor }} tickLine={false} axisLine={{ stroke: gridColor }} width={56} domain={[(dMin: number) => dMin - Math.abs(dMin) * 0.08 - 1, (dMax: number) => dMax + Math.abs(dMax) * 0.08 + 1]} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-        <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--chart-surface))", border: `1px solid ${gridColor}`, borderRadius: 2, fontSize: 11 }} labelFormatter={fmtTooltipLabel} />
+        <Tooltip cursor={false} contentStyle={CHART_TOOLTIP_STYLE} labelFormatter={fmtTooltipLabel} />
         <Customized component={HudCrosshairOverlay} />
         <ReferenceLine y={0} stroke="hsl(var(--chart-axis))" strokeWidth={1} />
         {dis.large && <Bar dataKey="netLargeSpec" name="Large Specs" fill="hsl(152 85% 32%)" stroke="hsl(152 90% 22%)" strokeWidth={0.5} fillOpacity={0.95} isAnimationActive={false} />}
@@ -651,7 +659,7 @@ export default function AssetDetail() {
         <div className={`grid grid-cols-1 gap-3 ${showNews ? "lg:grid-cols-3" : ""}`}>
           <div className={showNews ? "lg:col-span-2 space-y-0" : "space-y-0"}>
             {/* Price chart (top) */}
-            <ChartPanel title={`${symbol} Price`} exportTitle={`${symbol} price ${timeframe}`} sub="Underlying spot/futures · log scale" height={340} onExpand={() => openExpand("price")}>
+            <ChartPanel title={`${symbol} Price`} exportTitle={`${symbol} price ${timeframe}`} asOf={lastPriceDate} sub="Underlying spot/futures · log scale" height={340} onExpand={() => openExpand("price")}>
               {renderPriceChart(timeframe)}
             </ChartPanel>
 
@@ -660,6 +668,7 @@ export default function AssetDetail() {
             <ChartPanel
               title={`Positioning · ${METRIC_LABEL[metric]}`}
               exportTitle={`${symbol} positioning ${METRIC_LABEL[metric]} ${timeframe}`}
+              asOf={lastCotDate}
               sub={
                 metric === "netSpec"
                   ? "Legacy report · Large Specs (non-comm) · Small Specs (non-rpt) · Commercials"
@@ -846,6 +855,7 @@ export default function AssetDetail() {
               {expanded === "disagg" && disaggToggles(expDisagg, setExpDisagg)}
               <ChartExportButton
                 className="mr-8"
+                asOf={expanded === "price" ? lastPriceDate : lastCotDate}
                 title={`${symbol} ${expanded === "price" ? "price" : expanded === "positioning" ? `positioning ${METRIC_LABEL[expMetric]}` : "disaggregated net positioning"} ${expTimeframe}`}
               />
             </div>

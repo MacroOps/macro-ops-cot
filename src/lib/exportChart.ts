@@ -1,4 +1,6 @@
 import { toPng } from "html-to-image";
+import { readChartToken } from "@/lib/chartTheme";
+import { exportDateLabel, exportFilename } from "@/lib/exportNaming";
 
 const IGNORED_CLASSES = ["recharts-tooltip-wrapper", "recharts-tooltip-cursor"];
 
@@ -9,44 +11,63 @@ function shouldInclude(node: HTMLElement): boolean {
   return true;
 }
 
-function isOpaque(color: string): boolean {
-  if (!color || color === "transparent") return false;
-  const m = color.match(/^rgba\(.*,\s*([\d.]+)\)$/) ?? color.match(/\/\s*([\d.]+%?)\s*\)$/);
-  if (!m) return true;
-  const a = m[1].endsWith("%") ? parseFloat(m[1]) / 100 : parseFloat(m[1]);
-  return a >= 1;
-}
+/**
+ * Same output as the TCTM JPG buttons: JPEG on white, 1200x900. The layout is 800x600 CSS px
+ * and is rendered at 1.5x, so the file is sharper but the composition is the same as on screen.
+ */
+const EXPORT_W = 800;
+const EXPORT_H = 600;
+const PIXEL_RATIO = 1.5;
+const JPEG_QUALITY = 0.95;
 
-/** First fully opaque background up the tree, so translucent panels don't export as see-through PNGs. */
-function resolveBackground(node: HTMLElement): string {
-  let el: HTMLElement | null = node;
-  while (el) {
-    const bg = getComputedStyle(el).backgroundColor;
-    if (isOpaque(bg)) return bg;
-    el = el.parentElement;
+/** What stays in an exported panel: the plot area plus anything flagged as a legend or caption. */
+const KEEP_SELECTOR = "[data-chart-body], [data-export-keep]";
+
+/**
+ * Hides toolbars, controls, KPI strips and the panel's own title so the capture is only the chart
+ * under a uniform heading. Ancestors of a kept element stay (their other children are hidden).
+ */
+function hidePanelChrome(node: HTMLElement): () => void {
+  const hidden: HTMLElement[] = [];
+  if (node.querySelector(KEEP_SELECTOR)) {
+    const visit = (el: HTMLElement) => {
+      for (const child of Array.from(el.children) as HTMLElement[]) {
+        if (child.matches(KEEP_SELECTOR)) continue;
+        if (child.querySelector(KEEP_SELECTOR)) {
+          visit(child);
+          continue;
+        }
+        child.setAttribute("data-export-hidden", "");
+        hidden.push(child);
+      }
+    };
+    visit(node);
   }
-  const v = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
-  return v ? `hsl(${v})` : "#ffffff";
+  return () => hidden.forEach((h) => h.removeAttribute("data-export-hidden"));
 }
 
-export function chartFilename(title: string, date = new Date()): string {
-  const slug = title
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/%/g, "pct")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "chart";
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${slug}-${y}-${m}-${d}.png`;
+/** Title on the left, date on the right: the same strip TCTM draws above its charts. */
+function insertHeading(node: HTMLElement, heading: string, dateLabel: string): () => void {
+  const el = document.createElement("div");
+  el.className = "export-heading";
+  el.setAttribute("data-export-heading", "");
+  const b = document.createElement("b");
+  b.textContent = heading.charAt(0).toUpperCase() + heading.slice(1);
+  const s = document.createElement("span");
+  s.textContent = dateLabel;
+  el.append(b, s);
+  node.insertBefore(el, node.firstChild);
+  return () => el.remove();
 }
 
-/** Layout size (CSS px) the panel is re-flowed to before capture; output is 2x. */
-const EXPORT_W = 1200;
-const EXPORT_H = 675;
-const PIXEL_RATIO = 2;
+export interface ChartExportOptions {
+  /** Heading drawn at the top of the image and the base of the file name. */
+  title: string;
+  /** Date of the last data point (ISO). Falls back to the export day. */
+  asOf?: string | null;
+  /** Overrides the heading when it should differ from the file name base. */
+  heading?: string;
+}
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -108,7 +129,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-async function fitToCanvas(dataUrl: string, bg: string): Promise<string> {
+async function fitToCanvas(dataUrl: string, bg: string): Promise<Blob> {
   const img = await loadImage(dataUrl);
   const w = EXPORT_W * PIXEL_RATIO;
   const h = EXPORT_H * PIXEL_RATIO;
@@ -116,24 +137,50 @@ async function fitToCanvas(dataUrl: string, bg: string): Promise<string> {
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return dataUrl;
+  if (!ctx) throw new Error("Canvas is not available");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
   const scale = Math.min(w / img.width, h / img.height);
   const dw = img.width * scale;
   const dh = img.height * scale;
   ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
-  return canvas.toDataURL("image/png");
+  // JPEG has no alpha, so the white fill above is what the viewer sees.
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Could not encode the JPG"))),
+      "image/jpeg",
+      JPEG_QUALITY,
+    );
+  });
 }
 
 /**
- * Re-flows the panel off-screen at 16:9 so Recharts redraws to fill it, then
- * captures it. Panels without a `data-chart-body` keep their natural height and
- * are letterboxed into the 16:9 frame instead.
+ * Saves a blob the way the TCTM buttons do: object URL on an anchor that is attached to the page
+ * for the click. A detached anchor with a large data: URL is ignored by some browsers.
  */
-export async function exportNodeToPng(node: HTMLElement, filename: string): Promise<void> {
-  const bg = resolveBackground(node);
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 2000);
+}
+
+/**
+ * Re-flows the panel off-screen at 800x600 so Recharts redraws to fill it, then captures it as a
+ * JPG: uniform heading, chart only (toolbars and controls hidden), white background. Panels
+ * without a `data-chart-body` keep their natural height and are letterboxed into the frame.
+ */
+export async function exportNodeToJpg(node: HTMLElement, opts: ChartExportOptions): Promise<void> {
+  const bg = readChartToken("--export-surface");
   const stretch = node.querySelector("[data-chart-body]") !== null;
+  const filename = exportFilename(opts.title, opts.asOf, "jpg");
 
   const placeholder = document.createElement("div");
   placeholder.className = node.className;
@@ -162,9 +209,19 @@ export async function exportNodeToPng(node: HTMLElement, filename: string): Prom
     backgroundColor: bg,
   });
   node.setAttribute("data-exporting", "");
+  const showChrome = hidePanelChrome(node);
+  const removeHeading = insertHeading(node, opts.heading ?? opts.title, exportDateLabel(opts.asOf));
 
   try {
     await waitForSettledChart(node, initial);
+
+    // Content that does not shrink (tables, heatmaps) can be taller than the frame: grow the node
+    // to fit it and let fitToCanvas scale the whole thing into 800x600 instead of cutting it off.
+    if (node.scrollHeight > node.clientHeight + 1) {
+      node.style.height = `${node.scrollHeight}px`;
+      await nextFrame();
+      await nextFrame();
+    }
 
     const raw = await toPng(node, {
       pixelRatio: PIXEL_RATIO,
@@ -175,13 +232,11 @@ export async function exportNodeToPng(node: HTMLElement, filename: string): Prom
       style: { position: "static", left: "0px", top: "0px", margin: "0px", transform: "none" },
       filter: (n) => !(n instanceof HTMLElement) || shouldInclude(n),
     });
-    const dataUrl = await fitToCanvas(raw, bg);
-
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = filename;
-    a.click();
+    const jpg = await fitToCanvas(raw, bg);
+    saveBlob(jpg, filename);
   } finally {
+    removeHeading();
+    showChrome();
     node.removeAttribute("data-exporting");
     if (prevStyle === null) node.removeAttribute("style");
     else node.setAttribute("style", prevStyle);
