@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/hud/AppShell";
 import { PageHeader } from "@/components/hud/PageHeader";
 import { SignalBadge, LevelBar } from "@/components/hud/SignalBadge";
-import { useTpmrSystems } from "@/hooks/useTpmrSystems";
+import { useTpmrSystems, type SystemsRow } from "@/hooks/useTpmrSystems";
 import { useTpDtPortfolio } from "@/hooks/useTpDtPortfolio";
 import { useTctmStatus } from "@/hooks/useTctmStatus";
 import { formatShortDate } from "@/lib/tctm/status";
@@ -28,6 +28,21 @@ function Panel({ title, eyebrow, badge, children }: { title: string; eyebrow?: s
       </div>
       <div className="p-3 flex-1 flex flex-col">{children}</div>
     </div>
+  );
+}
+
+/** T-Level, R-Level, signal and date for one Dual Trend horizon (short or long). */
+function DualTrendCells({ s }: { s: SystemsRow["trend"] }) {
+  return (
+    <>
+      <td className="py-1.5 pl-3 text-right tabular-nums border-l border-border/60">{s.tLevel}</td>
+      <td className="py-1.5 text-right tabular-nums">{s.rLevel}</td>
+      <td className="py-1.5 pl-3"><SignalBadge value={s.signal} /></td>
+      <td className="py-1.5">
+        <div className="text-[10px] tabular-nums text-surface-foreground">{s.date}</div>
+        <div className="text-[9px] text-muted-foreground">{s.days}d</div>
+      </td>
+    </>
   );
 }
 
@@ -174,7 +189,7 @@ export default function MarketOverview() {
           {isLoading || !spx ? (
             <div className="py-3 text-xs text-muted-foreground">{isLoading ? "Loading…" : "No data"}</div>
           ) : (
-            <div className="grid flex-1 grid-cols-[1fr_auto_auto_auto] grid-rows-[auto_repeat(3,1fr)] items-center gap-x-3">
+            <div className="grid flex-1 grid-cols-[1fr_auto_auto_auto] grid-rows-[auto_repeat(4,1fr)] items-center gap-x-3">
               <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">System</div>
               <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Status</div>
               <div className="pb-1 text-[9px] uppercase tracking-wider text-muted-foreground">Level</div>
@@ -182,7 +197,8 @@ export default function MarketOverview() {
               {[
                 { key: "riskST", label: "Risk ST", s: spx.riskST },
                 { key: "riskLT", label: "Risk LT", s: spx.riskLT },
-                { key: "trend", label: "Trend", s: spx.trend },
+                { key: "dualST", label: "Dual Trend ST", s: spx.dualST },
+                { key: "trend", label: "Dual Trend LT", s: spx.trend },
               ].map(({ key, label, s }) => (
                 <div key={key} className="contents">
                   <div className="flex h-full items-center border-t border-border/60 text-[11px] text-surface-foreground">
@@ -208,25 +224,35 @@ export default function MarketOverview() {
       <div className="px-3 pb-3">
         <Panel title="Sector Analysis — All Systems" eyebrow="1D">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[820px]">
+            <table className="w-full text-xs min-w-[1100px]">
               <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="text-left py-1 font-medium">Sector</th>
-                  <th className="text-left py-1 font-medium">Risk ST</th>
+                  <th rowSpan={2} className="text-left py-1 font-medium align-bottom">Sector</th>
+                  <th colSpan={2} className="text-left py-1 font-medium border-l border-border/60">Risk On/Off Composite</th>
+                  <th colSpan={4} className="text-left py-1 pl-3 font-medium border-l border-border/60">Dual Trend System · Short-Term</th>
+                  <th colSpan={4} className="text-left py-1 pl-3 font-medium border-l border-border/60">Dual Trend System · Long-Term</th>
+                </tr>
+                <tr className="border-b border-border/60">
+                  <th className="text-left py-1 font-medium border-l border-border/60">Risk ST</th>
                   <th className="text-left py-1 font-medium">Risk LT</th>
-                  <th className="text-left py-1 font-medium">Trend</th>
-                  <th className="text-right py-1 font-medium">T-Level</th>
+                  <th className="text-right py-1 pl-3 font-medium border-l border-border/60">T-Level</th>
                   <th className="text-right py-1 font-medium">R-Level</th>
+                  <th className="text-left py-1 pl-3 font-medium">Signal</th>
+                  <th className="text-left py-1 font-medium">Date</th>
+                  <th className="text-right py-1 pl-3 font-medium border-l border-border/60">T-Level</th>
+                  <th className="text-right py-1 font-medium">R-Level</th>
+                  <th className="text-left py-1 pl-3 font-medium">Signal</th>
+                  <th className="text-left py-1 font-medium">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={6} className="py-3 text-muted-foreground">Loading…</td></tr>
+                  <tr><td colSpan={11} className="py-3 text-muted-foreground">Loading…</td></tr>
                 )}
                 {(data?.sectors ?? []).map((r) => (
                   <tr key={r.code} className="border-t border-border/50">
                     <td className="py-1.5">{r.label}</td>
-                    <td className="py-1.5">
+                    <td className="py-1.5 border-l border-border/60">
                       <div className="flex items-center gap-2">
                         <SignalBadge value={r.riskST.signal} />
                         <LevelBar value={r.riskST.level} />
@@ -240,15 +266,8 @@ export default function MarketOverview() {
                       </div>
                       <div className="text-[9px] text-muted-foreground mt-0.5">{r.riskLT.date} · {r.riskLT.days}d</div>
                     </td>
-                    <td className="py-1.5">
-                      <div className="flex items-center gap-2">
-                        <SignalBadge value={r.trend.signal} />
-                        <LevelBar value={r.trend.level} />
-                      </div>
-                      <div className="text-[9px] text-muted-foreground mt-0.5">{r.trend.date} · {r.trend.days}d</div>
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums">{r.trend.tLevel}</td>
-                    <td className="py-1.5 text-right tabular-nums">{r.trend.rLevel}</td>
+                    <DualTrendCells s={r.dualST} />
+                    <DualTrendCells s={r.trend} />
                   </tr>
                 ))}
               </tbody>

@@ -21,7 +21,10 @@ export interface SystemsRow {
   label: string;
   riskST: SystemSnapshot;
   riskLT: SystemSnapshot;
+  /** Dual Trend System, long-term (trend_rel_lt_*). */
   trend: SystemSnapshot & { tLevel: number; rLevel: number };
+  /** Dual Trend System, short-term (trend_rel_st_*). */
+  dualST: SystemSnapshot & { tLevel: number; rLevel: number };
 }
 
 export interface TpmrSystems {
@@ -35,6 +38,8 @@ const KEYS = [
   "risk_lt_state", "risk_lt_score", "risk_lt_days", "risk_lt_start",
   "trend_rel_lt_state", "trend_rel_lt_days", "trend_rel_lt_start",
   "trend_rel_lt_value1", "trend_rel_lt_value2",
+  "trend_rel_st_state", "trend_rel_st_days", "trend_rel_st_start",
+  "trend_rel_st_value1", "trend_rel_st_value2",
 ] as const;
 
 type KeyMaps = Record<(typeof KEYS)[number], Map<string, number>>;
@@ -88,6 +93,14 @@ function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
       days: Math.round(m.trend_rel_lt_days.get(code) ?? 0),
       tLevel: trendLevel(m.trend_rel_lt_value1.get(code)),
       rLevel: trendLevel(m.trend_rel_lt_value2.get(code)),
+    },
+    dualST: {
+      level: trendLevel(m.trend_rel_st_value1.get(code)),
+      signal: dir(m.trend_rel_st_state.get(code)),
+      date: epochDaysToLabel(m.trend_rel_st_start.get(code)),
+      days: Math.round(m.trend_rel_st_days.get(code) ?? 0),
+      tLevel: trendLevel(m.trend_rel_st_value1.get(code)),
+      rLevel: trendLevel(m.trend_rel_st_value2.get(code)),
     },
   };
 }
