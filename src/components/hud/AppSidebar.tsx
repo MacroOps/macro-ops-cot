@@ -136,7 +136,6 @@ const NAV: Group[] = [
       { title: "S&P 600", url: "/tpmr/dual-trend/sp600", access: "tp" },
       { title: "ETFs", url: "/tpmr/dual-trend/etfs", access: "tp" },
       { title: "Gold & Silver Miners", url: "/tpmr/dual-trend/gold-silver-miners", access: "tp" },
-      { title: "Large Cap Cyclical", url: "/tpmr/dual-trend/large-cap-cyclical", access: "tp" },
       { title: "Thematic Stocks", url: "/tpmr/dual-trend/thematic", access: "tp" },
     ],
   },

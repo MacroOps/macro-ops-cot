@@ -86,7 +86,11 @@ export interface CustomListPayload {
   }[];
 }
 
-/** Custom lists: every member of the list is a row; category tags the list. */
+/**
+ * Custom lists: every member of the list is a row. A non-empty `category` tags
+ * the whole list (ETFs). An empty `category` groups each member by its own
+ * category from the list file (Thematic Stocks), so no fixed list label is shown.
+ */
 export function buildListRows(payload: CustomListPayload, category: string): DualTrendRow[] {
   const inst = payload.instruments ?? {};
   const members = payload.memberships?.length
@@ -94,11 +98,12 @@ export function buildListRows(payload: CustomListPayload, category: string): Dua
     : Object.keys(inst).map((s) => ({ entity_a: s }) as NonNullable<CustomListPayload["memberships"]>[number]);
   return members.map((m) => {
     const v = inst[m.entity_a]?.values ?? {};
+    const own = m.metadata?.categories ?? [];
     return {
       symbol: m.entity_a,
       name: m.metadata?.display_names?.[0] ?? m.canonical_name ?? "",
-      group: category,
-      subGroup: m.metadata?.categories?.join(", ") ?? "",
+      group: category || own[0] || "",
+      subGroup: category ? own.join(", ") : "",
       lt: horizon(v, "lt"),
       st: horizon(v, "st"),
     };

@@ -101,7 +101,6 @@ const App = () => (
             <Route path="/tpmr/dual-trend/sp600" element={<DualTrendPage slug="sp600" />} />
             <Route path="/tpmr/dual-trend/etfs" element={<DualTrendPage slug="etfs" />} />
             <Route path="/tpmr/dual-trend/gold-silver-miners" element={<DualTrendPage slug="gold-silver-miners" />} />
-            <Route path="/tpmr/dual-trend/large-cap-cyclical" element={<DualTrendPage slug="large-cap-cyclical" />} />
             <Route path="/tpmr/dual-trend/thematic" element={<DualTrendPage slug="thematic" />} />
             <Route path="/tpmr/tctm-live" element={<TctmLive />} />
             <Route path="/tpmr/tctm/risk-off" element={<Navigate to="/tpmr/tctm-live#riskoff" replace />} />

@@ -82,6 +82,19 @@ describe("custom list rows", () => {
     expect(out[0].lt.days).toBe(10);
     expect(out[0].lt.start).toBe("2026-11-02");
   });
+
+  it("empty category groups each member by its own category (Thematic Stocks)", () => {
+    const out = buildListRows({
+      memberships: [
+        { entity_a: "NVDA", metadata: { display_names: ["NVIDIA"], categories: ["Semiconductors"] } },
+        { entity_a: "PLTR", metadata: { display_names: ["Palantir"], categories: ["Artificial Intelligence"] } },
+      ],
+    }, "");
+    expect(out.map((r) => [r.symbol, r.group, r.subGroup])).toEqual([
+      ["NVDA", "Semiconductors", ""],
+      ["PLTR", "Artificial Intelligence", ""],
+    ]);
+  });
 });
 
 describe("saved returns", () => {

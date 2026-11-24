@@ -76,7 +76,8 @@ export const DUAL_TREND_SECTIONS: Record<string, DualTrendSection> = {
     slug: "thematic",
     label: "Thematic Stocks",
     description: "Thematic / megatrend names.",
-    universe: { kind: "lists", lists: [{ id: "CUSTOM:STOCKS_THEMATICS", category: "Thematic" }] },
+    // Empty category: each stock is grouped by its own category from the list file.
+    universe: { kind: "lists", lists: [{ id: "CUSTOM:STOCKS_THEMATICS", category: "" }] },
     csvName: "thematic-dual-trend.csv",
   },
 };
