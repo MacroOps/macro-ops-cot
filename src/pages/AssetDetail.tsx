@@ -265,8 +265,9 @@ export default function AssetDetail() {
   }
 
 
-  const last = data?.series.at(-1);
-  const prev = data?.series.at(-2);
+  const series = data?.series ?? [];
+  const last = series[series.length - 1];
+  const prev = series[series.length - 2];
   const wkChg = last && prev ? ((last.price - prev.price) / prev.price) * 100 : 0;
   const netWoW = last && prev ? last.netSpec - prev.netSpec : 0;
 
