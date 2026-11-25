@@ -10,3 +10,9 @@
 - [x] LT/ST return + net columns on every row, batched + cached (symbol + start + as-of)
 - [x] Sector breadth on S&P 500/400/600 with index total row
 - [x] Remove x10 trend scaling (incl. TPMR Overview); paginate every /v1/signal list call
+
+## Major dependency upgrades — ON HOLD (Nov 25)
+- [x] Step 1: remove zod + @hookform/resolvers (zod advisory cleared; 22 advisories open)
+- [ ] Step 2: Vite 8 + Vitest 5 — reverted; blocked on production build failing on the canonical link in index.html (config-only plugin tested and works)
+- [ ] Step 3: react-router-dom 6 → 7 (target >= 7.18.0)
+- [ ] Step 4: echarts 5 → 6 (target >= 6.1.0)
