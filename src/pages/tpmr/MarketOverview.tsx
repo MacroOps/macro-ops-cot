@@ -224,17 +224,22 @@ export default function MarketOverview() {
       <div className="px-3 pb-3">
         <Panel title="Sector Analysis — All Systems" eyebrow="1D">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[1100px]">
+            <table className="w-full text-xs min-w-[1400px]">
               <thead className="text-[9px] uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th rowSpan={2} className="text-left py-1 font-medium align-bottom">Sector</th>
                   <th colSpan={2} className="text-left py-1 font-medium border-l border-border/60">Risk On/Off Composite</th>
+                  <th colSpan={4} className="text-left py-1 pl-3 font-medium border-l border-border/60">Trend System</th>
                   <th colSpan={4} className="text-left py-1 pl-3 font-medium border-l border-border/60">Dual Trend System · Short-Term</th>
                   <th colSpan={4} className="text-left py-1 pl-3 font-medium border-l border-border/60">Dual Trend System · Long-Term</th>
                 </tr>
                 <tr className="border-b border-border/60">
                   <th className="text-left py-1 font-medium border-l border-border/60">Risk ST</th>
                   <th className="text-left py-1 font-medium">Risk LT</th>
+                  <th className="text-right py-1 pl-3 font-medium border-l border-border/60" title="trend_value1 · native API scale">Value 1</th>
+                  <th className="text-right py-1 font-medium" title="trend_value2 · native API scale">Value 2</th>
+                  <th className="text-left py-1 pl-3 font-medium">Signal</th>
+                  <th className="text-left py-1 font-medium">Date</th>
                   <th className="text-right py-1 pl-3 font-medium border-l border-border/60">T-Level</th>
                   <th className="text-right py-1 font-medium">R-Level</th>
                   <th className="text-left py-1 pl-3 font-medium">Signal</th>
@@ -247,7 +252,7 @@ export default function MarketOverview() {
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={11} className="py-3 text-muted-foreground">Loading…</td></tr>
+                  <tr><td colSpan={15} className="py-3 text-muted-foreground">Loading…</td></tr>
                 )}
                 {(data?.sectors ?? []).map((r) => (
                   <tr key={r.code} className="border-t border-border/50">
@@ -265,6 +270,13 @@ export default function MarketOverview() {
                         <LevelBar value={r.riskLT.level} />
                       </div>
                       <div className="text-[9px] text-muted-foreground mt-0.5">{r.riskLT.date} · {r.riskLT.days}d</div>
+                    </td>
+                    <td className="py-1.5 pl-3 text-right tabular-nums border-l border-border/60">{r.trendSystem.value1 ?? "—"}</td>
+                    <td className="py-1.5 text-right tabular-nums">{r.trendSystem.value2 ?? "—"}</td>
+                    <td className="py-1.5 pl-3"><SignalBadge value={r.trendSystem.signal} /></td>
+                    <td className="py-1.5">
+                      <div className="text-[10px] tabular-nums text-surface-foreground">{r.trendSystem.date}</div>
+                      <div className="text-[9px] text-muted-foreground">{r.trendSystem.days}d</div>
                     </td>
                     <DualTrendCells s={r.dualST} />
                     <DualTrendCells s={r.trend} />

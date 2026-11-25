@@ -15,6 +15,8 @@ This app (Terminus / Foundation Macro) uses Outseta for authentication, CRM, bil
 
 ## Community Alpha
 
+- Market Overview's absolute Trend System reads `trend_value1`, `trend_value2`, `trend_state`, `trend_days`, and `trend_start` separately from Dual Trend; preserve native component values and use neutral component labels until the API defines their ST/LT mapping, to avoid invented semantics.
+
 - Weekly window logic lives in `supabase/functions/_shared/community-alpha/window.ts` (Luxon, America/Los_Angeles, Slack ts compared as integer microseconds) — one source of truth for DST-safe Friday 2 PM PT windows.
 - Members page `/community-alpha` is Collective (and Team Plan). `community-alpha-read` verifies the Outseta JWT; staging mode is Team Plan only. Dashboard logic in `src/pages/communityAlphaDashboard.ts` stays a verbatim port of the reference, but its styling follows Terminus's design system.
 

@@ -21,6 +21,8 @@ export interface SystemsRow {
   label: string;
   riskST: SystemSnapshot;
   riskLT: SystemSnapshot;
+  /** Absolute Trend System: native API component levels, shared state/start. */
+  trendSystem: SystemSnapshot & { value1: number | null; value2: number | null };
   /** Dual Trend System, long-term (trend_rel_lt_*). */
   trend: SystemSnapshot & { tLevel: number; rLevel: number };
   /** Dual Trend System, short-term (trend_rel_st_*). */
@@ -33,9 +35,10 @@ export interface TpmrSystems {
   sectors: SystemsRow[];
 }
 
-const KEYS = [
+export const KEYS = [
   "risk_st_state", "risk_st_score", "risk_st_days", "risk_st_start",
   "risk_lt_state", "risk_lt_score", "risk_lt_days", "risk_lt_start",
+  "trend_state", "trend_days", "trend_start", "trend_value1", "trend_value2",
   "trend_rel_lt_state", "trend_rel_lt_days", "trend_rel_lt_start",
   "trend_rel_lt_value1", "trend_rel_lt_value2",
   "trend_rel_st_state", "trend_rel_st_days", "trend_rel_st_start",
@@ -70,7 +73,7 @@ const level = (v: number | undefined) => (v === undefined ? 0 : Math.round(v * 1
 // trend_rel_*_value1/value2 are already 0-100: use as-is.
 const trendLevel = (v: number | undefined) => (v === undefined ? 0 : v);
 
-function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
+export function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
   return {
     code,
     label,
@@ -85,6 +88,14 @@ function buildRow(code: string, label: string, m: KeyMaps): SystemsRow {
       signal: dir(m.risk_lt_state.get(code)),
       date: epochDaysToLabel(m.risk_lt_start.get(code)),
       days: Math.round(m.risk_lt_days.get(code) ?? 0),
+    },
+    trendSystem: {
+      level: m.trend_value1.get(code) ?? 0,
+      value1: m.trend_value1.get(code) ?? null,
+      value2: m.trend_value2.get(code) ?? null,
+      signal: dir(m.trend_state.get(code)),
+      date: epochDaysToLabel(m.trend_start.get(code)),
+      days: m.trend_days.get(code) ?? 0,
     },
     trend: {
       level: trendLevel(m.trend_rel_lt_value1.get(code)),
